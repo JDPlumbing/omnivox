@@ -1,0 +1,19 @@
+[package]
+name = "omnivox"
+version = "0.1.0"
+edition = "2024"
+
+
+authors = ["Dr. Ippy <jdplumbingsoflo@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/JDPlumbing/omnivox"
+
+[dependencies]
+chronovox = "0.1.0"
+objex = "0.2.0"
+serde = { version = "1", features = ["derive"] }
+uuid = "1"
+serde_json = "1"
+
+tokio = { version = "1", features = ["full"] }
+supabasic = "0.2.4"
