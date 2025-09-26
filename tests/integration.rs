@@ -1,20 +1,27 @@
-use omnivox::sim::SimWorld;
-use chronovox::{EventKind, UvoxId};
+use std::env;
+use uuid::Uuid;
 
-#[test]
-fn test_bootstrap_world_has_earth() {
-    // Build a fresh world
-    let world = SimWorld::bootstrap_world();
+use omnivox::SimWorld;
+use supabasic::Supabase;
 
-    // Assert Earth object exists in objects
-    let earth = world.objects.values().find(|o| o.name == "Earth");
-    assert!(earth.is_some(), "Earth object should be present in world.objects");
+#[tokio::test]
+async fn test_load_simworld_from_supabase() {
+    // Load .env so SUPABASE_URL and SUPABASE_KEY are available
+    dotenvy::dotenv().ok();
 
-    // Assert a Spawn event exists at tick 0
-    let spawn = world.timeline.iter_chronological().find(|e| {
-        matches!(e.kind, EventKind::Spawn)
-            && e.t.ticks("nanoseconds") == 0
-            && e.id == UvoxId::earth(0, 0, 0)
-    });
-    assert!(spawn.is_some(), "Earth should have a Spawn event at tick 0");
+    let url = env::var("SUPABASE_URL").expect("SUPABASE_URL not set");
+    let key = env::var("SUPABASE_KEY").expect("SUPABASE_KEY not set");
+    let sup = Supabase::new(&url, &key);
+
+    // Hardcoded simulation id from your setup
+    let sim_id = Uuid::parse_str("b691967d-8820-4f81-ab32-a9e7a10189f7")
+        .expect("hardcoded UUID should parse");
+
+    // Call into Omnivox (this does all the parsing)
+    let world = SimWorld::load_from_supabase(&sup, sim_id)
+        .await
+        .expect("should load SimWorld from Supabase");
+
+    println!("Loaded SimWorld: {:?}", world.simulation_id);
+    assert_eq!(world.simulation_id, sim_id);
 }

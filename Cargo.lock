@@ -1061,11 +1061,15 @@ dependencies = [
 name = "omnivox"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "chronovox",
+ "dotenvy",
  "objex",
  "serde",
  "serde_json",
  "supabasic",
+ "tdt",
+ "thiserror 2.0.16",
  "tokio",
  "uuid",
 ]
