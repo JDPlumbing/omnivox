@@ -22,9 +22,11 @@ struct SimulationRow {
     metadata: Value,
 }
 
+use chronovox::ChronoEvent;
+
 impl SimWorld {
     pub async fn load_from_supabase(sup: &Supabase, sim_id: Uuid) -> Result<Self> {
-        // 1. Fetch as raw JSON (Supabase returns an array of rows)
+        // 1. Fetch simulation metadata
         let raw: Value = sup
             .from("simulations")
             .select("*")
@@ -34,33 +36,28 @@ impl SimWorld {
 
         println!("RAW SIMULATION ROW: {raw:#}");
 
-        // 2. Extract the first row
         let row_val = raw.as_array()
             .and_then(|arr| arr.get(0).cloned())
             .ok_or_else(|| OmnivoxError::InvalidRow("no rows returned".into()))?;
 
-        // 3. Deserialize into SimulationRow
         let row: SimulationRow = serde_json::from_value(row_val)?;
 
-        // 4. Parse UUIDs
         let simulation_id = Uuid::parse_str(&row.simulation_id)?;
         let owner_id = Uuid::parse_str(&row.owner_id)?;
-
-        // 5. Parse numbers safely
         let frame_id = row.frame_id.as_i64()
             .ok_or_else(|| OmnivoxError::InvalidRow("frame_id not an integer".into()))? as u64;
 
         let tick_rate_val = row.tick_rate.as_i64()
             .ok_or_else(|| OmnivoxError::InvalidRow("tick_rate not an integer".into()))?;
 
-        // 6. Parse timestamp
         let last_saved = row.last_saved
             .map(|s| DateTime::parse_from_rfc3339(&s))
             .transpose()
-            .map_err(|e| OmnivoxError::InvalidRow(format!("bad timestamp: {e}")))?
+            .map_err(|e| OmnivoxError::InvalidRow(format!("bad timestamp: {e}")))? 
             .map(|dt| dt.with_timezone(&Utc));
 
-        Ok(SimWorld {
+        // 2. Build world
+        let mut world = SimWorld {
             simulation_id,
             frame_id,
             tick_rate: TimeDelta::from_ticks(tick_rate_val, "nanoseconds"),
@@ -68,6 +65,27 @@ impl SimWorld {
             owner_id,
             objects: HashMap::new(),
             timeline: Timeline::new(),
-        })
+            current_tick: 0,
+        };
+
+        // 3. Fetch and hydrate events
+let raw_events: Value = sup
+    .from("events")
+    .select("*, order(timestamp.asc)")
+    .eq("simulation_id", &sim_id.to_string())
+    .execute()
+    .await?;
+
+
+
+        if let Some(events) = raw_events.as_array() {
+            for ev_val in events {
+                let ev: ChronoEvent = serde_json::from_value(ev_val.clone())?;
+                world.timeline.push(ev);
+            }
+        }
+
+        Ok(world)
     }
 }
+

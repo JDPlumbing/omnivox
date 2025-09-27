@@ -2,8 +2,10 @@ use uuid::Uuid;
 use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 
-use objex::Objex;
-use chronovox::{Timeline, UvoxId};
+use objex::{Objex, Shape, MaterialLink};
+
+
+use chronovox::{Timeline, ChronoEvent, EventKind, UvoxId};
 use tdt::core::TimeDelta;
 
 /// In-memory representation of a simulation.
@@ -28,6 +30,9 @@ pub struct SimWorld {
 
     /// Chronological record of events in this simulation
     pub timeline: Timeline,
+
+    /// Current tick position of this world
+    pub current_tick: i64,
 }
 
 impl Default for SimWorld {
@@ -42,6 +47,53 @@ impl Default for SimWorld {
                 .expect("hardcoded UUID should parse"),
             objects: HashMap::new(),
             timeline: Timeline::new(),
+            current_tick: 0,
         }
+    }
+}
+
+impl SimWorld {
+    /// Advance the simulation by one tick and apply events for that tick.
+    pub fn tick(&mut self) -> Vec<ChronoEvent> {
+        self.current_tick += 1;
+        let now_tick = self.current_tick;
+
+        // Collect events scheduled for this tick
+        let ready: Vec<ChronoEvent> = self.timeline
+            .events
+            .iter()
+            .filter(|ev| ev.t.ticks("nanoseconds") == now_tick)
+            .cloned()
+            .collect();
+
+        // Apply the events to world state
+        for ev in &ready {
+            match ev.kind {
+                EventKind::Spawn => {
+                    // In a real impl, you’d construct the Objex from payload/DB
+                    let obj = Objex {
+                        entity_id: Uuid::new_v4(),
+                        name: "test_obj".into(),
+                        shape: Shape {
+                            geometry: serde_json::json!({"type": "point"}), // arbitrary schema
+                        },
+                        material: MaterialLink {
+                            category_id: Uuid::nil(), // or some valid material UUID
+                            properties: serde_json::json!({"name": "vacuum"}),
+                        },
+                    };
+
+                    self.objects.insert(ev.id.clone(), obj);
+                }
+                EventKind::Despawn => {
+                    self.objects.remove(&ev.id);
+                }
+                _ => {
+                    // other event kinds can be added here
+                }
+            }
+        }
+
+        ready
     }
 }
