@@ -9,21 +9,6 @@ license = "MIT"
 repository = "https://github.com/JDPlumbing/omnivox"
 
 [dependencies]
-
-
-supabasic = { path = "../supabasic" }
-
-objex = { path = "../objex" }
-geospec = { path = "../geospec" }
-matcat = { path = "../matcat" }
-
-chronovox = { path = "../chronovox" }
-tdt = { path = "../tdt" }
-uvoxid = { path = "../uvoxid" }
-uvoxxyz = { path = "../uvoxxyz" }
-
-
-
 serde = { version = "1", features = ["derive"] }
 uuid = "1"
 serde_json = "1"
@@ -33,26 +18,3 @@ thiserror = "2.0.16"
 dotenvy = "0.15.7"
 anyhow = "1.0.100"
 
-
-[workspace]
-members = [
-  "omnivox",
-  "supabasic",
-
-  "objex",
-  "geospec",
-  "matcat",
-
-  "chronovox",
-  "tdt",
-  "uvoxid",
-  "uvoxxyz",
-
-  "droidid",
-  "shortid",
-
-
-
-
-  
-]
