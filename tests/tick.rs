@@ -1,19 +1,20 @@
 // tests/tick.rs
 use uuid::Uuid;
-use supabasic::Supabase;
+use omnivox::supabasic::Supabase;
 
 use omnivox::sim::{
     persist::spawn_entity_with_objex,
     world::SimWorld,
 };
-use objex::Objex;
-use geospec::shapes::{BoxShape};
-use chronovox::{ChronoEvent, EventKind, UvoxId};
-use tdt::core::TimeDelta;
-use geospec::coords::Cartesian;
+use omnivox::objex::{ Objex, Shape, MaterialLink };
+use omnivox::geospec::shapes::{BoxShape};
+use omnivox::chronovox::{ChronoEvent, EventKind, UvoxId};
+use omnivox::tdt::core::TimeDelta;
+use omnivox::uvoxxyz::Cartesian;
 
 #[tokio::test]
 async fn test_tick_spawns_and_moves() -> anyhow::Result<()> {
+    dotenvy::dotenv().ok();
     let url = std::env::var("SUPABASE_URL")?;
     let key = std::env::var("SUPABASE_KEY")?;
     let sup = Supabase::new(&url, &key);
@@ -32,9 +33,10 @@ async fn test_tick_spawns_and_moves() -> anyhow::Result<()> {
     let entity_id = Uuid::new_v4();
     let objex = Objex {
         entity_id,
-        name: Some("unit cube".into()),
-        shape: cube.into(),
-        material: "vacuum".into(), // minimal stub
+        name: "unit cube".into(),
+        shape: Shape::Box(cube),
+        material: MaterialLink::vacuum(),
+
     };
 
     let uvox = UvoxId::earth(0, 0, 0);
@@ -44,7 +46,7 @@ async fn test_tick_spawns_and_moves() -> anyhow::Result<()> {
         spawn_entity_with_objex(&sup, sim_id, world.frame_id as i64, objex.clone(), uvox).await?;
 
     // Tick forward once
-    world.tick(1);
+    world.tick();
 
     // Inject a manual move event
     let move_event = ChronoEvent {

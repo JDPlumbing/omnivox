@@ -77,7 +77,7 @@ impl SimWorld {
                         material: MaterialLink::vacuum(),
                     };
 
-                    self.objects.insert(ev.id.clone(), obj);
+                    self.objects.insert(ev.id, obj);
                 }
                 EventKind::Despawn => {
                     self.objects.remove(&ev.id);

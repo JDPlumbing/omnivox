@@ -1,8 +1,7 @@
 use uuid::Uuid;
-use chrono::Utc;
 
 use crate::supabasic::Supabase;
-use crate::objex::{Objex, insert_objex, MaterialLink, Shape};
+use crate::objex::{Objex, insert_objex};
 use crate::chronovox::{ChronoEvent, EventKind, UvoxId, insert_event_for_entity};
 use crate::tdt::core::TimeDelta;
 
@@ -44,7 +43,7 @@ pub async fn spawn_entity_with_objex(
 
     // 2. Create a spawn event
     let event = ChronoEvent {
-        id: uvox.clone(),
+        id: uvox,
         t: TimeDelta::from_ticks(0, "nanoseconds"), // default spawn at tick 0
         kind: EventKind::Spawn,
         payload: Some(serde_json::json!({

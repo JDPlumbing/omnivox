@@ -37,7 +37,7 @@ impl SimWorld {
         println!("RAW SIMULATION ROW: {raw:#}");
 
         let row_val = raw.as_array()
-            .and_then(|arr| arr.get(0).cloned())
+            .and_then(|arr| arr.first().cloned())
             .ok_or_else(|| OmnivoxError::InvalidRow("no rows returned".into()))?;
 
         let row: SimulationRow = serde_json::from_value(row_val)?;
