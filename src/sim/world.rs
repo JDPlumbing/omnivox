@@ -1,12 +1,10 @@
 use uuid::Uuid;
 use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-
-use objex::{Objex, Shape, MaterialLink};
-
-
-use chronovox::{Timeline, ChronoEvent, EventKind, UvoxId};
-use tdt::core::TimeDelta;
+use crate::geospec::shapes::Sphere;
+use crate::objex::{Objex, Shape, MaterialLink};
+use crate::chronovox::{Timeline, ChronoEvent, EventKind, UvoxId};
+use crate::tdt::core::TimeDelta;
 
 /// In-memory representation of a simulation.
 pub struct SimWorld {
@@ -74,13 +72,9 @@ impl SimWorld {
                     let obj = Objex {
                         entity_id: Uuid::new_v4(),
                         name: "test_obj".into(),
-                        shape: Shape {
-                            geometry: serde_json::json!({"type": "point"}), // arbitrary schema
-                        },
-                        material: MaterialLink {
-                            category_id: Uuid::nil(), // or some valid material UUID
-                            properties: serde_json::json!({"name": "vacuum"}),
-                        },
+                        shape: Shape::Sphere(Sphere { radius: 1.0 }),
+
+                        material: MaterialLink::vacuum(),
                     };
 
                     self.objects.insert(ev.id.clone(), obj);

@@ -1,10 +1,10 @@
 use uuid::Uuid;
 use chrono::Utc;
 
-use supabasic::Supabase;
-use objex::{Objex, insert_objex, MaterialLink, Shape};
-use chronovox::{ChronoEvent, EventKind, UvoxId, insert_event_for_entity};
-use tdt::core::TimeDelta;
+use crate::supabasic::Supabase;
+use crate::objex::{Objex, insert_objex, MaterialLink, Shape};
+use crate::chronovox::{ChronoEvent, EventKind, UvoxId, insert_event_for_entity};
+use crate::tdt::core::TimeDelta;
 
 use crate::sim::error::OmnivoxError;
 
@@ -14,7 +14,7 @@ pub async fn persist_objex(
     obj: &Objex,
 ) -> Result<Uuid, OmnivoxError> {
     let id = obj.entity_id;
-    insert_objex(sup, id, obj).await?;
+    insert_objex(sup, obj).await?;
     Ok(id)
 }
 
@@ -40,7 +40,7 @@ pub async fn spawn_entity_with_objex(
     let entity_id = objex.entity_id;
 
     // 1. Persist the Objex
-    insert_objex(sup, entity_id, &objex).await?;
+    insert_objex(sup, &objex).await?;
 
     // 2. Create a spawn event
     let event = ChronoEvent {

@@ -10,11 +10,15 @@ repository = "https://github.com/JDPlumbing/omnivox"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-uuid = "1"
 serde_json = "1"
-tokio = { version = "1", features = ["full"] }
-chrono = "0.4.42"
-thiserror = "2.0.16"
-dotenvy = "0.15.7"
-anyhow = "1.0.100"
 
+uuid   = { version = "1", features = ["serde", "v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+rand   = { version = "0.9", features = ["serde"] }
+
+tokio     = { version = "1", features = ["full"] }
+thiserror = "2.0"
+dotenvy   = "0.15"
+anyhow    = "1.0"
+reqwest   = { version = "0.12", features = ["json"] }
+sha2      = "0.10"

@@ -4,16 +4,6 @@
 
 Created by [JDPlumbing](https://github.com/JDPlumbing)
 
-## 📦 Installation
+## Overview
 
-```bash
-cargo install omnivox
-```
-
-## 🚀 Usage
-
-```rust
-fn main() {
-    println!("Hello from your new crate!");
-}
-```
+omnivox is a top-level ecs style simulation framework which orchestrates several sub modules that perform specific functions. in order to rapid-develop this crate without managing several sub-crates, but it is important to note that the submods should manage their own concerns

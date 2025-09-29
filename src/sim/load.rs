@@ -4,10 +4,10 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 
-use supabasic::Supabase;
+use crate::supabasic::Supabase;
 
-use chronovox::Timeline;
-use tdt::core::TimeDelta;
+use crate::chronovox::Timeline;
+use crate::tdt::core::TimeDelta;
 
 use crate::sim::world::SimWorld;
 use crate::sim::error::{OmnivoxError, Result};
@@ -22,7 +22,7 @@ struct SimulationRow {
     metadata: Value,
 }
 
-use chronovox::ChronoEvent;
+use crate::chronovox::ChronoEvent;
 
 impl SimWorld {
     pub async fn load_from_supabase(sup: &Supabase, sim_id: Uuid) -> Result<Self> {
