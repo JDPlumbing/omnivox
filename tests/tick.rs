@@ -1,4 +1,3 @@
-// tests/tick.rs
 use uuid::Uuid;
 use omnivox::supabasic::Supabase;
 
@@ -6,8 +5,8 @@ use omnivox::sim::{
     persist::spawn_entity_with_objex,
     world::SimWorld,
 };
-use omnivox::objex::{ Objex, Shape, MaterialLink };
-use omnivox::geospec::shapes::{BoxShape};
+use omnivox::objex::{Objex, Shape, MaterialLink};
+use omnivox::geospec::shapes::BoxShape;
 use omnivox::chronovox::{ChronoEvent, EventKind, UvoxId};
 use omnivox::tdt::core::TimeDelta;
 use omnivox::uvoxxyz::Cartesian;
@@ -36,7 +35,6 @@ async fn test_tick_spawns_and_moves() -> anyhow::Result<()> {
         name: "unit cube".into(),
         shape: Shape::Box(cube),
         material: MaterialLink::vacuum(),
-
     };
 
     let uvox = UvoxId::earth(0, 0, 0);
@@ -45,10 +43,10 @@ async fn test_tick_spawns_and_moves() -> anyhow::Result<()> {
     let (_eid, _spawn_event) =
         spawn_entity_with_objex(&sup, sim_id, world.frame_id as i64, objex.clone(), uvox).await?;
 
-    // Tick forward once
-    world.tick();
+    // Tick forward once (async now!)
+    world.tick(Some(&sup)).await?;
 
-    // Inject a manual move event
+    // Inject a manual move event (not persisted — just in-memory)
     let move_event = ChronoEvent {
         id: uvox,
         t: TimeDelta::from_ticks(1, "nanoseconds"),
@@ -70,4 +68,39 @@ async fn test_tick_spawns_and_moves() -> anyhow::Result<()> {
     );
 
     Ok(())
+}
+
+use omnivox::sim::world::SimWorld;
+use omnivox::chronovox::{EventKind, UvoxId};
+use omnivox::objex::{Objex, Shape, MaterialLink};
+use omnivox::geospec::shapes::Sphere;
+
+#[tokio::test]
+async fn test_movement_system_generates_move() {
+    let mut world = SimWorld::default();
+
+    // Spawn a dummy object into the world
+    let obj_id = UvoxId {
+        frame_id: 0,
+        r_um: 0,
+        lat_code: 0,
+        lon_code: 0,
+    };
+    world.objects.insert(obj_id, Objex {
+        entity_id: uuid::Uuid::new_v4(),
+        name: "moving_obj".into(),
+        shape: Shape::Sphere(Sphere { radius: 1.0 }),
+        material: MaterialLink::vacuum(),
+    });
+
+    // Tick once — MovementSystem should run (async now!)
+    let events = world.tick(None).await.unwrap();
+
+    println!("Events after tick: {:?}", events);
+
+    // Assert we got at least one Move event
+    assert!(
+        events.iter().any(|e| matches!(e.kind, EventKind::Move { .. })),
+        "Expected MovementSystem to emit a Move event"
+    );
 }

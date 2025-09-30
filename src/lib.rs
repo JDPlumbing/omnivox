@@ -9,5 +9,5 @@ pub mod supabasic; // basic Supabase client
 pub mod tdt;       // time delta utils
 pub mod uvoxid;    // spatial ID system
 pub mod uvoxxyz;   // coordinate utils
-
+pub mod api;      // web API (Axum)
 

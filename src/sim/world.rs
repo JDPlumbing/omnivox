@@ -1,93 +1,65 @@
 use uuid::Uuid;
 use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use crate::geospec::shapes::Sphere;
-use crate::objex::{Objex, Shape, MaterialLink};
-use crate::chronovox::{Timeline, ChronoEvent, EventKind, UvoxId};
+use serde::Serialize;
+
+use crate::chronovox::{Timeline, UvoxId};
+use crate::objex::Objex;
 use crate::tdt::core::TimeDelta;
 
-/// In-memory representation of a simulation.
+/// Pure state of a simulation world
 pub struct SimWorld {
-    /// Simulation container ID (primary key in `simulations` table)
     pub simulation_id: Uuid,
-
-    /// Frame of reference for UvoxId coordinates (0 = canonical Earth, etc.)
     pub frame_id: u64,
-
-    /// How much time one tick represents (ns per tick or similar)
     pub tick_rate: TimeDelta,
-
-    /// Last time this simulation was saved
     pub last_saved: Option<DateTime<Utc>>,
-
-    /// Owner of this simulation (foreign key to `auth.users` table)
     pub owner_id: Uuid,
-
-    /// The entities that exist in this world, keyed by their spatial UvoxId
     pub objects: HashMap<UvoxId, Objex>,
-
-    /// Chronological record of events in this simulation
     pub timeline: Timeline,
-
-    /// Current tick position of this world
     pub current_tick: i64,
+    pub persist_events: bool,
 }
 
 impl Default for SimWorld {
     fn default() -> Self {
         Self {
-            simulation_id: Uuid::parse_str("b691967d-8820-4f81-ab32-a9e7a10189f7")
-                .expect("hardcoded UUID should parse"),
-            frame_id: 0, // test world always 0
+            simulation_id: Uuid::parse_str("b691967d-8820-4f81-ab32-a9e7a10189f7").unwrap(),
+            frame_id: 0,
             tick_rate: TimeDelta::from_ticks(1, "nanoseconds"),
             last_saved: None,
-            owner_id: Uuid::parse_str("4ea96b3f-51d7-4238-bd18-2f7fd8be26ec")
-                .expect("hardcoded UUID should parse"),
+            owner_id: Uuid::parse_str("4ea96b3f-51d7-4238-bd18-2f7fd8be26ec").unwrap(),
             objects: HashMap::new(),
             timeline: Timeline::new(),
             current_tick: 0,
+            persist_events: false,
         }
     }
 }
 
-impl SimWorld {
-    /// Advance the simulation by one tick and apply events for that tick.
-    pub fn tick(&mut self) -> Vec<ChronoEvent> {
-        self.current_tick += 1;
-        let now_tick = self.current_tick;
+/// Data Transfer Object for API responses
+#[derive(Serialize)]
+pub struct SimWorldDto {
+    pub simulation_id: Uuid,
+    pub frame_id: u64,
+    pub tick_rate_ns: i64,
+    pub last_saved: Option<DateTime<Utc>>,
+    pub owner_id: Uuid,
+    pub current_tick: i64,
+    pub persist_events: bool,
+    // TODO: objects and timeline → flatten into Vecs if needed
+}
 
-        // Collect events scheduled for this tick
-        let ready: Vec<ChronoEvent> = self.timeline
-            .events
-            .iter()
-            .filter(|ev| ev.t.ticks("nanoseconds") == now_tick)
-            .cloned()
-            .collect();
+impl From<&SimWorld> for SimWorldDto {
+    fn from(world: &SimWorld) -> Self {
+        Self {
+            simulation_id: world.simulation_id,
+            frame_id: world.frame_id,
+            tick_rate_ns: world.tick_rate.ticks("nanoseconds"),
 
-        // Apply the events to world state
-        for ev in &ready {
-            match ev.kind {
-                EventKind::Spawn => {
-                    // In a real impl, you’d construct the Objex from payload/DB
-                    let obj = Objex {
-                        entity_id: Uuid::new_v4(),
-                        name: "test_obj".into(),
-                        shape: Shape::Sphere(Sphere { radius: 1.0 }),
-
-                        material: MaterialLink::vacuum(),
-                    };
-
-                    self.objects.insert(ev.id, obj);
-                }
-                EventKind::Despawn => {
-                    self.objects.remove(&ev.id);
-                }
-                _ => {
-                    // other event kinds can be added here
-                }
-            }
+            last_saved: world.last_saved,
+            owner_id: world.owner_id,
+            current_tick: world.current_tick,
+            persist_events: world.persist_events,
         }
-
-        ready
     }
 }
