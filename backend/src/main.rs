@@ -2,7 +2,7 @@ use axum::Router;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 
-use omnivox::api; // your API router
+use omnivox_backend::api; // your API router
 
 #[tokio::main]
 async fn main() {
