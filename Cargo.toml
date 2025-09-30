@@ -1,26 +1,10 @@
-[package]
-name = "omnivox"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = [
+    "backend",
+    "frontend",
+    "shared",
+]
+resolver = "2"
 
-
-authors = ["Dr. Ippy <jdplumbingsoflo@gmail.com>"]
-license = "MIT"
-repository = "https://github.com/JDPlumbing/omnivox"
-
-[dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-
-uuid   = { version = "1", features = ["serde", "v4"] }
-chrono = { version = "0.4", features = ["serde"] }
-rand   = { version = "0.9", features = ["serde"] }
-
-tokio     = { version = "1", features = ["full"] }
-thiserror = "2.0"
-dotenvy   = "0.15"
-anyhow    = "1.0"
-reqwest   = { version = "0.12", features = ["json"] }
-sha2      = "0.10"
-axum = "0.8.5"
-tower-http = { version = "0.5", features = ["cors"] }
+[workspace.dependencies]
+serde = "=1.0.188"
