@@ -1,20 +1,24 @@
 use axum::Router;
-use std::net::SocketAddr;
-use tower_http::cors::CorsLayer;
-
-use omnivox::api; // your API router
+use tower_http::cors::{Any, CorsLayer};
+use omnivox::api::api_router; // 👈 from lib.rs re-export
 
 #[tokio::main]
 async fn main() {
-    // Build our application with routes and layers
+     dotenvy::dotenv().ok();
     let app = Router::new()
-        .nest("/api", api::api_router())
-        .layer(CorsLayer::permissive()); // <- allows all origins (dev-friendly)
+        .nest("/api", api_router()) // 👈 mounts all /hello, /worlds, /users
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
+        );
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    println!("listening on {}", addr);
-
-    axum::serve(tokio::net::TcpListener::bind(addr).await.unwrap(), app)
-        .await
-        .unwrap();
+    println!("listening on http://localhost:8000");
+    axum::serve(
+        tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap(),
+        app,
+    )
+    .await
+    .unwrap();
 }

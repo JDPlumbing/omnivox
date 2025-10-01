@@ -1,7 +1,7 @@
 use serde::de::DeserializeOwned;
 use reqwest::Client;
 use serde_json::Value;
-use crate::supabasic::error::{Result, SupabasicError}; // ✅ bring in the error type
+use crate::supabasic::error::{Result, SupabasicError};
 
 pub struct Supabase {
     url: String,
@@ -27,6 +27,14 @@ impl Supabase {
             payload: None,
         }
     }
+
+    pub fn new_from_env() -> Result<Self> {
+        let url = std::env::var("SUPABASE_URL")
+            .map_err(|_| SupabasicError::Other("SUPABASE_URL must be set".into()))?;
+        let api_key = std::env::var("SUPABASE_KEY")
+            .map_err(|_| SupabasicError::Other("SUPABASE_KEY must be set".into()))?;
+        Ok(Supabase::new(&url, &api_key))
+    }
 }
 
 enum Method {
@@ -51,20 +59,47 @@ impl<'a> QueryBuilder<'a> {
         self
     }
 
-    pub fn insert(mut self, json: Value) -> Self {
+    pub fn insert<T: serde::Serialize>(mut self, item: T) -> Self {
         self.method = Method::Insert;
-        self.payload = Some(json);
+
+        // Always wrap insert payload in array
+        self.payload = Some(serde_json::json!([item]));
+
+        // Always request rows back
+        if self.query.is_empty() {
+            self.query = "?select=*".to_string();
+        } else if !self.query.contains("select=") {
+            self.query.push('&');
+            self.query.push_str("select=*");
+        }
+
         self
     }
 
     pub fn update(mut self, json: Value) -> Self {
         self.method = Method::Update;
         self.payload = Some(json);
+
+        if self.query.is_empty() {
+            self.query = "?select=*".to_string();
+        } else if !self.query.contains("select=") {
+            self.query.push('&');
+            self.query.push_str("select=*");
+        }
+
         self
     }
 
     pub fn delete(mut self) -> Self {
         self.method = Method::Delete;
+
+        if self.query.is_empty() {
+            self.query = "?select=*".to_string();
+        } else if !self.query.contains("select=") {
+            self.query.push('&');
+            self.query.push_str("select=*");
+        }
+
         self
     }
 
@@ -96,14 +131,26 @@ impl<'a> QueryBuilder<'a> {
         }
     }
 
-    // ✅ new single() method
+    /// Return exactly one row
     pub async fn single(self) -> Result<Value> {
         let val: Value = self.execute().await?;
-        match val.as_array().and_then(|arr| arr.first()) {
-            Some(first) => Ok(first.clone()),
-            None => Err(SupabasicError::Other("no row found".to_string())),
 
+        if let Some(arr) = val.as_array() {
+            if let Some(first) = arr.first() {
+                return Ok(first.clone());
+            } else {
+                return Err(SupabasicError::Other("no row found".to_string()));
+            }
         }
+
+        if val.is_object() {
+            return Ok(val);
+        }
+
+        Err(SupabasicError::Other(format!(
+            "unexpected response shape: {:?}",
+            val
+        )))
     }
 
     pub async fn execute(self) -> Result<Value> {
@@ -111,8 +158,20 @@ impl<'a> QueryBuilder<'a> {
 
         let req = match self.method {
             Method::Select => self.client.http.get(&url),
-            Method::Insert => self.client.http.post(&url).json(&self.payload),
-            Method::Update => self.client.http.patch(&url).json(&self.payload),
+            Method::Insert => {
+                if let Some(ref payload) = self.payload {
+                    self.client.http.post(&url).json(payload)
+                } else {
+                    self.client.http.post(&url)
+                }
+            }
+            Method::Update => {
+                if let Some(ref payload) = self.payload {
+                    self.client.http.patch(&url).json(payload)
+                } else {
+                    self.client.http.patch(&url)
+                }
+            }
             Method::Delete => self.client.http.delete(&url),
         };
 
@@ -124,7 +183,12 @@ impl<'a> QueryBuilder<'a> {
             .send()
             .await?;
 
-        Ok(res.json().await?)
+        let text = res.text().await?;
+        eprintln!("DEBUG raw response text: {}", text);
+
+        std::fs::write("output.json", &text).expect("Unable to write output.json");
+
+        Ok(serde_json::from_str(&text)?)
     }
 
     pub async fn execute_typed<T: DeserializeOwned>(self) -> Result<Vec<T>> {
@@ -132,8 +196,20 @@ impl<'a> QueryBuilder<'a> {
 
         let req = match self.method {
             Method::Select => self.client.http.get(&url),
-            Method::Insert => self.client.http.post(&url).json(&self.payload),
-            Method::Update => self.client.http.patch(&url).json(&self.payload),
+            Method::Insert => {
+                if let Some(ref payload) = self.payload {
+                    self.client.http.post(&url).json(payload)
+                } else {
+                    self.client.http.post(&url)
+                }
+            }
+            Method::Update => {
+                if let Some(ref payload) = self.payload {
+                    self.client.http.patch(&url).json(payload)
+                } else {
+                    self.client.http.patch(&url)
+                }
+            }
             Method::Delete => self.client.http.delete(&url),
         };
 
@@ -142,7 +218,6 @@ impl<'a> QueryBuilder<'a> {
             .header("Authorization", format!("Bearer {}", &self.client.api_key))
             .header("Content-Type", "application/json")
             .header("Prefer", "return=representation")
-
             .send()
             .await?;
 
@@ -154,8 +229,20 @@ impl<'a> QueryBuilder<'a> {
 
         let req = match self.method {
             Method::Select => self.client.http.get(&url),
-            Method::Insert => self.client.http.post(&url).json(&self.payload),
-            Method::Update => self.client.http.patch(&url).json(&self.payload),
+            Method::Insert => {
+                if let Some(ref payload) = self.payload {
+                    self.client.http.post(&url).json(payload)
+                } else {
+                    self.client.http.post(&url)
+                }
+            }
+            Method::Update => {
+                if let Some(ref payload) = self.payload {
+                    self.client.http.patch(&url).json(payload)
+                } else {
+                    self.client.http.patch(&url)
+                }
+            }
             Method::Delete => self.client.http.delete(&url),
         };
 
@@ -164,7 +251,6 @@ impl<'a> QueryBuilder<'a> {
             .header("Authorization", format!("Bearer {}", &self.client.api_key))
             .header("Content-Type", "application/json")
             .header("Prefer", "return=representation")
-
             .send()
             .await?;
 
