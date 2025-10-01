@@ -1,21 +1,25 @@
 use dioxus::prelude::*;
+use dioxus_router::{Routable, Router};
+use crate::app::pages::Home;
+use crate::app::pages::Login;
+use crate::app::pages::NotFound;
+
+mod pages;
+
+#[derive(Routable, Clone, Debug, PartialEq)]
+enum Route {
+    #[route("/")]
+    Home {},
+
+    #[route("/login")]
+    Login {},
+
+    #[route("/:..segments")]
+    NotFound { segments: Vec<String> },
+}
 
 pub fn App() -> Element {
-    // ⬅ state/signals come first, before rendering
-    let mut count = use_signal(|| 0);
-
     rsx! {
-        // ⬅ global style block at the top of your UI tree
-        style { include_str!("./styles/index.css") }
-
-        div {
-            h1 { "Omnivox" }
-            p { "Landing page placeholder — wiring in progress." }
-
-            button {
-                onclick: move |_| count += 1,
-                "Clicked {count} times"
-            }
-        }
+        Router::<Route> {}
     }
 }

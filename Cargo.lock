@@ -1927,6 +1927,7 @@ dependencies = [
  "dioxus",
  "dioxus-router",
  "dioxus-web",
+ "log",
  "omnivox-shared",
  "reqwest 0.11.27",
  "serde",
