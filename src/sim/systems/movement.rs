@@ -1,4 +1,4 @@
-use crate::sim::world::SimWorld;
+use crate::sim::world::World;
 use crate::chronovox::{ChronoEvent, EventKind, UvoxId};
 use crate::sim::systems::System;
 use crate::tdt::core::TimeDelta;
@@ -6,7 +6,7 @@ use crate::tdt::core::TimeDelta;
 pub struct MovementSystem;
 
 impl System for MovementSystem {
-    fn run(&mut self, world: &mut SimWorld) -> Vec<ChronoEvent> {
+    fn run(&mut self, world: &mut World) -> Vec<ChronoEvent> {
         let mut applied = Vec::new();
         let tick = world.current_tick;
 
