@@ -1,7 +1,7 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use uuid::Uuid;
-
+use serde_json::Value;
 use crate::supabasic::client::Supabase;
 use crate::supabasic::error::SupabasicError;
 
@@ -25,30 +25,44 @@ pub async fn fetch<T: DbModel>(id: Uuid) -> Result<T, SupabasicError> {
 }
 
 /// List all rows in the table
-pub async fn list<T: DbModel>() -> Result<Vec<T>, SupabasicError> {
+
+/// Existing list<T>
+pub async fn list<T>() -> Result<Vec<T>, SupabasicError>
+where
+    T: DeserializeOwned + DbModel,
+{
     let supa = Supabase::new_from_env()?;
-    let val = supa
+    let raw = supa.from(T::table()).select("*").execute().await?;
+    let parsed: Vec<T> = serde_json::from_value(raw)?;
+    Ok(parsed)
+}
+
+/// NEW: raw_list
+pub async fn raw_list(table: &str) -> Result<Value, SupabasicError> {
+    let supa = Supabase::new_from_env()?;
+    let raw = supa.from(table).select("*").execute().await?;
+    Ok(raw)
+}
+
+/// Existing insert<T,R>
+pub async fn insert<T, R>(payload: &T) -> Result<R, SupabasicError>
+where
+    T: Serialize + DbModel,
+    R: DeserializeOwned,
+{
+    let supa = Supabase::new_from_env()?;
+    let raw = supa
         .from(T::table())
+        .insert(serde_json::json!([payload]))
         .select("*")
         .execute()
         .await?;
-    Ok(serde_json::from_value(val)?)
+    let parsed: Vec<R> = serde_json::from_value(raw)?;
+    parsed.into_iter().next().ok_or_else(|| {
+        SupabasicError::Other("Insert returned empty response".to_string())
+    })
 }
 
-/// Insert a new row and return the inserted row
-pub async fn insert<I, O>(item: &I) -> Result<O, SupabasicError>
-where
-    I: Serialize,
-    O: DbModel + DeserializeOwned,
-{
-    let supa = Supabase::new_from_env()?;
-    let val = supa
-        .from(O::table())
-        .insert(serde_json::to_value(item)?)
-        .single()
-        .await?;
-    Ok(serde_json::from_value(val)?)
-}
 
 /// Update a row by UUID (returns the updated row)
 pub async fn update<I, O>(id: Uuid, item: &I) -> Result<O, SupabasicError>

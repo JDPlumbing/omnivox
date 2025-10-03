@@ -48,6 +48,12 @@ impl DbModel for AnonUser {
     }
 }
 
+impl DbModel for NewAnonUser {
+    fn table() -> &'static str {
+        "anon_users"
+    }
+}
+
 /// GET /api/users/{id} → real users
 pub async fn get_user(Path(user_id): Path<Uuid>) -> impl IntoResponse {
     let supa = Supabase::new_from_env().unwrap();

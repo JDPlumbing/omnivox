@@ -152,6 +152,10 @@ impl<'a> QueryBuilder<'a> {
             val
         )))
     }
+    pub async fn single_typed<T: DeserializeOwned>(self) -> Result<T> {
+        let val = self.single().await?;
+        Ok(serde_json::from_value(val)?)
+    }
 
     pub async fn execute(self) -> Result<Value> {
         let url = format!("{}/rest/v1/{}{}", self.client.url, self.table, self.query);
@@ -281,4 +285,15 @@ impl<'a> QueryBuilder<'a> {
         self.add_filter(filter);
         self
     }
+    pub fn order(mut self, column: &str) -> Self {
+    if self.query.is_empty() {
+        self.query = format!("?order={}", column);
+    } else {
+        self.query.push('&');
+        self.query.push_str(&format!("order={}", column));
+    }
+    self
+    }
+    
+
 }
