@@ -1,76 +1,46 @@
-# uvoxid
+# uvoxid Module
 
-[![Crates.io](https://img.shields.io/crates/v/uvoxid.svg)](https://crates.io/crates/uvoxid)
-[![Documentation](https://docs.rs/uvoxid/badge.svg)](https://docs.rs/uvoxid)
-[![License](https://img.shields.io/crates/l/uvoxid.svg)](./LICENSE)
-A crate for representing positions in space (and time) with **pure integers**, designed for simulations, physics, and spatial indexing.
+The `uvoxid` module provides a compact, lossless, and arithmetic-friendly identifier for spatial locations within arbitrary reference frames. It is designed for use in simulations, games, or scientific applications where precise, serializable, and math-capable spatial IDs are needed.
 
-## Overview
+## Features
 
-`UvoxId` encodes a position as **four 64-bit fields**:
+- **UvoxId Struct:**  
+  Represents a spatial location as four 64-bit fields:
+  - `frame_id`: Reference frame anchor (e.g., Earth, Moon, Sun, etc.)
+  - `r_um`: Radial distance from frame center, in micrometers
+  - `lat_code`: Latitude code (full 64-bit signed range)
+  - `lon_code`: Longitude code (full 64-bit signed range)
+- **Delta Struct:**  
+  Represents a difference between two `UvoxId`s, supporting arithmetic operations and safe wrapping for latitude/longitude.
+- **Arithmetic Operations:**  
+  - Add or apply a `Delta` to a `UvoxId` (with safe wrapping and clamping).
+- **Serialization:**  
+  - Convert to/from a packed 256-bit hex string for efficient storage or transmission.
+- **Convenience Methods:**  
+  - Construct for Earth or other frames.
+  - Tuple conversion for math or serialization.
+  - Safe latitude/longitude wrapping and clamping.
 
-- `frame_id: u64` → Reference frame (0 = Earth, 1 = Moon, 2 = Sun, …)
-- `r_um: u64` → Radial distance from the frame center, in micrometers
-- `lat_code: i64` → Latitude code (full 64-bit signed integer range)
-- `lon_code: i64` → Longitude code (full 64-bit signed integer range)
+## Structure
 
-This gives:
-- **Integer math only** (no floats in the core representation).
-- **Ridiculous precision** — sub-atomic resolution at Earth’s surface, ~6 mm resolution even at 2 light-years.
-- **Stable hex serialization** (256-bit fixed-width string).
-- Optional `serde` support for JSON/CBOR serialization.
+- **core.rs:** Defines the `UvoxId` struct, arithmetic, and serialization logic.
+- **delta.rs:** Defines the `Delta` struct and its helpers.
+- **mod.rs:** Module exports for easy integration.
 
-## Examples
+## Example Usage
 
 ```rust
 use uvoxid::{UvoxId, Delta};
 
-// Construct a position (frame 0 = Earth)
-let mut pos = UvoxId::earth(6_371_000_000_000, 0, 0);
+// Create a UvoxId for Earth
+let id = UvoxId::earth(1_000_000, 123_456, -654_321);
 
-// Apply a delta
-let delta = Delta { dr_um: 100, dlat: 50, dlon: -50 };
-pos.apply_delta(delta);
+// Apply a delta (move 1000 µm radially, +100 lat, -200 lon)
+let delta = Delta::new(1000, 100, -200);
+let new_id = id + delta;
 
-println!("{}", pos); 
-// → frame=0, r=6371000000100 µm, lat=50, lon=-50
+// Serialize to hex and back
+let hex = new_id.to_hex();
+let parsed = UvoxId::from_hex(&hex).unwrap();
 
-// Serialize to hex
-let hex = pos.to_hex();
-let back = UvoxId::from_hex(&hex).unwrap();
-assert_eq!(pos, back);
-
-// Serialize to JSON (with serde enabled)
-let json = serde_json::to_string(&pos).unwrap();
-let decoded: UvoxId = serde_json::from_str(&json).unwrap();
-assert_eq!(pos, decoded);
-```
-
-## Why?
-
-- **Consistent, integer-only units** for distance, area, volume, velocity, and time.
-- **Reference-frame aware**: anchor at Earth, Moon, Sun, or any body by `frame_id`.
-- **Simulation-ready**: can represent velocity as “uvox per tick,” where one tick = 1 ns, with the speed of light defined as a max velocity in those units.
-
-## Benchmarks
-
-With Criterion:
-
-- Construct `UvoxId`: ~2 ns  
-- Apply delta: ~8 ns  
-- Serialize/deserialize JSON: ~50–100 ns  
-- Haversine distance: ~37 ns  
-
-
----
-
-## 📎 Links
-- [Crates.io](https://crates.io/crates/uvoxid)
-- [Docs.rs](https://docs.rs/uvoxid)
-- [Source Code](https://github.com/JDPlumbing/uvoxid-rs)
-
----
-
-## 📄 License
-
-MIT © JD Plumbing
+assert_eq!(parsed, new_id);

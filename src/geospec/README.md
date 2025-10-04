@@ -1,71 +1,36 @@
-# geospec
+# geospec Module
 
-`geospec` is a geometry specification library designed for ECS-style simulations.  
-It provides **shape definitions**, **dimension inference**, and **JSON-friendly representations** for physical objects.
-
----
+The `geospec` module provides geometric primitives, traits, and inference utilities for representing and working with basic shapes in simulations and scientific applications. It enables calculation of surface area, volume, and serialization of geometric data, as well as inferring missing properties from partial JSON input.
 
 ## Features
-- Define common geometric shapes:
-  - Sphere (radius, volume, surface area)
-  - Box (length × width × height, volume, surface area)
-  - Cylinder (radius × height, volume, surface area)
-  - Cone (radius × height, volume, surface area)
-  - Pyramid (base × height, volume, surface area)
-  - Capsule, Torus, Prism, etc. (planned)
 
-- Infer missing properties:
-  - Provide just a radius → auto-compute volume and surface area.
-  - Provide dimensions → auto-compute derived measures.
+- **Geometric Primitives:** Includes common shapes such as `Point`, `Line`, `Plane`, `Sphere`, `BoxShape`, `Cylinder`, and `Cone`.
+- **Traits:**  
+  - `SurfaceArea`: For types that can compute their surface area.
+  - `Volume`: For types that can compute their volume.
+  - `Dimensions`: For types that can serialize their dimensions and properties as JSON.
+- **Inference Utility:**  
+  - `infer_from_json`: Given partial JSON describing a shape, infers and fills in missing properties (like surface area and volume).
 
-- Serialize/deserialize to **JSON** using `serde_json`.
+## Structure
 
-- Optimized for **speed**: most computations run in nanoseconds.
+- **traits.rs:** Defines the core traits (`SurfaceArea`, `Volume`, `Dimensions`) for geometric types.
+- **shapes.rs:** Implements the geometric primitives and their trait methods.
+- **inference.rs:** Provides the `infer_from_json` function for inferring shape properties from JSON.
 
----
-
-## Example
+## Example Usage
 
 ```rust
-use geospec::shapes::Sphere;
-use geospec::traits::ShapeSpec;
+use geospec::{Sphere, Dimensions};
+use serde_json::json;
 
-fn main() {
-    let sphere = Sphere { radius: 2.0 };
-    let json = sphere.as_json();
+// Create a sphere and get its properties as JSON
+let sphere = Sphere { radius: 2.0 };
+let props = sphere.as_json();
+println!("{}", props);
 
-    println!("Sphere as JSON: {}", json);
-    println!("Volume: {}", sphere.volume());
-    println!("Surface area: {}", sphere.surface_area());
-}
-```
-
-Output:
-```
-Sphere as JSON: {"radius":2.0,"volume":33.510,"surface_area":50.265}
-Volume: 33.510
-Surface area: 50.265
-```
-
----
-
-## Benchmarks
-
-Run with:
-
-```bash
-cargo bench
-```
-
-Typical performance (on a mid-range CPU):
-- Sphere volume: ~1.4 ns
-- Sphere surface area: ~1.1 ns
-- Box volume: ~0.46 ns
-- Box surface area: ~0.44 ns
-
----
-
-## License
-Dual-licensed under either:
-- MIT License
-- Apache License 2.0
+// Infer properties from partial JSON
+use geospec::inference::infer_from_json;
+let input = json!({ "type": "sphere", "radius": 2.0 });
+let inferred = infer_from_json(&input).unwrap();
+println!("{}", inferred);

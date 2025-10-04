@@ -1,20 +1,23 @@
 // src/api/simulations.rs
 use axum::{extract::Path, response::IntoResponse, Json};
 use axum::http::StatusCode;
-use uuid::Uuid;
 use serde::{Serialize, Deserialize};
+use uuid::Uuid;
 
 use crate::supabasic::client::Supabase;
 use crate::supabasic::simulations::SimulationRow;
+use crate::supabasic::events::EventRow;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SimulationDto {
     pub simulation_id: Uuid,
     pub user_owner_id: Option<Uuid>,
     pub anon_owner_id: Option<Uuid>,
     pub tick_rate: i64,
     pub frame_id: i64,
-    pub last_saved: Option<String>, // String for frontend safety
+    pub last_saved: Option<String>, // safer string for frontend
+    #[serde(default)]
+    pub events: Vec<EventRow>, // only populated in get_simulation
 }
 
 impl From<SimulationRow> for SimulationDto {
@@ -26,6 +29,7 @@ impl From<SimulationRow> for SimulationDto {
             tick_rate: row.tick_rate,
             frame_id: row.frame_id,
             last_saved: row.last_saved.map(|dt| dt.to_rfc3339()),
+            events: vec![],
         }
     }
 }
@@ -34,7 +38,15 @@ impl From<SimulationRow> for SimulationDto {
 pub async fn get_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
     let supa = Supabase::new_from_env().unwrap();
     match SimulationRow::get(&supa, sim_id).await {
-        Ok(sim) => Json(SimulationDto::from(sim)).into_response(),
+        Ok(sim) => {
+            // hydrate with events
+            let mut dto = SimulationDto::from(sim);
+            match EventRow::list_for_sim(&supa, &dto.simulation_id).await {
+                Ok(events) => dto.events = events,
+                Err(e) => eprintln!("Warning: could not load events for sim {}: {:?}", dto.simulation_id, e),
+            }
+            Json(dto).into_response()
+        }
         Err(e) => {
             eprintln!("Error fetching simulation {}: {:?}", sim_id, e);
             (StatusCode::NOT_FOUND, "not found").into_response()
@@ -47,7 +59,8 @@ pub async fn list_simulations() -> impl IntoResponse {
     let supa = Supabase::new_from_env().unwrap();
     match SimulationRow::list(&supa).await {
         Ok(sims) => {
-            let dto_list: Vec<SimulationDto> = sims.into_iter().map(SimulationDto::from).collect();
+            let dto_list: Vec<SimulationDto> =
+                sims.into_iter().map(SimulationDto::from).collect();
             Json(dto_list).into_response()
         }
         Err(e) => {

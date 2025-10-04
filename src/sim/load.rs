@@ -44,6 +44,7 @@ impl Simulation {
             created_at: row.last_saved.unwrap_or_else(Utc::now),
             updated_at: Utc::now(),
             deleted_at: None,
+            events: vec![],
         };
 
         // 4. Empty systems for now

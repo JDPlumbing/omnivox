@@ -13,10 +13,19 @@ pub use users::User;
 pub use orm::{DbModel, fetch, list, insert};
 
 // worlds: only re-export the low-level DB functions
-pub use worlds::{list_worlds, create_world};
+// src/supabasic/mod.rs
+pub use self::worlds::WorldRow;
+pub use self::worlds::NewWorld as NewWorldRow;
+
 
 // simulations: just re-export the model
 pub use simulations::SimulationRow;
 
 // optionally, if you want to reach into sim layer directly
 pub use crate::sim::world::{World, NewWorld};
+pub mod objex;
+pub mod events;
+
+
+pub use events::EventRow;
+

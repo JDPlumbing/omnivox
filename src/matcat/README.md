@@ -1,71 +1,41 @@
-# matcat
+# matcat Module
 
-A compact, procedural material catalog for simulations.
-
-Instead of maintaining giant lookup tables of materials, **matcat** encodes every material as a 5-byte identifier (`MatCatId`), then **procedurally derives its physical properties**. This allows trillions of possible distinct materials — far more than you could ever hand-author — while still giving deterministic, repeatable results.
-
----
+The `matcat` module provides a compact, extensible material catalog system for simulations and engineering applications. It enables efficient identification, procedural property generation, and similarity search for a wide range of materials using a small, deterministic code.
 
 ## Features
 
-- **Compact IDs**  
-  `MatCatId` is only 5 bytes (`u8` category, `u16` variant, `u16` grade).  
-  Each ID maps deterministically to a unique material.
+- **Compact Material IDs:**  
+  Materials are identified by a 5-byte code (`MatCatId`) consisting of category, variant, and grade.
+- **Procedural Property Generation:**  
+  Material properties (`MatProps`) are deterministically generated from the ID, using category-based ranges and seeded pseudo-randomness.
+- **Category and Variant Maps:**  
+  Human-readable names for categories and variants are provided via static maps.
+- **Similarity Search:**  
+  Find the closest material to a target property set using Euclidean distance in property space.
+- **Extensible:**  
+  Easily add new categories, variants, or property ranges.
 
-- **Procedural properties**  
-  `props_for(id)` derives a complete `MatProps` struct, covering mechanical, thermal, chemical, and electromagnetic properties.
+## Structure
 
-- **Distance metric**  
-  Compare materials in property-space with a Euclidean distance function.
+- **mod.rs:** Module root and public API re-exports.
+- **materials.rs:** Core types (`MatCatId`, `MatProps`) and property generation logic.
+- **category_ranges.rs:** Defines property ranges for each material category and generates properties within those ranges.
+- **categories.rs:** Maps category IDs to human-readable names.
+- **variants.rs:** Maps (category, variant) pairs to variant names.
 
-- **Search**  
-  `find_closest_material` lets you match a target set of properties against a search space of `MatCatId`s.
-
-- **Blazing fast**  
-  Property derivation (`props_for`) takes ~12ns; searching 1000 candidates takes ~17µs (see benches).
-
----
-
-## Example
+## Example Usage
 
 ```rust
 use matcat::{MatCatId, props_for, find_closest_material};
 
-fn main() {
-    let copper_id = MatCatId::new(1, 42, 0); // category=1 (Metal), variant=42, grade=0
-    let copper_props = props_for(&copper_id);
+// Create a material ID for Copper (category 1, variant 2, grade 1)
+let copper_id = MatCatId::new(1, 2, 1);
 
-    println!("Copper-like density: {} kg/m³", copper_props.density);
+// Get the procedural properties for Copper
+let copper_props = props_for(&copper_id);
 
-    // Suppose we want the closest match to a target density
-    let target = matcat::materials::MatProps { density: 8000.0, ..Default::default() };
-    let candidates: Vec<_> = (0..1000).map(|v| MatCatId::new(1, v, 0)).collect();
-    if let Some((id, props)) = find_closest_material(&target, &candidates) {
-        println!("Closest material ID: {:?}, density={}", id, props.density);
-    }
+// Find the closest material to a target property set
+let search_space = vec![copper_id /*, ... other MatCatIds ... */];
+if let Some((best_id, best_props)) = find_closest_material(&copper_props, &search_space) {
+    println!("Closest material: {:?} with props {:?}", best_id, best_props);
 }
-```
-
----
-
-## Use cases
-
-- Simulation engines that need consistent materials without manual authoring.  
-- ECS systems where materials are components.  
-- Procedural generation of worlds, objects, and environments.  
-- Approximate matching for “what’s the closest material to this set of properties?”
-
----
-
-## Performance
-
-Benchmarked on a modern x86 CPU:
-
-- `props_for`: ~12 ns  
-- `find_closest_material` (1000 candidates): ~17 µs  
-
----
-
-## License
-
-MIT
