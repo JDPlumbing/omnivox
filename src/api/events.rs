@@ -1,68 +1,41 @@
-use axum::{
-    extract::{Path, Json},
-    response::IntoResponse,
-};
-use crate::supabasic::Supabase;
-use crate::supabasic::events::EventRow;
-
-use serde::{Serialize, Deserialize};
+use axum::{extract::Path, response::IntoResponse, Json};
+use axum::http::StatusCode;
+use serde_json::json;
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct EventDto {
-    pub id: Uuid,
-    pub simulation_id: Uuid,
-    pub entity_id: Uuid,
-    pub frame_id: i64,
-    pub r_um: i64,
-    pub lat_code: i64,
-    pub lon_code: i64,
-    pub ticks: i64,
-    pub kind: String,
-}
+use crate::supabasic::{Supabase, SupabasicError};
+use crate::supabasic::events::EventRow;
 
-impl From<EventRow> for EventDto {
-    fn from(e: EventRow) -> Self {
-        EventDto {
-            id: e.id,
-            simulation_id: e.simulation_id,
-            entity_id: e.entity_id,
-            frame_id: e.frame_id,
-            r_um: e.r_um,
-            lat_code: e.lat_code,
-            lon_code: e.lon_code,
-            ticks: e.ticks,
-            kind: e.kind,
-        }
-    }
-}
+/// GET /api/events/:simulation_id
+/// Lists all events for a given simulation.
+pub async fn list_events_for_sim(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
+    let supa = match Supabase::new_from_env() {
+        Ok(c) => c,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, format!("Supabase init failed: {e:?}")).into_response(),
+    };
 
-/// GET /simulations/:id/events
-pub async fn list_events_handler(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
     match EventRow::list_for_sim(&supa, &sim_id).await {
-        Ok(rows) => {
-            let dto: Vec<EventDto> = rows.into_iter().map(EventDto::from).collect();
-            Json(dto).into_response()
+        Ok(events) => Json(events).into_response(),
+        Err(e) => {
+            eprintln!("Error fetching events for simulation {}: {:?}", sim_id, e);
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch failed: {e:?}")).into_response()
         }
-        Err(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
 
-/// GET /events/:id
-pub async fn get_event_handler(Path(event_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-    match EventRow::get(&supa, event_id).await {
-        Ok(event) => Json(EventDto::from(event)).into_response(),
-        Err(e) => (axum::http::StatusCode::NOT_FOUND, e.to_string()).into_response(),
-    }
-}
+/// POST /api/events
+/// Insert a new event directly (generic).
+pub async fn create_event(Json(payload): Json<EventRow>) -> impl IntoResponse {
+    let supa = match Supabase::new_from_env() {
+        Ok(c) => c,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, format!("Supabase init failed: {e:?}")).into_response(),
+    };
 
-/// POST /events
-pub async fn create_event_handler(Json(payload): Json<EventRow>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
     match EventRow::create(&supa, &payload).await {
-        Ok(event) => Json(EventDto::from(event)).into_response(),
-        Err(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+        Ok(inserted) => Json(json!({ "status": "ok", "inserted": inserted })).into_response(),
+        Err(e) => {
+            eprintln!("Error inserting event: {:?}", e);
+            (StatusCode::BAD_REQUEST, format!("Insert failed: {e:?}")).into_response()
+        }
     }
 }

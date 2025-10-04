@@ -12,6 +12,7 @@ use serde_json::to_string_pretty;
 /// Mirrors your `objex_entities` table
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ObjectRecord {
+    pub frame_id: i64,               // 🔥 include this
     pub entity_id: Option<Uuid>,     // DB may autogen
     pub name: String,
     pub shape: Value,                // stored as JSONB
@@ -39,7 +40,7 @@ impl ObjectRecord {
         // Now decode into typed rows
         let inserted: Vec<Self> = supa.from("objex_entities")
             .insert(payload)
-            .select("entity_id,name,shape,material_name,material_kind")
+            .select("frame_id,entity_id,name,shape,material_name,material_kind")
             .execute_typed()
             .await?;
 
@@ -50,14 +51,14 @@ impl ObjectRecord {
 
     pub async fn list(supa: &Supabase) -> Result<Vec<Self>, SupabasicError> {
         supa.from(Self::table())
-            .select("entity_id,name,shape,material_name,material_kind")
+            .select("frame_id,entity_id,name,shape,material_name,material_kind")
             .execute_typed::<Self>()
             .await
     }
 
     pub async fn get(supa: &Supabase, id: Uuid) -> Result<Self, SupabasicError> {
         supa.from(Self::table())
-            .select("entity_id,name,shape,material_name,material_kind")
+            .select("frame_id,entity_id,name,shape,material_name,material_kind")
             .eq("entity_id", &id.to_string())
             .single_typed::<Self>()
             .await
@@ -71,6 +72,7 @@ impl ObjectRecord {
 impl From<Objex> for ObjectRecord {
     fn from(o: Objex) -> Self {
         ObjectRecord {
+            frame_id: o.frame_id, // 🔥 include this
             entity_id: Some(o.entity_id), // wrap Uuid
             name: o.name,
             shape: serde_json::to_value(o.shape).unwrap(),
@@ -85,6 +87,7 @@ impl TryFrom<ObjectRecord> for Objex {
 
     fn try_from(r: ObjectRecord) -> Result<Self, Self::Error> {
         Ok(Objex {
+            frame_id: r.frame_id, // 🔥 include this
             entity_id: r.entity_id.ok_or_else(|| anyhow::anyhow!("missing entity_id"))?,
             name: r.name,
             shape: serde_json::from_value(r.shape)?,

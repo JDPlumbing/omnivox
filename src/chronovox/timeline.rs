@@ -1,8 +1,10 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use crate::chronovox::{ChronoEvent, EventKind, UvoxId, Cartesian};
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Default, Clone)]
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Timeline {
     pub events: Vec<ChronoEvent>,
 }

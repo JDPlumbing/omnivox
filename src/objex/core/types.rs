@@ -122,6 +122,7 @@ impl MaterialLink {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Objex {
+    pub frame_id: i64, // 🔥 include this
     pub entity_id: Uuid,
     pub name: String, // required (could also make this Option<String> if you want optional names)
     pub shape: Shape,
@@ -129,8 +130,9 @@ pub struct Objex {
 }
 
 impl Objex {
-    pub fn new_sphere(material: MaterialLink, radius: f64) -> Self {
+    pub fn new_sphere(frame_id: i64, material: MaterialLink, radius: f64) -> Self {
         Self {
+            frame_id,
             entity_id: uuid::Uuid::new_v4(),
             name: format!("{:?} Sphere", material),
             shape: Shape::Sphere(Sphere { radius }),
@@ -138,8 +140,9 @@ impl Objex {
         }
     }
 
-    pub fn new_box(material: MaterialLink, length: f64, width: f64, height: f64) -> Self {
+    pub fn new_box(frame_id: i64, material: MaterialLink, length: f64, width: f64, height: f64) -> Self {
         Self {
+            frame_id,
             entity_id: uuid::Uuid::new_v4(),
             name: format!("{:?} Box", material),
             shape: Shape::Box(BoxShape { length, width, height }),
@@ -147,8 +150,9 @@ impl Objex {
         }
     }
 
-    pub fn new_cylinder(material: MaterialLink, radius: f64, height: f64) -> Self {
+    pub fn new_cylinder(frame_id: i64, material: MaterialLink, radius: f64, height: f64) -> Self {
         Self {
+            frame_id,
             entity_id: uuid::Uuid::new_v4(),
             name: format!("{:?} Cylinder", material),
             shape: Shape::Cylinder(Cylinder { radius, height }),
@@ -160,8 +164,9 @@ impl Objex {
 impl Objex {
     /// Create a new Objex with a given name, shape, and material name.
     /// Material kind is inferred automatically.
-    pub fn new(name: impl Into<String>, shape: Shape, material: MaterialLink) -> Self {
+    pub fn new(frame_id: i64, name: impl Into<String>, shape: Shape, material: MaterialLink) -> Self {
         Self {
+            frame_id,
             entity_id: Uuid::new_v4(),
             name: name.into(),
             shape,

@@ -48,6 +48,7 @@ impl ObjexBuilder {
 
     pub fn build(self) -> Objex {
         Objex {
+            frame_id: 0, // 🔥 include this
             entity_id: self.entity_id,
             name: self.name.unwrap_or_else(|| "unnamed".into()),
             shape: self.shape.unwrap_or(Shape::Point(Point)),

@@ -1,12 +1,13 @@
-// src/api/simulations.rs
 use axum::{extract::Path, response::IntoResponse, Json};
 use axum::http::StatusCode;
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
+use serde_json::json;
 
-use crate::supabasic::client::Supabase;
+use crate::supabasic::Supabase;
 use crate::supabasic::simulations::SimulationRow;
 use crate::supabasic::events::EventRow;
+use crate::supabasic::objex::ObjectRecord;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SimulationDto {
@@ -15,9 +16,9 @@ pub struct SimulationDto {
     pub anon_owner_id: Option<Uuid>,
     pub tick_rate: i64,
     pub frame_id: i64,
-    pub last_saved: Option<String>, // safer string for frontend
+    pub last_saved: Option<String>,
     #[serde(default)]
-    pub events: Vec<EventRow>, // only populated in get_simulation
+    pub events: Vec<EventRow>,
 }
 
 impl From<SimulationRow> for SimulationDto {
@@ -39,7 +40,6 @@ pub async fn get_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
     let supa = Supabase::new_from_env().unwrap();
     match SimulationRow::get(&supa, sim_id).await {
         Ok(sim) => {
-            // hydrate with events
             let mut dto = SimulationDto::from(sim);
             match EventRow::list_for_sim(&supa, &dto.simulation_id).await {
                 Ok(events) => dto.events = events,
@@ -59,13 +59,74 @@ pub async fn list_simulations() -> impl IntoResponse {
     let supa = Supabase::new_from_env().unwrap();
     match SimulationRow::list(&supa).await {
         Ok(sims) => {
-            let dto_list: Vec<SimulationDto> =
-                sims.into_iter().map(SimulationDto::from).collect();
+            let dto_list: Vec<SimulationDto> = sims.into_iter().map(SimulationDto::from).collect();
             Json(dto_list).into_response()
         }
         Err(e) => {
             eprintln!("Error listing simulations: {:?}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, "error").into_response()
+        }
+    }
+}
+
+/// POST /api/simulations/:id/seed
+pub async fn seed_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
+    let supa = Supabase::new_from_env().unwrap();
+
+    // 1️⃣ Get simulation's world frame
+    let sim: serde_json::Value = match supa
+        .from("simulations")
+        .select("frame_id")
+        .eq("simulation_id", &sim_id.to_string())
+        .single()
+        .await
+    {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Failed to get simulation: {:?}", e);
+            return (StatusCode::INTERNAL_SERVER_ERROR, "error getting simulation").into_response();
+        }
+    };
+    let frame_id = sim["frame_id"].as_i64().unwrap_or(0);
+
+    // 2️⃣ Get world objects
+    let objs: Vec<ObjectRecord> = match supa
+        .from("objex_entities")
+        .select("entity_id, name, shape, material_name, material_kind, frame_id")
+        .eq("frame_id", &frame_id.to_string())
+        .execute_typed()
+        .await
+
+    {
+        Ok(list) => list,
+        Err(e) => {
+            eprintln!("Failed to fetch objects: {:?}", e);
+            return (StatusCode::INTERNAL_SERVER_ERROR, "error fetching objects").into_response();
+        }
+    };
+
+    // 3️⃣ Create spawn events
+    let events: Vec<serde_json::Value> = objs
+        .into_iter()
+        .map(|o| {
+            json!({
+                "simulation_id": sim_id,
+                "entity_id": o.entity_id,
+                "frame_id": frame_id,
+                "ticks": 0,
+                "timestamp": chrono::Utc::now(),
+                "kind": "Spawn",
+                "move_offset": null,
+                "payload": null,
+            })
+        })
+        .collect();
+
+    match supa.from("events").insert(events).select("*").execute().await {
+        Ok(res) => Json(json!({ "status": "ok", "spawned": res })).into_response(),
+        Err(e) => {
+            eprintln!("Insert failed: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "insert failed").into_response()
         }
     }
 }
