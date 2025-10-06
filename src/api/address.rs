@@ -219,44 +219,42 @@ pub async fn update_address(
 
 
 /// PATCH /address/{id}
-pub async fn patch_address(Path(id): Path<Uuid>, Json(changes): Json<Value>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let filtered = match &changes {
-        Value::Object(map) => {
-            let clean: serde_json::Map<_, _> = map
-                .iter()
-                .filter(|(_, v)| !v.is_null())
-                .map(|(k, v)| (k.clone(), v.clone()))
-                .collect();
-            Value::Object(clean)
-        }
-        _ => changes.clone(), // ✅ clone here
+pub async fn patch_address(
+    Path(id): Path<uuid::Uuid>,
+    Json(payload): Json<serde_json::Value>,
+) -> impl IntoResponse {
+    let supa = match Supabase::new_from_env() {
+        Ok(client) => client,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, format!("Supabase init error: {e}")).into_response(),
     };
+
+    // Defensive check: empty payload means nothing to patch
+    if payload.as_object().map(|m| m.is_empty()).unwrap_or(true) {
+        return (StatusCode::BAD_REQUEST, "Empty patch payload".to_string()).into_response();
+    }
+
+    // Ensure we’re wrapping the payload correctly for PostgREST
+    let filtered = json!(payload);
 
     eprintln!("📦 PATCH filtered payload: {}", filtered);
 
-    let result = supa
+    // Chain the entire builder sequence in one expression
+    match supa
         .from("addresses")
-        
-
-        .eq("id", &id.to_string())
-        .update(serde_json::json!([filtered.clone()])) // 👈 wrap in array
+        .eq("id", &id.to_string()) // ✅ filter first
+        .update(filtered)
         .select("*")
         .execute_typed::<AddressRow>()
-        .await;
+        .await
 
-
-
-    match result {
-        Ok(updated) => Json(json!({ "patched": updated })).into_response(),
+    {
+        Ok(rows) => Json(json!({ "patched": rows })).into_response(),
         Err(e) => {
-            eprintln!("Error patching address {}: {:?}", id, e);
-            (StatusCode::BAD_REQUEST, format!("Patch failed: {e:?}")).into_response()
+            eprintln!("Error patching address {id}: {e:?}");
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Patch failed: {e:?}")).into_response()
         }
     }
 }
-
 
 /// DELETE /address/{id}
 pub async fn delete_address(Path(id): Path<Uuid>) -> impl IntoResponse {
