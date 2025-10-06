@@ -50,7 +50,16 @@ impl EventRow {
             .execute_typed::<Self>()
             .await
     }
-
+    pub async fn list_for_entity(
+        supa: &Supabase,
+        entity_id: &Uuid,
+    ) -> Result<Vec<Self>, SupabasicError> {
+        supa.from(Self::table())
+            .select("id,simulation_id,entity_id,frame_id,r_um,lat_code,lon_code,ticks,timestamp,kind,move_offset,payload,created_at")
+            .eq("entity_id", &entity_id.to_string())
+            .execute_typed::<Self>()
+            .await
+    }
     pub async fn get(supa: &Supabase, id: Uuid) -> Result<Self, SupabasicError> {
         supa.from(Self::table())
             .select("id,simulation_id,entity_id,frame_id,r_um,lat_code,lon_code,ticks,timestamp,kind,move_offset,payload,created_at")

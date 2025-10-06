@@ -1,1 +1,1 @@
-[{"id":"ad9e612f-18f4-46fc-a546-0dadd040cc30","frame_id":0,"r_um":0,"lat_code":0,"lon_code":0,"ticks":0,"timestamp":"2025-10-04T18:42:38.003877+00:00","kind":"spawn","move_offset":null,"payload":null,"created_at":"2025-10-04T18:42:38.003877+00:00","entity_id":"84ccda7f-83b8-4417-b4e5-bb3d89bc06a3","simulation_id":"2d1d1e3a-7d44-4b9e-a9ef-49c2279d9c1c"}]
+{"code":"PGRST102","details":null,"hint":null,"message":"All object keys must match"}

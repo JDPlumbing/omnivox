@@ -7,7 +7,7 @@ const DEG_SCALE: f64 = 180e6; // 180 * 10^6 microdegrees
 /// Extension trait for converting between UvoxId and Cartesian coordinates.
 pub trait UvoxIdExt {
     fn to_cartesian(&self, system: CoordSystem) -> Cartesian;
-    fn from_cartesian(cart: Cartesian, system: CoordSystem, frame_id: u64) -> UvoxId;
+    fn from_cartesian(cart: Cartesian, system: CoordSystem, frame_id: i64) -> UvoxId;
 }
 
 impl UvoxIdExt for UvoxId {
@@ -34,7 +34,7 @@ impl UvoxIdExt for UvoxId {
     }
 
     /// Convert Cartesian → UvoxId (Math or Graphics).
-    fn from_cartesian(cart: Cartesian, system: CoordSystem, frame_id: u64) -> UvoxId {
+    fn from_cartesian(cart: Cartesian, system: CoordSystem, frame_id: i64) -> UvoxId {
         let r = (cart.x.powi(2) + cart.y.powi(2) + cart.z.powi(2)).sqrt();
 
         let (lat_rad, lon_rad) = match system {
@@ -50,7 +50,7 @@ impl UvoxIdExt for UvoxId {
             }
         };
 
-        let r_um = (r * 1e6).round() as u64;
+        let r_um = (r * 1e6).round() as i64;
         let lat_code = (lat_rad * DEG_SCALE / PI).round() as i64;
         let lon_code = (lon_rad * DEG_SCALE / PI).round() as i64;
 

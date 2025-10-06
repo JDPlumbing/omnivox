@@ -66,8 +66,8 @@ impl EventRowDb {
     fn into_event(self) -> ChronoEvent {
         ChronoEvent {
             id: UvoxId {
-                frame_id: self.frame_id as u64,
-                r_um: self.r_um as u64,
+                frame_id: self.frame_id as i64,
+                r_um: self.r_um as i64,
                 lat_code: self.lat_code, // ✅ keep as i64
                 lon_code: self.lon_code, // ✅ keep as i64
             },

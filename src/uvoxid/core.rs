@@ -3,32 +3,32 @@ use serde::{Serialize, Deserialize};
 use std::fmt;
 use std::ops::{Add, AddAssign};
 
-/// A UVoxID as 4x64-bit fields:
-/// - frame_id: reference frame anchor (e.g. 0 = Earth, 1 = Moon, 2 = Sun, …)
-/// - r_um: radial distance from frame center, in micrometers
-/// - lat_code: latitude code (full 64-bit signed range)
-/// - lon_code: longitude code (full 64-bit signed range)
+/// A UVoxID as 4x64-bit *signed* fields:
+/// - `frame_id`: reference frame anchor (0 = Earth, 1 = Moon, etc.)
+/// - `r_um`: radial distance from frame center (in µm, always ≥ 0)
+/// - `lat_code`: latitude code (-90e6 to +90e6)
+/// - `lon_code`: longitude code (-180e6 to +180e6)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct UvoxId {
-    pub frame_id: u64,
-    pub r_um: u64,
+    pub frame_id: i64,
+    pub r_um: i64,
     pub lat_code: i64,
     pub lon_code: i64,
 }
 
 impl UvoxId {
     /// Construct directly
-    pub fn new(frame_id: u64, r_um: u64, lat_code: i64, lon_code: i64) -> Self {
-        Self { frame_id, r_um, lat_code, lon_code }
+    pub fn new(frame_id: i64, r_um: i64, lat_code: i64, lon_code: i64) -> Self {
+        Self { frame_id, r_um: r_um.max(0), lat_code, lon_code }
     }
 
     /// Convenience for Earth (frame 0)
-    pub fn earth(r_um: u64, lat_code: i64, lon_code: i64) -> Self {
+    pub fn earth(r_um: i64, lat_code: i64, lon_code: i64) -> Self {
         Self::new(0, r_um, lat_code, lon_code)
     }
 
     /// Return as tuple for math/serialization
-    pub fn as_tuple(&self) -> (u64, u64, i64, i64) {
+    pub fn as_tuple(&self) -> (i64, i64, i64, i64) {
         (self.frame_id, self.r_um, self.lat_code, self.lon_code)
     }
 
@@ -45,7 +45,7 @@ impl UvoxId {
     /// Apply a delta in µm/lat/lon codes (frame_id is fixed)
     pub fn apply_delta(&mut self, delta: Delta) {
         // radius can’t go negative
-        self.r_um = (self.r_um as i128 + delta.dr_um as i128).max(0) as u64;
+        self.r_um = (self.r_um as i128 + delta.dr_um as i128).max(0) as i64;
 
         // use i128 to avoid overflow when adding big deltas
         let mut lat = self.lat_code as i128 + delta.dlat as i128;
@@ -68,14 +68,13 @@ impl UvoxId {
         self.lon_code = ((lon + 180_000_000).rem_euclid(360_000_000) - 180_000_000) as i64;
     }
 
-
-    /// Serialize to packed 256-bit hex string.
+    /// Serialize to packed 256-bit hex string (still deterministic)
     pub fn to_hex(&self) -> String {
         format!(
             "{:016x}{:016x}{:016x}{:016x}",
-            self.frame_id,
-            self.r_um,
-            self.lat_code as u64, // reinterpret signed as raw bits
+            self.frame_id as u64, // reinterpret signed bits
+            self.r_um as u64,
+            self.lat_code as u64,
             self.lon_code as u64,
         )
     }
@@ -85,21 +84,20 @@ impl UvoxId {
         if s.len() != 64 {
             return None;
         }
-        let frame_id = u64::from_str_radix(&s[0..16], 16).ok()?;
-        let r_um     = u64::from_str_radix(&s[16..32], 16).ok()?;
-        let lat_bits = u64::from_str_radix(&s[32..48], 16).ok()?;
-        let lon_bits = u64::from_str_radix(&s[48..64], 16).ok()?;
+
+        let frame_bits = u64::from_str_radix(&s[0..16], 16).ok()?;
+        let r_bits     = u64::from_str_radix(&s[16..32], 16).ok()?;
+        let lat_bits   = u64::from_str_radix(&s[32..48], 16).ok()?;
+        let lon_bits   = u64::from_str_radix(&s[48..64], 16).ok()?;
 
         Some(Self {
-            frame_id,
-            r_um,
+            frame_id: frame_bits as i64,
+            r_um: r_bits as i64,
             lat_code: lat_bits as i64,
             lon_code: lon_bits as i64,
         })
     }
 }
-
-
 
 impl Add<Delta> for UvoxId {
     type Output = UvoxId;
@@ -133,7 +131,7 @@ mod tests {
 
     #[test]
     fn round_trip_hex() {
-        let original = UvoxId::new(42, 1_000_000u64, 123_456i64, -654_321i64);
+        let original = UvoxId::new(42, 1_000_000i64, 123_456i64, -654_321i64);
 
         let hex = original.to_hex();
         assert_eq!(hex.len(), 64, "hex string should always be 64 chars long");

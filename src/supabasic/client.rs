@@ -3,6 +3,7 @@ use reqwest::Client;
 use serde_json::Value;
 use crate::supabasic::error::{Result, SupabasicError};
 
+#[derive(Debug, Clone)]
 pub struct Supabase {
     url: String,
     api_key: String,
@@ -18,9 +19,9 @@ impl Supabase {
         }
     }
 
-    pub fn from(&self, table: &str) -> QueryBuilder<'_> {
+    pub fn from(&self, table: &str) -> QueryBuilder {
         QueryBuilder {
-            client: self,
+            client: self.clone(),
             table: table.to_string(),
             query: String::new(),
             method: Method::Select,
@@ -37,6 +38,7 @@ impl Supabase {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 enum Method {
     Select,
     Insert,
@@ -44,15 +46,16 @@ enum Method {
     Delete,
 }
 
-pub struct QueryBuilder<'a> {
-    client: &'a Supabase,
+#[derive(Debug, Clone)]
+pub struct QueryBuilder {
+    client: Supabase,
     table: String,
     query: String,
     method: Method,
     payload: Option<Value>,
 }
 
-impl<'a> QueryBuilder<'a> {
+impl QueryBuilder {
     pub fn select(mut self, fields: &str) -> Self {
         self.method = Method::Select;
         self.query = format!("?select={}", fields);
@@ -61,49 +64,39 @@ impl<'a> QueryBuilder<'a> {
 
     pub fn insert<T: serde::Serialize>(mut self, item: T) -> Self {
         self.method = Method::Insert;
-
-        // Always wrap insert payload in array
         self.payload = Some(serde_json::json!([item]));
-
-        // Always request rows back
         if self.query.is_empty() {
             self.query = "?select=*".to_string();
         } else if !self.query.contains("select=") {
             self.query.push('&');
             self.query.push_str("select=*");
         }
-
         self
     }
 
     pub fn update(mut self, json: Value) -> Self {
         self.method = Method::Update;
-        self.payload = Some(json);
-
+        self.payload = Some(serde_json::json!([json]));
         if self.query.is_empty() {
             self.query = "?select=*".to_string();
         } else if !self.query.contains("select=") {
             self.query.push('&');
             self.query.push_str("select=*");
         }
-
         self
     }
 
     pub fn delete(mut self) -> Self {
         self.method = Method::Delete;
-
         if self.query.is_empty() {
             self.query = "?select=*".to_string();
         } else if !self.query.contains("select=") {
             self.query.push('&');
             self.query.push_str("select=*");
         }
-
         self
     }
 
-    // Filters
     pub fn eq(mut self, column: &str, value: &str) -> Self {
         let filter = format!("{}=eq.{}", column, value);
         self.add_filter(filter);
@@ -131,10 +124,31 @@ impl<'a> QueryBuilder<'a> {
         }
     }
 
+    pub fn is_null(mut self, column: &str) -> Self {
+        let filter = format!("{}=is.null", column);
+        self.add_filter(filter);
+        self
+    }
+
+    pub fn not_null(mut self, column: &str) -> Self {
+        let filter = format!("{}=not.is.null", column);
+        self.add_filter(filter);
+        self
+    }
+
+    pub fn order(mut self, column: &str) -> Self {
+        if self.query.is_empty() {
+            self.query = format!("?order={}", column);
+        } else {
+            self.query.push('&');
+            self.query.push_str(&format!("order={}", column));
+        }
+        self
+    }
+
     /// Return exactly one row
     pub async fn single(self) -> Result<Value> {
         let val: Value = self.execute().await?;
-
         if let Some(arr) = val.as_array() {
             if let Some(first) = arr.first() {
                 return Ok(first.clone());
@@ -142,23 +156,38 @@ impl<'a> QueryBuilder<'a> {
                 return Err(SupabasicError::Other("no row found".to_string()));
             }
         }
-
         if val.is_object() {
             return Ok(val);
         }
-
         Err(SupabasicError::Other(format!(
             "unexpected response shape: {:?}",
             val
         )))
     }
+
     pub async fn single_typed<T: DeserializeOwned>(self) -> Result<T> {
         let val = self.single().await?;
         Ok(serde_json::from_value(val)?)
     }
 
     pub async fn execute(self) -> Result<Value> {
+        eprintln!("🧩 DEBUG QueryBuilder BEFORE EXECUTE:");
+        eprintln!("   table: {}", self.table);
+        eprintln!("   method: {:?}", self.method);
+        eprintln!("   query: {}", self.query);
+        eprintln!("   payload: {:?}", self.payload);
+
         let url = format!("{}/rest/v1/{}{}", self.client.url, self.table, self.query);
+        eprintln!(
+            "🧠 FINAL URL [{}]: {}",
+            match self.method {
+                Method::Select => "SELECT",
+                Method::Insert => "INSERT",
+                Method::Update => "UPDATE",
+                Method::Delete => "DELETE",
+            },
+            url
+        );
 
         let req = match self.method {
             Method::Select => self.client.http.get(&url),
@@ -187,16 +216,16 @@ impl<'a> QueryBuilder<'a> {
             .send()
             .await?;
 
+        eprintln!("DEBUG status: {} {:?}", res.status(), res.headers());
         let text = res.text().await?;
         eprintln!("DEBUG raw response text: {}", text);
-
         std::fs::write("output.json", &text).expect("Unable to write output.json");
-
         Ok(serde_json::from_str(&text)?)
     }
 
     pub async fn execute_typed<T: DeserializeOwned>(self) -> Result<Vec<T>> {
         let url = format!("{}/rest/v1/{}{}", self.client.url, self.table, self.query);
+        eprintln!("🧠 FINAL URL: {}", url);
 
         let req = match self.method {
             Method::Select => self.client.http.get(&url),
@@ -229,7 +258,23 @@ impl<'a> QueryBuilder<'a> {
     }
 
     pub async fn execute_one<T: DeserializeOwned>(self) -> Result<T> {
+        eprintln!("🧩 DEBUG QueryBuilder BEFORE EXECUTE:");
+        eprintln!("   table: {}", self.table);
+        eprintln!("   method: {:?}", self.method);
+        eprintln!("   query: {}", self.query);
+        eprintln!("   payload: {:?}", self.payload);
+
         let url = format!("{}/rest/v1/{}{}", self.client.url, self.table, self.query);
+        eprintln!(
+            "🧠 FINAL URL [{}]: {}",
+            match self.method {
+                Method::Select => "SELECT",
+                Method::Insert => "INSERT",
+                Method::Update => "UPDATE",
+                Method::Delete => "DELETE",
+            },
+            url
+        );
 
         let req = match self.method {
             Method::Select => self.client.http.get(&url),
@@ -258,42 +303,15 @@ impl<'a> QueryBuilder<'a> {
             .send()
             .await?;
 
-        Ok(res.json::<T>().await?)
-    }
+        let text = res.text().await?;
+        eprintln!("DEBUG raw response text (execute_one): {}", text);
 
-    // convenience for null checks
-    pub fn is_null(mut self, column: &str) -> Self {
-        let filter = format!("{}=is.null", column);
-        self.add_filter(filter);
-        self
+        let val: Value = serde_json::from_str(&text)?;
+        if let Some(arr) = val.as_array() {
+            if let Some(first) = arr.first() {
+                return Ok(serde_json::from_value(first.clone())?);
+            }
+        }
+        Ok(serde_json::from_value(val)?)
     }
-
-    pub fn not_null(mut self, column: &str) -> Self {
-        let filter = format!("{}=not.is.null", column);
-        self.add_filter(filter);
-        self
-    }
-
-    pub fn is_(mut self, column: &str, op: &str) -> Self {
-        let filter = format!("{}=is.{}", column, op);
-        self.add_filter(filter);
-        self
-    }
-
-    pub fn is_not_null(mut self, column: &str) -> Self {
-        let filter = format!("{}=is.not.null", column);
-        self.add_filter(filter);
-        self
-    }
-    pub fn order(mut self, column: &str) -> Self {
-    if self.query.is_empty() {
-        self.query = format!("?order={}", column);
-    } else {
-        self.query.push('&');
-        self.query.push_str(&format!("order={}", column));
-    }
-    self
-    }
-    
-
 }
