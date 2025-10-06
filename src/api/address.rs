@@ -161,12 +161,12 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
     // 3️⃣ Insert into geolocations
     let geo_result = supa
         .from("geolocations")
-        .insert(json!([{
+        .insert(json!({
             "lat": lat,
             "lon": lon,
             "elevation_m": elevation_m,
             "address_id": id
-        }]))
+        }))
         .select("id, lat, lon, elevation_m")
         .execute()
         .await;
