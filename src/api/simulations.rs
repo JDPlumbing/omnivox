@@ -5,7 +5,7 @@ use uuid::Uuid;
 use serde_json::json;
 
 use crate::supabasic::Supabase;
-use crate::supabasic::simulations::SimulationRow;
+use crate::supabasic::simulations::{UpdateSimulation, SimulationRow};
 use crate::supabasic::events::EventRow;
 use crate::supabasic::objex::ObjectRecord;
 use crate::supabasic::SupabasicError;
@@ -22,6 +22,17 @@ pub struct SimulationDto {
     #[serde(default)]
     pub events: Vec<EventRow>,
 }
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NewSimulation {
+    pub simulation_id: Option<Uuid>, // optional; generated if missing
+    pub frame_id: i64,
+    pub tick_rate: i64,
+    pub last_saved: Option<chrono::DateTime<chrono::Utc>>,
+    pub metadata: Option<serde_json::Value>,
+    pub user_owner_id: Option<Uuid>,
+    pub anon_owner_id: Option<Uuid>,
+}
+
 
 impl From<SimulationRow> for SimulationDto {
     fn from(row: SimulationRow) -> Self {
@@ -33,6 +44,48 @@ impl From<SimulationRow> for SimulationDto {
             frame_id: row.frame_id,
             last_saved: row.last_saved.map(|dt| dt.to_rfc3339()),
             events: vec![],
+        }
+    }
+}
+/// POST /api/simulations
+pub async fn create_simulation(Json(payload): Json<NewSimulation>) -> impl IntoResponse {
+    let supa = Supabase::new_from_env().unwrap();
+
+    let new_id = Uuid::new_v4();
+
+    // ✅ Build exactly the JSON that works via curl
+    let insert_payload = json!([{
+        "simulation_id": new_id,
+        "frame_id": payload.frame_id,
+        "tick_rate": payload.tick_rate,
+        "last_saved": payload.last_saved,
+        "metadata": json!({}),
+        "user_owner_id": payload.user_owner_id,
+        "anon_owner_id": payload.anon_owner_id
+    }]);
+
+    println!(
+        "🧩 FINAL JSON TO SUPABASE:\n{}",
+        serde_json::to_string_pretty(&insert_payload).unwrap()
+    );
+
+    // ✅ Use the new insert_raw method to avoid double-encoding
+    let result = supa
+        .from("simulations")
+        .insert_raw(insert_payload)
+        .select("*")
+        .execute_typed::<SimulationRow>() // optional typed decode
+        .await;
+
+    match result {
+        Ok(rows) => Json(json!({ "status": "ok", "inserted": rows })).into_response(),
+        Err(e) => {
+            eprintln!("❌ Error creating simulation: {:?}", e);
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Insert failed: {e:?}"),
+            )
+            .into_response()
         }
     }
 }
@@ -228,23 +281,37 @@ pub async fn init_simulation(
 }
 
 // PUT /api/simulations/{id}
-pub async fn update_simulation(Path(sim_id): Path<Uuid>, Json(updated): Json<SimulationRow>) -> impl IntoResponse {
+pub async fn update_simulation(Path(sim_id): Path<Uuid>, Json(payload): Json<UpdateSimulation>) -> impl IntoResponse {
     let supa = Supabase::new_from_env().unwrap();
+
+    let update_json = json!({
+        "frame_id": payload.frame_id,
+        "tick_rate": payload.tick_rate,
+        "last_saved": payload.last_saved,
+        "metadata": payload.metadata,
+        "user_owner_id": payload.user_owner_id,
+        "anon_owner_id": payload.anon_owner_id
+    });
+
+    println!("🧩 UPDATE JSON: {}", serde_json::to_string_pretty(&update_json).unwrap());
 
     let result = supa
         .from("simulations")
+        .update(update_json)
         .eq("simulation_id", &sim_id.to_string())
-        .update(serde_json::to_value(updated).unwrap())
         .select("*")
-        .execute_typed::<SimulationRow>()
+        .execute()
         .await;
 
     match result {
-        Ok(rows) => Json(json!({ "updated": rows })).into_response(),
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            format!("Update failed: {e:?}"),
-        ).into_response(),
+        Ok(rows) => Json(rows).into_response(),
+        Err(e) => {
+            eprintln!("Error updating simulation: {:?}", e);
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Update failed: {e:?}")
+            ).into_response()
+        }
     }
 }
 

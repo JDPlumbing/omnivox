@@ -17,14 +17,17 @@ pub async fn create_objex(Json(obj): Json<Objex>) -> impl IntoResponse {
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, format!("Supabase init error: {e}")).into_response(),
     };
 
-    match insert_objex(&supa, &obj).await {
-        Ok(_) => Json(json!({ "entity_id": obj.entity_id, "status": "spawned" })).into_response(),
+    let obj_clone = obj.clone(); // 👈 keep one copy for logging
+
+    match ObjectRecord::create(&supa, &ObjectRecord::from(obj)).await {
+        Ok(rec) => Json(json!({ "entity_id": rec.entity_id, "status": "spawned" })).into_response(),
         Err(e) => {
-            eprintln!("Error inserting Objex {:?}: {:?}", obj.name, e);
+            eprintln!("Error inserting Objex {:?}: {:?}", obj_clone.name, e);
             (StatusCode::BAD_REQUEST, format!("Insert failed: {e:?}")).into_response()
         }
     }
 }
+
 
 /// GET /api/objex/:entity_id
 /// Fetch an Objex entity and its material/shape info.

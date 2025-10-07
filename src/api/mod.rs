@@ -49,13 +49,14 @@ pub fn api_router() -> Router {
 
     // Simulations routes
     let simulations_routes = Router::new()
-        .route("/", get(simulations::list_simulations))
+        .route("/", get(simulations::list_simulations).post(simulations::create_simulation))
         .route("/{id}", get(simulations::get_simulation)
             .put(simulations::update_simulation)
             .patch(simulations::patch_simulation)
             .delete(simulations::delete_simulation))
         .route("/{id}/seed", post(simulations::seed_simulation))
         .route("/init", post(simulations::init_simulation));
+
 
 
 

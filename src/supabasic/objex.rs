@@ -25,28 +25,36 @@ impl DbModel for ObjectRecord {
 }
 
 impl ObjectRecord {
-    pub async fn create(supa: &Supabase, payload: &Self) -> Result<Self, SupabasicError> {
-        let raw = supa.from("objex_entities")
-            .insert(payload)
-            .select("*")
-            .execute()
-            .await?;
+pub async fn create(supa: &Supabase, payload: &Self) -> Result<Self, SupabasicError> {
+    use serde_json::json;
 
-            println!(
-                "DEBUG Objex insert raw response: {}",
-                to_string_pretty(&raw).unwrap_or_else(|_| "<invalid json>".to_string())
-            );
+    let insert_payload = json!([{
+        "entity_id": payload.entity_id.unwrap_or_else(Uuid::new_v4),
+        "name": payload.name,
+        "shape": payload.shape,
+        "material_name": payload.material_name,
+        "material_kind": payload.material_kind,
+        "frame_id": payload.frame_id
+    }]);
 
-        // Now decode into typed rows
-        let inserted: Vec<Self> = supa.from("objex_entities")
-            .insert(payload)
-            .select("frame_id,entity_id,name,shape,material_name,material_kind")
-            .execute_typed()
-            .await?;
+    println!(
+        "🧩 FINAL OBJEX INSERT PAYLOAD:\n{}",
+        to_string_pretty(&insert_payload).unwrap()
+    );
 
-        inserted.into_iter().next()
-            .ok_or_else(|| SupabasicError::Other("empty insert response".into()))
-    }
+    let raw = supa
+        .from("objex_entities")
+        .insert_raw(insert_payload)
+        .select("*")
+        .execute()
+        .await?;
+
+    let inserted: Vec<Self> = serde_json::from_value(raw)?;
+    inserted
+        .into_iter()
+        .next()
+        .ok_or_else(|| SupabasicError::Other("empty insert response".into()))
+}
 
 
     pub async fn list(supa: &Supabase) -> Result<Vec<Self>, SupabasicError> {

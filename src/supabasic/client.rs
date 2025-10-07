@@ -82,7 +82,15 @@ impl QueryBuilder {
         }
         self
     }
-
+    pub fn insert_raw(mut self, raw_json: serde_json::Value) -> Self {
+        self.method = Method::Insert;
+        // Raw path — assume it's already properly wrapped
+        self.payload = Some(raw_json);
+        if !self.query.contains("select=") {
+            self.add_filter("select=*".into());
+        }
+        self
+    }
     pub fn update(mut self, json: Value) -> Self {
         self.payload = Some(serde_json::json!([json]));
         self.method = Method::Update; // ✅ always force Update, no matter when called

@@ -18,6 +18,12 @@ pub struct WorldDto {
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
     pub events: Vec<EventRow>,
 }
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct WorldUpdate {
+    pub name: Option<String>,
+    pub description: Option<String>,
+}
+
 
 impl From<WorldRow> for WorldDto {
     fn from(w: WorldRow) -> Self {
@@ -98,28 +104,38 @@ pub async fn create_world_handler(Json(payload): Json<NewWorld>) -> impl IntoRes
 }
 
 /// PUT /worlds/{frame_id}
+/// PUT /worlds/{frame_id}
 pub async fn update_world_handler(
     Path(frame_id): Path<i64>,
-    Json(updated): Json<WorldRow>,
+    Json(updated): Json<WorldUpdate>,
 ) -> impl IntoResponse {
     let supa = Supabase::new_from_env().unwrap();
+    let payload = serde_json::to_value(&updated).unwrap();
+
+    eprintln!("📦 PUT /worlds/{frame_id} payload: {}", payload);
 
     let result = supa
         .from("worlds")
         .eq("frame_id", &frame_id.to_string())
-        .update(serde_json::to_value(updated).unwrap())
+        .update(payload)
         .select("*")
         .execute_typed::<WorldRow>()
         .await;
 
     match result {
-        Ok(rows) => Json(json!({ "updated": rows })).into_response(),
+        Ok(mut rows) => {
+            if rows.is_empty() {
+                return (StatusCode::NOT_FOUND, "No row updated").into_response();
+            }
+            Json(json!({ "updated": rows.remove(0) })).into_response()
+        }
         Err(e) => {
-            eprintln!("Error updating world {}: {:?}", frame_id, e);
+            eprintln!("❌ Error updating world {}: {:?}", frame_id, e);
             (StatusCode::BAD_REQUEST, format!("Update failed: {e:?}")).into_response()
         }
     }
 }
+
 
 /// PATCH /worlds/{frame_id}
 pub async fn patch_world_handler(
