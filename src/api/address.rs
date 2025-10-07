@@ -105,7 +105,7 @@ pub async fn create_address(Json(addr): Json<NewAddress>) -> impl IntoResponse {
 pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
     let supa = Supabase::new_from_env().unwrap();
 
-    // 1️⃣ Fetch the address
+    // 1️⃣ Fetch address row
     let addr: AddressRow = match supa
         .from("addresses")
         .select("id, street_address, city, state, postal_code, country")
@@ -113,17 +113,14 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
         .single_typed::<AddressRow>()
         .await
     {
-        Ok(row) => {
-            println!("🔎 resolve_address fetched address: {:?}", row);
-            row
-        },
+        Ok(row) => row,
         Err(e) => {
             eprintln!("Address not found: {:?}", e);
             return (StatusCode::NOT_FOUND, "Address not found").into_response();
         }
     };
 
-    // 2️⃣ Build OpenCage query string
+    // 2️⃣ Build OpenCage query
     let query = format!(
         "{}, {}, {}, {}",
         addr.street_address.clone().unwrap_or_default(),
@@ -140,17 +137,9 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
     );
 
     let client = reqwest::Client::new();
-    let resp = client.get(&url).send().await;
-    println!("🌐 resolve_address OpenCage API call url: {}", url);
-    if resp.is_err() {
-        println!("🌐 resolve_address OpenCage API call failed: {:?}", resp);
-        return (StatusCode::BAD_REQUEST, "Geocode request failed").into_response();
-    }
-
-    let data: serde_json::Value = resp.unwrap().json().await.unwrap();
-    println!("🌐 resolve_address OpenCage API response: {:?}", data);
+    let resp = client.get(&url).send().await.unwrap();
+    let data: serde_json::Value = resp.json().await.unwrap();
     let Some(result) = data["results"].get(0) else {
-        println!("🌐 resolve_address OpenCage API no results");
         return (StatusCode::BAD_REQUEST, "No geocode results").into_response();
     };
 
@@ -158,7 +147,7 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
     let lon = result["geometry"]["lng"].as_f64().unwrap_or(0.0);
     let elevation_m = 0.0;
 
-    // 3️⃣ Insert into geolocations
+    // 3️⃣ Insert into geolocations (working version)
     let geo_result = supa
         .from("geolocations")
         .insert(json!({
@@ -170,19 +159,59 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
         .select("id, lat, lon, elevation_m")
         .execute()
         .await;
-    println!("🗺️ resolve_address geolocations insert result: {:?}", geo_result);
 
-    match geo_result {
+    if let Err(e) = &geo_result {
+        eprintln!("Error inserting geolocation: {:?}", e);
+        return (StatusCode::BAD_REQUEST, format!("Insert failed: {e:?}")).into_response();
+    }
+
+    let geo_value: serde_json::Value = geo_result.unwrap();
+    let geolocation_id = geo_value[0]["id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+
+    // 4️⃣ Compute uvoxid fields
+    const EARTH_RADIUS_M: f64 = 6_371_000.0;
+    let lat_code: i64 = (lat * 1e9) as i64;
+    let lon_code: i64 = (lon * 1e9) as i64;
+    let r_um: i64 = ((EARTH_RADIUS_M + elevation_m) * 1e6) as i64;
+    let frame_id: i64 = 0;
+
+    println!(
+        "🧭 Calculated UVXOID: frame={}, r_um={}, lat_code={}, lon_code={}, geolocation_id={}",
+        frame_id, r_um, lat_code, lon_code, geolocation_id
+    );
+
+    // 5️⃣ Insert into uvoxid (same JSON shape as before)
+    let uvox_result = supa
+        .from("uvoxid")
+        .insert(json!({
+            "frame_id": frame_id,
+            "r_um": r_um,
+            "lat_code": lat_code,
+            "lon_code": lon_code,
+            "geolocation_id": geolocation_id
+        }))
+        .select("frame_id, r_um, lat_code, lon_code, geolocation_id")
+        .execute()
+        .await;
+
+    println!("📡 resolve_address uvoxid insert result: {:?}", uvox_result);
+
+    match uvox_result {
         Ok(v) => Json(json!({
             "status": "ok",
-            "geolocation": v,
+            "geolocation": geo_value,
+            "uvoxid": v,
             "lat": lat,
-            "lon": lon
+            "lon": lon,
+            "r_um": r_um
         }))
         .into_response(),
         Err(e) => {
-            eprintln!("Error inserting geolocation: {:?}", e);
-            (StatusCode::BAD_REQUEST, format!("Insert failed: {e:?}")).into_response()
+            eprintln!("Error inserting uvoxid: {:?}", e);
+            (StatusCode::BAD_REQUEST, format!("Uvox insert failed: {e:?}")).into_response()
         }
     }
 }
