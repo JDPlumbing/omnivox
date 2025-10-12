@@ -122,51 +122,53 @@ impl MaterialLink {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Objex {
-    pub frame_id: i64, // 🔥 include this
-    pub entity_id: Uuid,
-    pub name: String, // required (could also make this Option<String> if you want optional names)
-    pub shape: Shape,
-    pub material: MaterialLink,
+    pub frame_id: i64,                    // world scope
+    pub entity_id: Uuid,                  // unique object id
+    pub property_id: Option<Uuid>,        // FK → properties (nullable)
+    pub name: String,                     // readable name
+    pub shape: Shape,                     // geometry data
+    pub material: MaterialLink,           // material composition
 }
 
+
 impl Objex {
-    pub fn new_sphere(frame_id: i64, material: MaterialLink, radius: f64) -> Self {
+    pub fn new_sphere(frame_id: i64, property_id: Option<Uuid>, material: MaterialLink, radius: f64) -> Self {
         Self {
             frame_id,
-            entity_id: uuid::Uuid::new_v4(),
+            property_id,
+            entity_id: Uuid::new_v4(),
             name: format!("{:?} Sphere", material),
             shape: Shape::Sphere(Sphere { radius }),
-            material
+            material,
         }
     }
 
-    pub fn new_box(frame_id: i64, material: MaterialLink, length: f64, width: f64, height: f64) -> Self {
+    pub fn new_box(frame_id: i64, property_id: Option<Uuid>, material: MaterialLink, length: f64, width: f64, height: f64) -> Self {
         Self {
             frame_id,
-            entity_id: uuid::Uuid::new_v4(),
+            property_id,
+            entity_id: Uuid::new_v4(),
             name: format!("{:?} Box", material),
             shape: Shape::Box(BoxShape { length, width, height }),
             material,
         }
     }
 
-    pub fn new_cylinder(frame_id: i64, material: MaterialLink, radius: f64, height: f64) -> Self {
+    pub fn new_cylinder(frame_id: i64, property_id: Option<Uuid>, material: MaterialLink, radius: f64, height: f64) -> Self {
         Self {
             frame_id,
-            entity_id: uuid::Uuid::new_v4(),
+            property_id,
+            entity_id: Uuid::new_v4(),
             name: format!("{:?} Cylinder", material),
             shape: Shape::Cylinder(Cylinder { radius, height }),
             material,
         }
     }
-}
 
-impl Objex {
-    /// Create a new Objex with a given name, shape, and material name.
-    /// Material kind is inferred automatically.
-    pub fn new(frame_id: i64, name: impl Into<String>, shape: Shape, material: MaterialLink) -> Self {
+    pub fn new(frame_id: i64, property_id: Option<Uuid>, name: impl Into<String>, shape: Shape, material: MaterialLink) -> Self {
         Self {
             frame_id,
+            property_id,
             entity_id: Uuid::new_v4(),
             name: name.into(),
             shape,

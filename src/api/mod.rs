@@ -25,10 +25,14 @@ pub use events::{create_event, list_events_for_sim, list_events_for_entity};
 mod address;
 pub use address::*;
 
+mod properties;
+pub use properties::{get_property, list_properties, create_property, delete_property};
+use crate::shared::app_state::AppState;
+mod session;
+pub use session::init_session;
 
 
-
-pub fn api_router() -> Router {
+pub fn api_router() -> Router<AppState> {
 
     // Users routes
     let users_routes = Router::new()
@@ -69,7 +73,9 @@ pub fn api_router() -> Router {
             get(objex::get_objex)
                 .put(objex::update_objex)
                 .patch(objex::patch_objex)
-                .delete(objex::delete_objex),
+                .delete(objex::delete_objex),)
+        .route("/property/{property_id}", get(objex::list_objex_for_property)
+
         );
 
     // Events routes
@@ -92,10 +98,27 @@ pub fn api_router() -> Router {
             .delete(delete_address))
         .route("/{id}/resolve", post(resolve_address));
 
+    let property_routes = Router::new()
+        .route("/", get(properties::list_properties).post(properties::create_property))
+        .route(
+            "/{id}",
+            get(properties::get_property)
+                .put(properties::update_property)
+                .delete(properties::delete_property),
+        )
+        .route(
+            "/world/{frame_id}",
+            get(properties::list_properties_for_world),
+        )
+        .route("/{id}/generate", post(properties::generate_property_objects));
+
+
         
     // --- Main API router ---
     Router::new()
+        .route("/session/init", get(init_session))
         .nest("/address", address_routes)
+        .nest("/properties", property_routes)
         .route("/ping", get(|| async { "pong" }))
         .nest("/users", users_routes)
         .nest("/worlds", worlds_routes)

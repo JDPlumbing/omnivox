@@ -7,6 +7,7 @@ pub mod worlds;
 pub mod simulations;
 pub mod addresses;
 pub mod geolocations;
+pub mod properties;
 
 pub use client::Supabase;
 pub use error::{SupabasicError, Result};
@@ -19,6 +20,7 @@ pub use geolocations::GeolocationRecord;
 // src/supabasic/mod.rs
 pub use self::worlds::WorldRow;
 pub use self::worlds::NewWorld as NewWorldRow;
+pub use properties::PropertyRecord;
 
 
 // simulations: just re-export the model
@@ -28,7 +30,5 @@ pub use simulations::SimulationRow;
 pub use crate::sim::world::{World, NewWorld};
 pub mod objex;
 pub mod events;
-
-
 pub use events::EventRow;
 

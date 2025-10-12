@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Json},
+    extract::{Path, State, Json},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -7,14 +7,16 @@ use uuid::Uuid;
 use serde_json::json;
 
 use crate::supabasic::users::{User, AnonUser, NewAnonUser};
-use crate::supabasic::client::Supabase;
 use crate::supabasic::orm::{fetch, list};
+use crate::shared::app_state::AppState;
 
-/// GET /api/users/:id (real Supabase users — tied to auth.users)
-pub async fn get_user(Path(user_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+// ------------------------------------------------------------
+// GET /api/users/:id
+// Real Supabase users (auth.users table)
+// ------------------------------------------------------------
+pub async fn get_user(State(app): State<AppState>, Path(user_id): Path<Uuid>) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("users")
         .select("*")
         .eq("id", &user_id.to_string())
@@ -25,37 +27,57 @@ pub async fn get_user(Path(user_id): Path<Uuid>) -> impl IntoResponse {
         Ok(user) => Json(user).into_response(),
         Err(e) => {
             eprintln!("❌ Error fetching user {}: {:?}", user_id, e);
-            (StatusCode::NOT_FOUND, "user not found").into_response()
+            (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "user not found", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-/// GET /api/users/anon/{id}
-pub async fn get_anon_user(Path(id): Path<Uuid>) -> impl IntoResponse {
+// ------------------------------------------------------------
+// GET /api/users/anon/{id}
+// ------------------------------------------------------------
+pub async fn get_anon_user(State(_app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
     match fetch::<AnonUser>(id).await {
         Ok(user) => Json(user).into_response(),
-        Err(_) => (StatusCode::NOT_FOUND, "anon user not found").into_response(),
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "anon user not found" })),
+        )
+            .into_response(),
     }
 }
 
-/// GET /api/users/anon
-pub async fn list_anon_users() -> impl IntoResponse {
+// ------------------------------------------------------------
+// GET /api/users/anon
+// ------------------------------------------------------------
+pub async fn list_anon_users(State(_app): State<AppState>) -> impl IntoResponse {
     match list::<AnonUser>().await {
         Ok(users) => Json(users).into_response(),
         Err(e) => {
             eprintln!("❌ Error listing anon users: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "error listing anon users").into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "error listing anon users", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-/// POST /api/users/anon
-pub async fn create_anon_user(Json(payload): Json<NewAnonUser>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+// ------------------------------------------------------------
+// POST /api/users/anon
+// ------------------------------------------------------------
+pub async fn create_anon_user(
+    State(app): State<AppState>,
+    Json(payload): Json<NewAnonUser>,
+) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("anon_users")
-        .insert(serde_json::to_value(&payload).unwrap()) // ✅ no array
+        .insert(serde_json::to_value(&payload).unwrap())
         .select("*")
         .execute_typed::<AnonUser>()
         .await;
@@ -66,16 +88,21 @@ pub async fn create_anon_user(Json(payload): Json<NewAnonUser>) -> impl IntoResp
         Ok(rows) => Json(json!({ "status": "ok", "inserted": rows })).into_response(),
         Err(e) => {
             eprintln!("❌ Error creating anon_user: {:?}", e);
-            (StatusCode::BAD_REQUEST, format!("insert failed: {:?}", e)).into_response()
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "insert failed", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-/// DELETE /api/users/anon/{id}
-pub async fn delete_anon_user(Path(id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+// ------------------------------------------------------------
+// DELETE /api/users/anon/{id}
+// ------------------------------------------------------------
+pub async fn delete_anon_user(State(app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("anon_users")
         .eq("id", &id.to_string())
         .delete()
@@ -86,7 +113,11 @@ pub async fn delete_anon_user(Path(id): Path<Uuid>) -> impl IntoResponse {
         Ok(_) => Json(json!({ "status": "deleted", "id": id })).into_response(),
         Err(e) => {
             eprintln!("❌ Error deleting anon_user {}: {:?}", id, e);
-            (StatusCode::BAD_REQUEST, format!("Delete failed: {e:?}")).into_response()
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Delete failed", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }

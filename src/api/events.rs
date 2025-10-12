@@ -1,22 +1,21 @@
-// src/api/events.rs
-use axum::{extract::Path, response::IntoResponse, Json};
-use axum::http::StatusCode;
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
 use serde_json::{json, Value};
 use uuid::Uuid;
 
-use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::events::EventRow;
+use crate::shared::app_state::AppState;
 
 // ------------------------------------------------------------
-// LIST: all events (optional global or filtered later)
+// LIST: all events
 // ------------------------------------------------------------
-pub async fn list_events() -> impl IntoResponse {
-    let supa = match Supabase::new_from_env() {
-        Ok(c) => c,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, format!("Supabase init failed: {e:?}")).into_response(),
-    };
-
-    match supa
+pub async fn list_events(State(app): State<AppState>) -> impl IntoResponse {
+    match app
+        .supa
         .from("events")
         .select("*")
         .execute_typed::<EventRow>()
@@ -25,7 +24,7 @@ pub async fn list_events() -> impl IntoResponse {
         Ok(rows) => Json(rows).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Fetch failed: {e:?}"),
+            Json(json!({ "error": format!("Fetch failed: {e:?}") })),
         )
             .into_response(),
     }
@@ -34,42 +33,41 @@ pub async fn list_events() -> impl IntoResponse {
 // ------------------------------------------------------------
 // GET: single event by id
 // ------------------------------------------------------------
-pub async fn get_event(Path(event_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    match EventRow::get(&supa, event_id).await {
+pub async fn get_event(State(app): State<AppState>, Path(event_id): Path<Uuid>) -> impl IntoResponse {
+    match EventRow::get(&app.supa, event_id).await {
         Ok(event) => Json(event).into_response(),
         Err(e) => (
             StatusCode::NOT_FOUND,
-            format!("Event {event_id} not found: {e:?}"),
+            Json(json!({ "error": format!("Event {event_id} not found: {e:?}") })),
         )
             .into_response(),
     }
 }
 
 // ------------------------------------------------------------
-// POST: create event (already works fine)
+// POST: create event
 // ------------------------------------------------------------
-pub async fn create_event(Json(payload): Json<EventRow>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    match EventRow::create(&supa, &payload).await {
+pub async fn create_event(State(app): State<AppState>, Json(payload): Json<EventRow>) -> impl IntoResponse {
+    match EventRow::create(&app.supa, &payload).await {
         Ok(inserted) => Json(json!({ "status": "ok", "inserted": inserted })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            format!("Insert failed: {e:?}"),
+            Json(json!({ "error": format!("Insert failed: {e:?}") })),
         )
             .into_response(),
     }
 }
 
 // ------------------------------------------------------------
-// PUT: full update event
+// PUT: full update
 // ------------------------------------------------------------
-pub async fn update_event(Path(event_id): Path<Uuid>, Json(updated): Json<EventRow>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+pub async fn update_event(
+    State(app): State<AppState>,
+    Path(event_id): Path<Uuid>,
+    Json(updated): Json<EventRow>,
+) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("events")
         .eq("id", &event_id.to_string())
         .update(serde_json::to_value(updated).unwrap())
@@ -81,7 +79,7 @@ pub async fn update_event(Path(event_id): Path<Uuid>, Json(updated): Json<EventR
         Ok(rows) => Json(json!({ "updated": rows })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            format!("Update failed: {e:?}"),
+            Json(json!({ "error": format!("Update failed: {e:?}") })),
         )
             .into_response(),
     }
@@ -90,10 +88,13 @@ pub async fn update_event(Path(event_id): Path<Uuid>, Json(updated): Json<EventR
 // ------------------------------------------------------------
 // PATCH: partial update
 // ------------------------------------------------------------
-pub async fn patch_event(Path(event_id): Path<Uuid>, Json(changes): Json<Value>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+pub async fn patch_event(
+    State(app): State<AppState>,
+    Path(event_id): Path<Uuid>,
+    Json(changes): Json<Value>,
+) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("events")
         .eq("id", &event_id.to_string())
         .update(changes)
@@ -105,7 +106,7 @@ pub async fn patch_event(Path(event_id): Path<Uuid>, Json(changes): Json<Value>)
         Ok(rows) => Json(json!({ "patched": rows })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            format!("Patch failed: {e:?}"),
+            Json(json!({ "error": format!("Patch failed: {e:?}") })),
         )
             .into_response(),
     }
@@ -114,10 +115,9 @@ pub async fn patch_event(Path(event_id): Path<Uuid>, Json(changes): Json<Value>)
 // ------------------------------------------------------------
 // DELETE: remove event
 // ------------------------------------------------------------
-pub async fn delete_event(Path(event_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+pub async fn delete_event(State(app): State<AppState>, Path(event_id): Path<Uuid>) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("events")
         .eq("id", &event_id.to_string())
         .delete()
@@ -128,7 +128,7 @@ pub async fn delete_event(Path(event_id): Path<Uuid>) -> impl IntoResponse {
         Ok(_) => Json(json!({ "status": "deleted", "id": event_id })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            format!("Delete failed: {e:?}"),
+            Json(json!({ "error": format!("Delete failed: {e:?}") })),
         )
             .into_response(),
     }
@@ -137,14 +137,12 @@ pub async fn delete_event(Path(event_id): Path<Uuid>) -> impl IntoResponse {
 // ------------------------------------------------------------
 // LIST: events for simulation
 // ------------------------------------------------------------
-pub async fn list_events_for_sim(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    match EventRow::list_for_sim(&supa, &sim_id).await {
+pub async fn list_events_for_sim(State(app): State<AppState>, Path(sim_id): Path<Uuid>) -> impl IntoResponse {
+    match EventRow::list_for_sim(&app.supa, &sim_id).await {
         Ok(events) => Json(events).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Fetch failed: {e:?}"),
+            Json(json!({ "error": format!("Fetch failed: {e:?}") })),
         )
             .into_response(),
     }
@@ -153,14 +151,12 @@ pub async fn list_events_for_sim(Path(sim_id): Path<Uuid>) -> impl IntoResponse 
 // ------------------------------------------------------------
 // LIST: events for entity
 // ------------------------------------------------------------
-pub async fn list_events_for_entity(Path(entity_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    match EventRow::list_for_entity(&supa, &entity_id).await {
+pub async fn list_events_for_entity(State(app): State<AppState>, Path(entity_id): Path<Uuid>) -> impl IntoResponse {
+    match EventRow::list_for_entity(&app.supa, &entity_id).await {
         Ok(events) => Json(events).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Fetch failed: {e:?}"),
+            Json(json!({ "error": format!("Fetch failed: {e:?}") })),
         )
             .into_response(),
     }

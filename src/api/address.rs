@@ -1,13 +1,16 @@
-use axum::{extract::Path, response::IntoResponse, Json};
-use axum::http::StatusCode;
-use serde_json::{Value, json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
+use serde_json::{json, Value};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::supabasic::Supabase;
 use crate::supabasic::addresses::AddressRow;
-use crate::supabasic::SupabasicError;
 use crate::sim::address::Address;
+use crate::shared::app_state::AppState;
 
 /// Data model for creating a new address
 #[derive(Debug, Serialize, Deserialize)]
@@ -18,6 +21,7 @@ pub struct NewAddress {
     pub postal_code: Option<String>,
     pub country: Option<String>,
 }
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AddressUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -32,81 +36,86 @@ pub struct AddressUpdate {
     pub country: Option<String>,
 }
 
-/// GET /address
-pub async fn list_addresses() -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+// ========================================================
+// GET /address
+// ========================================================
+pub async fn list_addresses(State(app): State<AppState>) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("addresses")
         .select("id, street_address, city, state, postal_code, country")
         .execute_typed::<AddressRow>()
         .await;
-    println!("🔎 list_addresses DB call result: {:?}", result);
 
     match result {
         Ok(rows) => Json(rows).into_response(),
         Err(e) => {
             eprintln!("Error listing addresses: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "error listing addresses").into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "error listing addresses" })),
+            )
+                .into_response()
         }
     }
 }
 
-/// GET /address/{id}
-pub async fn get_address(Path(id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+// ========================================================
+// GET /address/{id}
+// ========================================================
+pub async fn get_address(State(app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("addresses")
         .select("id, street_address, city, state, postal_code, country")
         .eq("id", &id.to_string())
         .single_typed::<AddressRow>()
         .await;
-    println!("🔎 get_address DB call for id {}: {:?}", id, result);
 
     match result {
         Ok(row) => Json(row).into_response(),
-        Err(e) => {
-            eprintln!("Error fetching address {}: {:?}", id, e);
-            (StatusCode::NOT_FOUND, "address not found").into_response()
-        }
+        Err(e) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": format!("not found: {e:?}") })),
+        )
+            .into_response(),
     }
 }
 
-/// POST /address
-/// POST /api/address
-pub async fn create_address(Json(addr): Json<NewAddress>) -> impl IntoResponse {
-    println!("📬 create_address hit with {:?}", addr);
-    let supa = Supabase::new_from_env().unwrap();
-
+// ========================================================
+// POST /address
+// ========================================================
+pub async fn create_address(
+    State(app): State<AppState>,
+    Json(addr): Json<NewAddress>,
+) -> impl IntoResponse {
     let record = AddressRow {
         id: None,
         street_address: Some(addr.street_address),
-
         city: addr.city,
         state: addr.state,
         postal_code: addr.postal_code,
         country: addr.country,
     };
 
-    let result = AddressRow::create(&supa, &record).await;
-    println!("📝 create_address DB insert result: {:?}", result);
+    let result = AddressRow::create(&app.supa, &record).await;
 
     match result {
         Ok(inserted) => Json(json!({ "status": "ok", "inserted": inserted })).into_response(),
-        Err(e) => {
-            eprintln!("Error inserting address: {:?}", e);
-            (StatusCode::BAD_REQUEST, format!("Insert failed: {e:?}")).into_response()
-        }
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": format!("Insert failed: {e:?}") })),
+        )
+            .into_response(),
     }
 }
 
-/// POST /api/address/{id}/resolve
-pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    // 1️⃣ Fetch address row
-    let addr: AddressRow = match supa
+// ========================================================
+// POST /address/{id}/resolve
+// ========================================================
+pub async fn resolve_address(State(app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
+    let addr: AddressRow = match app
+        .supa
         .from("addresses")
         .select("id, street_address, city, state, postal_code, country")
         .eq("id", &id.to_string())
@@ -120,7 +129,6 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
         }
     };
 
-    // 2️⃣ Build OpenCage query
     let query = format!(
         "{}, {}, {}, {}",
         addr.street_address.clone().unwrap_or_default(),
@@ -138,7 +146,7 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
 
     let client = reqwest::Client::new();
     let resp = client.get(&url).send().await.unwrap();
-    let data: serde_json::Value = resp.json().await.unwrap();
+    let data: Value = resp.json().await.unwrap();
     let Some(result) = data["results"].get(0) else {
         return (StatusCode::BAD_REQUEST, "No geocode results").into_response();
     };
@@ -147,8 +155,9 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
     let lon = result["geometry"]["lng"].as_f64().unwrap_or(0.0);
     let elevation_m = 0.0;
 
-    // 3️⃣ Insert into geolocations (working version)
-    let geo_result = supa
+    // Insert geolocation
+    let geo_result = app
+        .supa
         .from("geolocations")
         .insert(json!({
             "lat": lat,
@@ -165,26 +174,18 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
         return (StatusCode::BAD_REQUEST, format!("Insert failed: {e:?}")).into_response();
     }
 
-    let geo_value: serde_json::Value = geo_result.unwrap();
-    let geolocation_id = geo_value[0]["id"]
-        .as_str()
-        .unwrap_or_default()
-        .to_string();
+    let geo_value: Value = geo_result.unwrap();
+    let geolocation_id = geo_value[0]["id"].as_str().unwrap_or_default().to_string();
 
-    // 4️⃣ Compute uvoxid fields
+    // Compute uvoxid fields
     const EARTH_RADIUS_M: f64 = 6_371_000.0;
     let lat_code: i64 = (lat * 1e9) as i64;
     let lon_code: i64 = (lon * 1e9) as i64;
     let r_um: i64 = ((EARTH_RADIUS_M + elevation_m) * 1e6) as i64;
     let frame_id: i64 = 0;
 
-    println!(
-        "🧭 Calculated UVXOID: frame={}, r_um={}, lat_code={}, lon_code={}, geolocation_id={}",
-        frame_id, r_um, lat_code, lon_code, geolocation_id
-    );
-
-    // 5️⃣ Insert into uvoxid (same JSON shape as before)
-    let uvox_result = supa
+    let uvox_result = app
+        .supa
         .from("uvoxid")
         .insert(json!({
             "frame_id": frame_id,
@@ -197,8 +198,6 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
         .execute()
         .await;
 
-    println!("📡 resolve_address uvoxid insert result: {:?}", uvox_result);
-
     match uvox_result {
         Ok(v) => Json(json!({
             "status": "ok",
@@ -209,22 +208,26 @@ pub async fn resolve_address(Path(id): Path<Uuid>) -> impl IntoResponse {
             "r_um": r_um
         }))
         .into_response(),
-        Err(e) => {
-            eprintln!("Error inserting uvoxid: {:?}", e);
-            (StatusCode::BAD_REQUEST, format!("Uvox insert failed: {e:?}")).into_response()
-        }
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": format!("Uvox insert failed: {e:?}") })),
+        )
+            .into_response(),
     }
 }
 
-/// PUT /address/{id}
+// ========================================================
+// PUT /address/{id}
+// ========================================================
 pub async fn update_address(
+    State(app): State<AppState>,
     Path(id): Path<Uuid>,
     Json(update): Json<AddressUpdate>,
 ) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
     let payload = serde_json::to_value(&update).unwrap();
 
-    let result = supa
+    let result = app
+        .supa
         .from("addresses")
         .eq("id", &id.to_string())
         .update(payload)
@@ -239,69 +242,62 @@ pub async fn update_address(
             }
             Json(json!({ "updated": updated.remove(0) })).into_response()
         }
-        Err(e) => {
-            eprintln!("Error updating address {}: {:?}", id, e);
-            (StatusCode::BAD_REQUEST, format!("Update failed: {e:?}")).into_response()
-        }
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": format!("Update failed: {e:?}") })),
+        )
+            .into_response(),
     }
 }
 
-
-/// PATCH /address/{id}
+// ========================================================
+// PATCH /address/{id}
+// ========================================================
 pub async fn patch_address(
-    Path(id): Path<uuid::Uuid>,
-    Json(payload): Json<serde_json::Value>,
+    State(app): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<Value>,
 ) -> impl IntoResponse {
-    let supa = match Supabase::new_from_env() {
-        Ok(client) => client,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, format!("Supabase init error: {e}")).into_response(),
-    };
-
-    // Defensive check: empty payload means nothing to patch
     if payload.as_object().map(|m| m.is_empty()).unwrap_or(true) {
-        return (StatusCode::BAD_REQUEST, "Empty patch payload".to_string()).into_response();
+        return (StatusCode::BAD_REQUEST, "Empty patch payload").into_response();
     }
 
-    // Ensure we’re wrapping the payload correctly for PostgREST
-    let filtered = json!(payload);
-
-    eprintln!("📦 PATCH filtered payload: {}", filtered);
-
-    // Chain the entire builder sequence in one expression
-    match supa
+    match app
+        .supa
         .from("addresses")
-        .eq("id", &id.to_string()) // ✅ filter first
-        .update(filtered)
+        .eq("id", &id.to_string())
+        .update(json!(payload))
         .select("*")
         .execute_typed::<AddressRow>()
         .await
-
     {
         Ok(rows) => Json(json!({ "patched": rows })).into_response(),
-        Err(e) => {
-            eprintln!("Error patching address {id}: {e:?}");
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Patch failed: {e:?}")).into_response()
-        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": format!("Patch failed: {e:?}") })),
+        )
+            .into_response(),
     }
 }
 
-/// DELETE /address/{id}
-pub async fn delete_address(Path(id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+// ========================================================
+// DELETE /address/{id}
+// ========================================================
+pub async fn delete_address(State(app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("addresses")
         .eq("id", &id.to_string())
         .delete()
         .execute()
         .await;
-    println!("🗑️ delete_address DB delete result for id {}: {:?}", id, result);
 
     match result {
         Ok(_) => Json(json!({ "status": "deleted", "id": id })).into_response(),
-        Err(e) => {
-            eprintln!("Error deleting address {}: {:?}", id, e);
-            (StatusCode::BAD_REQUEST, format!("Delete failed: {e:?}")).into_response()
-        }
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": format!("Delete failed: {e:?}") })),
+        )
+            .into_response(),
     }
 }

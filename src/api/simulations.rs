@@ -1,14 +1,18 @@
-use axum::{extract::Path, response::IntoResponse, Json};
-use axum::http::StatusCode;
+use axum::{
+    extract::{Path, State},
+    response::IntoResponse,
+    http::StatusCode,
+    Json,
+};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use serde_json::json;
+use chrono::Utc;
 
-use crate::supabasic::Supabase;
+use crate::shared::app_state::AppState;
 use crate::supabasic::simulations::{UpdateSimulation, SimulationRow};
 use crate::supabasic::events::EventRow;
 use crate::supabasic::objex::ObjectRecord;
-use crate::supabasic::SupabasicError;
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -48,9 +52,10 @@ impl From<SimulationRow> for SimulationDto {
     }
 }
 /// POST /api/simulations
-pub async fn create_simulation(Json(payload): Json<NewSimulation>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
+pub async fn create_simulation(
+    State(app): State<AppState>,
+    Json(payload): Json<NewSimulation>,
+) -> impl IntoResponse {
     let new_id = Uuid::new_v4();
 
     // ✅ Build exactly the JSON that works via curl
@@ -69,12 +74,13 @@ pub async fn create_simulation(Json(payload): Json<NewSimulation>) -> impl IntoR
         serde_json::to_string_pretty(&insert_payload).unwrap()
     );
 
-    // ✅ Use the new insert_raw method to avoid double-encoding
-    let result = supa
+    // ✅ Use shared AppState’s Supabase client
+    let result = app
+        .supa
         .from("simulations")
         .insert_raw(insert_payload)
         .select("*")
-        .execute_typed::<SimulationRow>() // optional typed decode
+        .execute_typed::<SimulationRow>()
         .await;
 
     match result {
@@ -90,46 +96,71 @@ pub async fn create_simulation(Json(payload): Json<NewSimulation>) -> impl IntoR
     }
 }
 
-/// GET /api/simulations/:id
-pub async fn get_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-    match SimulationRow::get(&supa, sim_id).await {
+// ========================================================
+// GET /api/simulations/:id
+// ========================================================
+pub async fn get_simulation(
+    State(app): State<AppState>,
+    Path(sim_id): Path<Uuid>,
+) -> impl IntoResponse {
+    match SimulationRow::get(&app.supa, sim_id).await {
         Ok(sim) => {
             let mut dto = SimulationDto::from(sim);
-            match EventRow::list_for_sim(&supa, &dto.simulation_id).await {
+
+            match EventRow::list_for_sim(&app.supa, &dto.simulation_id).await {
                 Ok(events) => dto.events = events,
-                Err(e) => eprintln!("Warning: could not load events for sim {}: {:?}", dto.simulation_id, e),
+                Err(e) => eprintln!(
+                    "⚠️ Warning: could not load events for sim {}: {:?}",
+                    dto.simulation_id, e
+                ),
             }
+
             Json(dto).into_response()
         }
         Err(e) => {
             eprintln!("Error fetching simulation {}: {:?}", sim_id, e);
-            (StatusCode::NOT_FOUND, "not found").into_response()
+            (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-/// GET /api/simulations
-pub async fn list_simulations() -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-    match SimulationRow::list(&supa).await {
+// ========================================================
+// GET /api/simulations
+// ========================================================
+pub async fn list_simulations(State(app): State<AppState>) -> impl IntoResponse {
+    match SimulationRow::list(&app.supa).await {
         Ok(sims) => {
-            let dto_list: Vec<SimulationDto> = sims.into_iter().map(SimulationDto::from).collect();
+            let dto_list: Vec<SimulationDto> =
+                sims.into_iter().map(SimulationDto::from).collect();
             Json(dto_list).into_response()
         }
         Err(e) => {
             eprintln!("Error listing simulations: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "error").into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-/// POST /api/simulations/:id/seed
-pub async fn seed_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
+// ========================================================
+// POST /api/simulations/:id/seed
+// ========================================================
 
+// TODO: this function does not work and is pre-refactor. maybe needs to be repurposed
+pub async fn seed_simulation(
+    State(app): State<AppState>,
+    Path(sim_id): Path<Uuid>,
+) -> impl IntoResponse {
     // 1️⃣ Get simulation's world frame
-    let sim: serde_json::Value = match supa
+    let sim: serde_json::Value = match app
+        .supa
         .from("simulations")
         .select("frame_id")
         .eq("simulation_id", &sim_id.to_string())
@@ -139,24 +170,32 @@ pub async fn seed_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
         Ok(v) => v,
         Err(e) => {
             eprintln!("Failed to get simulation: {:?}", e);
-            return (StatusCode::INTERNAL_SERVER_ERROR, "error getting simulation").into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "error getting simulation" })),
+            )
+                .into_response();
         }
     };
     let frame_id = sim["frame_id"].as_i64().unwrap_or(0);
 
     // 2️⃣ Get world objects
-    let objs: Vec<ObjectRecord> = match supa
+    let objs: Vec<ObjectRecord> = match app
+        .supa
         .from("objex_entities")
         .select("entity_id, name, shape, material_name, material_kind, frame_id")
         .eq("frame_id", &frame_id.to_string())
         .execute_typed()
         .await
-
     {
         Ok(list) => list,
         Err(e) => {
             eprintln!("Failed to fetch objects: {:?}", e);
-            return (StatusCode::INTERNAL_SERVER_ERROR, "error fetching objects").into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "error fetching objects" })),
+            )
+                .into_response();
         }
     };
 
@@ -169,7 +208,7 @@ pub async fn seed_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
                 "entity_id": o.entity_id,
                 "frame_id": frame_id,
                 "ticks": 0,
-                "timestamp": chrono::Utc::now(),
+                "timestamp": Utc::now(),
                 "kind": "Spawn",
                 "move_offset": null,
                 "payload": null,
@@ -177,17 +216,22 @@ pub async fn seed_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
         })
         .collect();
 
-    match supa.from("events").insert(events).select("*").execute().await {
+    match app.supa.from("events").insert(events).select("*").execute().await {
         Ok(res) => Json(json!({ "status": "ok", "spawned": res })).into_response(),
         Err(e) => {
             eprintln!("Insert failed: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "insert failed").into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "insert failed" })),
+            )
+                .into_response()
         }
     }
 }
 
-
-
+// ========================================================
+// POST /api/simulations/init
+// ========================================================
 #[derive(Debug, Deserialize)]
 pub struct SimulationInitRequest {
     pub frame_id: i64,
@@ -206,18 +250,14 @@ pub struct SimulationInitResponse {
     pub spawned_event_count: usize,
 }
 
-/// POST /api/simulations/init
 pub async fn init_simulation(
+    State(app): State<AppState>,
     Json(req): Json<SimulationInitRequest>,
 ) -> impl IntoResponse {
-    let supa = match Supabase::new_from_env() {
-        Ok(s) => s,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, format!("Supabase init error: {e:?}")).into_response(),
-    };
-
     // 1️⃣ Create a new simulation record
     let sim_id = Uuid::new_v4();
-    let insert_res = supa
+    let insert_res = app
+        .supa
         .from("simulations")
         .insert(json!([{
             "simulation_id": sim_id,
@@ -230,11 +270,16 @@ pub async fn init_simulation(
         .await;
 
     if let Err(e) = insert_res {
-        return (StatusCode::BAD_REQUEST, format!("Simulation insert failed: {e:?}")).into_response();
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": format!("Simulation insert failed: {e:?}") })),
+        )
+            .into_response();
     }
 
-    // 2️⃣ Get nearby objects (simplified spatial query for now)
-    let objs: Vec<ObjectRecord> = match supa
+    // 2️⃣ Get nearby objects (simplified for now)
+    let objs: Vec<ObjectRecord> = match app
+        .supa
         .from("objex_entities")
         .select("entity_id, frame_id")
         .eq("frame_id", &req.frame_id.to_string())
@@ -242,24 +287,32 @@ pub async fn init_simulation(
         .await
     {
         Ok(list) => list,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch objects failed: {e:?}")).into_response(),
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": format!("Fetch objects failed: {e:?}") })),
+            )
+                .into_response()
+        }
     };
 
-    // (Later: filter by uvoxid proximity; for now, we just take all for the world frame)
-
-    // 3️⃣ Create spawn events for those objects
-    let events: Vec<_> = objs.iter().map(|o| {
-        json!({
-            "simulation_id": sim_id,
-            "entity_id": o.entity_id,
-            "frame_id": req.frame_id,
-            "ticks": 0,
-            "timestamp": chrono::Utc::now(),
-            "kind": "Spawn",
+    // 3️⃣ Create spawn events
+    let events: Vec<_> = objs
+        .iter()
+        .map(|o| {
+            json!({
+                "simulation_id": sim_id,
+                "entity_id": o.entity_id,
+                "frame_id": req.frame_id,
+                "ticks": 0,
+                "timestamp": Utc::now(),
+                "kind": "Spawn",
+            })
         })
-    }).collect();
+        .collect();
 
-    let insert_events = supa
+    let insert_events = app
+        .supa
         .from("events")
         .insert(events.clone())
         .select("id")
@@ -277,13 +330,18 @@ pub async fn init_simulation(
         frame_id: req.frame_id,
         object_count: objs.len(),
         spawned_event_count: spawned_count,
-    }).into_response()
+    })
+    .into_response()
 }
 
+// ========================================================
 // PUT /api/simulations/{id}
-pub async fn update_simulation(Path(sim_id): Path<Uuid>, Json(payload): Json<UpdateSimulation>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
+// ========================================================
+pub async fn update_simulation(
+    State(app): State<AppState>,
+    Path(sim_id): Path<Uuid>,
+    Json(payload): Json<UpdateSimulation>,
+) -> impl IntoResponse {
     let update_json = json!({
         "frame_id": payload.frame_id,
         "tick_rate": payload.tick_rate,
@@ -293,33 +351,36 @@ pub async fn update_simulation(Path(sim_id): Path<Uuid>, Json(payload): Json<Upd
         "anon_owner_id": payload.anon_owner_id
     });
 
-    println!("🧩 UPDATE JSON: {}", serde_json::to_string_pretty(&update_json).unwrap());
-
-    let result = supa
+    let result = app
+        .supa
         .from("simulations")
         .update(update_json)
         .eq("simulation_id", &sim_id.to_string())
         .select("*")
-        .execute()
+        .execute_typed::<SimulationRow>()
         .await;
+
 
     match result {
         Ok(rows) => Json(rows).into_response(),
-        Err(e) => {
-            eprintln!("Error updating simulation: {:?}", e);
-            (
-                StatusCode::BAD_REQUEST,
-                format!("Update failed: {e:?}")
-            ).into_response()
-        }
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": format!("Update failed: {e:?}") })),
+        )
+            .into_response(),
     }
 }
 
+// ========================================================
 // PATCH /api/simulations/{id}
-pub async fn patch_simulation(Path(sim_id): Path<Uuid>, Json(changes): Json<serde_json::Value>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+// ========================================================
+pub async fn patch_simulation(
+    State(app): State<AppState>,
+    Path(sim_id): Path<Uuid>,
+    Json(changes): Json<serde_json::Value>,
+) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("simulations")
         .eq("simulation_id", &sim_id.to_string())
         .update(changes)
@@ -331,16 +392,21 @@ pub async fn patch_simulation(Path(sim_id): Path<Uuid>, Json(changes): Json<serd
         Ok(rows) => Json(json!({ "patched": rows })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            format!("Patch failed: {e:?}"),
-        ).into_response(),
+            Json(json!({ "error": format!("Patch failed: {e:?}") })),
+        )
+            .into_response(),
     }
 }
 
+// ========================================================
 // DELETE /api/simulations/{id}
-pub async fn delete_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+// ========================================================
+pub async fn delete_simulation(
+    State(app): State<AppState>,
+    Path(sim_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("simulations")
         .eq("simulation_id", &sim_id.to_string())
         .delete()
@@ -351,7 +417,8 @@ pub async fn delete_simulation(Path(sim_id): Path<Uuid>) -> impl IntoResponse {
         Ok(_) => Json(json!({ "status": "deleted", "id": sim_id })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            format!("Delete failed: {e:?}"),
-        ).into_response(),
+            Json(json!({ "error": format!("Delete failed: {e:?}") })),
+        )
+            .into_response(),
     }
 }

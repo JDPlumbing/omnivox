@@ -1,11 +1,14 @@
-// src/api/worlds.rs
-use axum::{extract::Path, response::IntoResponse, Json};
-use axum::http::StatusCode;
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
 use serde_json::json;
 
-use crate::supabasic::Supabase;
 use crate::supabasic::worlds::{WorldRow, NewWorld};
 use crate::supabasic::events::EventRow;
+use crate::shared::app_state::AppState;
 
 /// DTO returned to clients
 #[derive(serde::Serialize)]
@@ -18,12 +21,12 @@ pub struct WorldDto {
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
     pub events: Vec<EventRow>,
 }
+
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct WorldUpdate {
     pub name: Option<String>,
     pub description: Option<String>,
 }
-
 
 impl From<WorldRow> for WorldDto {
     fn from(w: WorldRow) -> Self {
@@ -39,82 +42,91 @@ impl From<WorldRow> for WorldDto {
     }
 }
 
-/// GET /worlds
-pub async fn list_worlds_handler() -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    match WorldRow::list(&supa).await {
+// ------------------------------------------------------------
+// GET /worlds
+// ------------------------------------------------------------
+pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoResponse {
+    match WorldRow::list(&app.supa).await {
         Ok(rows) => {
             let mut result = Vec::new();
-
             for row in rows {
-                let events = EventRow::list_for_frame(&supa, row.frame_id)
+                let events = EventRow::list_for_frame(&app.supa, row.frame_id)
                     .await
                     .unwrap_or_default();
-
                 let mut dto = WorldDto::from(row);
                 dto.events = events;
                 result.push(dto);
             }
-
             Json(result).into_response()
         }
         Err(e) => {
             eprintln!("Error listing worlds: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "error listing worlds").into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "error listing worlds", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-/// GET /worlds/{frame_id}
-pub async fn get_world_handler(Path(frame_id): Path<i64>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    match WorldRow::get(&supa, frame_id).await {
+// ------------------------------------------------------------
+// GET /worlds/{frame_id}
+// ------------------------------------------------------------
+pub async fn get_world_handler(State(app): State<AppState>, Path(frame_id): Path<i64>) -> impl IntoResponse {
+    match WorldRow::get(&app.supa, frame_id).await {
         Ok(row) => {
-            let events = EventRow::list_for_frame(&supa, row.frame_id)
+            let events = EventRow::list_for_frame(&app.supa, row.frame_id)
                 .await
                 .unwrap_or_default();
-
             let mut dto = WorldDto::from(row);
             dto.events = events;
             Json(dto).into_response()
         }
         Err(e) => {
             eprintln!("Error fetching world {}: {:?}", frame_id, e);
-            (StatusCode::NOT_FOUND, "world not found").into_response()
+            (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "world not found", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-/// POST /worlds
-pub async fn create_world_handler(Json(payload): Json<NewWorld>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    match WorldRow::create(&supa, &payload).await {
+// ------------------------------------------------------------
+// POST /worlds
+// ------------------------------------------------------------
+pub async fn create_world_handler(State(app): State<AppState>, Json(payload): Json<NewWorld>) -> impl IntoResponse {
+    match WorldRow::create(&app.supa, &payload).await {
         Ok(row) => {
             let dto = WorldDto::from(row);
             (StatusCode::CREATED, Json(dto)).into_response()
         }
         Err(e) => {
             eprintln!("Error creating world: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "error creating world").into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "error creating world", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-/// PUT /worlds/{frame_id}
-/// PUT /worlds/{frame_id}
+// ------------------------------------------------------------
+// PUT /worlds/{frame_id}
+// ------------------------------------------------------------
 pub async fn update_world_handler(
+    State(app): State<AppState>,
     Path(frame_id): Path<i64>,
     Json(updated): Json<WorldUpdate>,
 ) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
     let payload = serde_json::to_value(&updated).unwrap();
-
     eprintln!("📦 PUT /worlds/{frame_id} payload: {}", payload);
 
-    let result = supa
+    let result = app
+        .supa
         .from("worlds")
         .eq("frame_id", &frame_id.to_string())
         .update(payload)
@@ -131,20 +143,25 @@ pub async fn update_world_handler(
         }
         Err(e) => {
             eprintln!("❌ Error updating world {}: {:?}", frame_id, e);
-            (StatusCode::BAD_REQUEST, format!("Update failed: {e:?}")).into_response()
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Update failed", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-
-/// PATCH /worlds/{frame_id}
+// ------------------------------------------------------------
+// PATCH /worlds/{frame_id}
+// ------------------------------------------------------------
 pub async fn patch_world_handler(
+    State(app): State<AppState>,
     Path(frame_id): Path<i64>,
     Json(changes): Json<serde_json::Value>,
 ) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+    let result = app
+        .supa
         .from("worlds")
         .eq("frame_id", &frame_id.to_string())
         .update(changes)
@@ -156,16 +173,21 @@ pub async fn patch_world_handler(
         Ok(rows) => Json(json!({ "patched": rows })).into_response(),
         Err(e) => {
             eprintln!("Error patching world {}: {:?}", frame_id, e);
-            (StatusCode::BAD_REQUEST, format!("Patch failed: {e:?}")).into_response()
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Patch failed", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }
 
-/// DELETE /worlds/{frame_id}
-pub async fn delete_world_handler(Path(frame_id): Path<i64>) -> impl IntoResponse {
-    let supa = Supabase::new_from_env().unwrap();
-
-    let result = supa
+// ------------------------------------------------------------
+// DELETE /worlds/{frame_id}
+// ------------------------------------------------------------
+pub async fn delete_world_handler(State(app): State<AppState>, Path(frame_id): Path<i64>) -> impl IntoResponse {
+    let result = app
+        .supa
         .from("worlds")
         .eq("frame_id", &frame_id.to_string())
         .delete()
@@ -176,7 +198,11 @@ pub async fn delete_world_handler(Path(frame_id): Path<i64>) -> impl IntoRespons
         Ok(_) => Json(json!({ "status": "deleted", "frame_id": frame_id })).into_response(),
         Err(e) => {
             eprintln!("Error deleting world {}: {:?}", frame_id, e);
-            (StatusCode::BAD_REQUEST, format!("Delete failed: {e:?}")).into_response()
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Delete failed", "details": format!("{e:?}") })),
+            )
+                .into_response()
         }
     }
 }

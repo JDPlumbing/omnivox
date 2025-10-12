@@ -1,6 +1,5 @@
 pub mod core;
 pub mod systems;
-pub mod persist;
 pub mod error;
 
 pub use error::{ObjexError, Result};
@@ -20,10 +19,3 @@ pub use systems::{
     composite as systems_composite,
     electrical,
 };
-
-pub use persist::{insert_objex, fetch_objex};
-
-pub mod builder;
-pub mod defaults;
-
-pub use builder::ObjexBuilder;

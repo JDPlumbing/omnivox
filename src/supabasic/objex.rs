@@ -10,15 +10,17 @@ use uuid::Uuid;
 use serde_json::to_string_pretty;
 
 /// Mirrors your `objex_entities` table
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ObjectRecord {
-    pub frame_id: i64,               // 🔥 include this
-    pub entity_id: Option<Uuid>,     // DB may autogen
+    pub entity_id: Option<Uuid>,     // PK
+    pub property_id: Option<Uuid>,   // FK → properties
+    pub frame_id: i64,               // FK → worlds
     pub name: String,
-    pub shape: Value,                // stored as JSONB
-    pub material_name: String,       // enums come back as text
-    pub material_kind: String,       // enums come back as text
+    pub shape: Value,                // JSONB blob
+    pub material_name: String,       // stringified enum
+    pub material_kind: String,       // stringified enum
 }
+
 
 impl DbModel for ObjectRecord {
     fn table() -> &'static str { "objex_entities" }
@@ -28,14 +30,16 @@ impl ObjectRecord {
 pub async fn create(supa: &Supabase, payload: &Self) -> Result<Self, SupabasicError> {
     use serde_json::json;
 
-    let insert_payload = json!([{
+    let insert_payload = json!({
         "entity_id": payload.entity_id.unwrap_or_else(Uuid::new_v4),
+        "property_id": payload.property_id,
         "name": payload.name,
         "shape": payload.shape,
         "material_name": payload.material_name,
         "material_kind": payload.material_kind,
         "frame_id": payload.frame_id
-    }]);
+    });
+
 
     println!(
         "🧩 FINAL OBJEX INSERT PAYLOAD:\n{}",
@@ -43,17 +47,38 @@ pub async fn create(supa: &Supabase, payload: &Self) -> Result<Self, SupabasicEr
     );
 
     let raw = supa
-        .from("objex_entities")
-        .insert_raw(insert_payload)
+        .from(Self::table())
+        .insert(insert_payload)
         .select("*")
         .execute()
         .await?;
 
-    let inserted: Vec<Self> = serde_json::from_value(raw)?;
+    let inserted: Vec<Self> = serde_json::from_value(raw.clone())
+        .map_err(|e| SupabasicError::Other(format!("decode error: {e:?}, raw={raw}")))?;
+
     inserted
         .into_iter()
         .next()
         .ok_or_else(|| SupabasicError::Other("empty insert response".into()))
+}
+
+pub async fn create_many(supa: &Supabase, payloads: &[Self]) -> Result<Vec<Self>, SupabasicError> {
+    use serde_json::json;
+
+    let json_array: serde_json::Value = serde_json::to_value(payloads)
+        .map_err(|e| SupabasicError::Other(format!("serialization error: {e:?}")))?;
+
+    let raw = supa
+        .from(Self::table())
+        .insert_raw(json_array)
+        .select("*")
+        .execute()
+        .await?;
+
+    let inserted: Vec<Self> = serde_json::from_value(raw.clone())
+        .map_err(|e| SupabasicError::Other(format!("decode error: {e:?}, raw={raw}")))?;
+
+    Ok(inserted)
 }
 
 
@@ -80,8 +105,9 @@ pub async fn create(supa: &Supabase, payload: &Self) -> Result<Self, SupabasicEr
 impl From<Objex> for ObjectRecord {
     fn from(o: Objex) -> Self {
         ObjectRecord {
-            frame_id: o.frame_id, // 🔥 include this
-            entity_id: Some(o.entity_id), // wrap Uuid
+            entity_id: Some(o.entity_id),
+            property_id: o.property_id, // 👈 new
+            frame_id: o.frame_id,
             name: o.name,
             shape: serde_json::to_value(o.shape).unwrap(),
             material_name: format!("{:?}", o.material.name),
@@ -90,6 +116,7 @@ impl From<Objex> for ObjectRecord {
     }
 }
 
+
 impl TryFrom<ObjectRecord> for Objex {
     type Error = anyhow::Error;
 
@@ -97,6 +124,8 @@ impl TryFrom<ObjectRecord> for Objex {
         Ok(Objex {
             frame_id: r.frame_id, // 🔥 include this
             entity_id: r.entity_id.ok_or_else(|| anyhow::anyhow!("missing entity_id"))?,
+            property_id: r.property_id,
+
             name: r.name,
             shape: serde_json::from_value(r.shape)?,
             material: MaterialLink {
