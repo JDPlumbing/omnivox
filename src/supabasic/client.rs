@@ -30,6 +30,39 @@ impl Supabase {
             .map_err(|_| SupabasicError::Other("SUPABASE_KEY must be set".into()))?;
         Ok(Supabase::new(&url, &api_key))
     }
+
+    pub async fn get_user_from_jwt(&self, token: String) -> Result<serde_json::Value> {
+        let url = format!("{}/auth/v1/user", self.url);
+        let res = self
+            .http
+            .get(url)
+            .bearer_auth(token)
+            .send()
+            .await
+            .map_err(|e| SupabasicError::Other(e.to_string()))?
+            .json::<serde_json::Value>()
+            .await
+            .map_err(|e| SupabasicError::Other(e.to_string()))?;
+        Ok(res)
+    }
+
+
+    pub async fn rpc(&self, function_name: &str, params: serde_json::Value) -> Result<serde_json::Value> {
+
+        let url = format!("{}/rest/v1/rpc/{}", self.url, function_name);
+        let res = self
+            .http               // ✅ not client
+            .post(url)
+            .header("apikey", &self.api_key)
+            .json(&params)
+            .send()
+            .await?
+            .json::<serde_json::Value>()
+            .await?;
+        Ok(res)
+    }
+
+
 }
 
 #[derive(Debug, Clone, Copy)]

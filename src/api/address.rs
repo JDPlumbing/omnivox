@@ -89,19 +89,53 @@ pub async fn create_address(
     State(app): State<AppState>,
     Json(addr): Json<NewAddress>,
 ) -> impl IntoResponse {
+    // Normalize address
+    let street = addr.street_address.trim().to_lowercase();
+    let city = addr.city.clone().unwrap_or_default().trim().to_lowercase();
+    let state = addr.state.clone().unwrap_or_default().trim().to_lowercase();
+    let postal = addr.postal_code.clone().unwrap_or_default().trim().to_lowercase();
+    let country = addr.country.clone().unwrap_or("US".to_string()).trim().to_lowercase();
+
+    // Step 1️⃣: Check if it already exists
+    let existing_result = app
+        .supa
+        .from("addresses")
+        .select("id, street_address, city, state, postal_code, country")
+        .eq("street_address", &street)
+        .eq("city", &city)
+        .eq("state", &state)
+        .eq("postal_code", &postal)
+        .eq("country", &country)
+        .execute_typed::<AddressRow>()
+        .await;
+
+    if let Ok(rows) = &existing_result {
+        if !rows.is_empty() {
+            let found = &rows[0];
+            eprintln!("♻️ Found existing address {:?}", found);
+            return Json(json!({
+                "status": "ok",
+                "existing": true,
+                "inserted": found
+            }))
+            .into_response();
+        }
+    }
+
+    // Step 2️⃣: Create if not found
     let record = AddressRow {
         id: None,
-        street_address: Some(addr.street_address),
-        city: addr.city,
-        state: addr.state,
-        postal_code: addr.postal_code,
-        country: addr.country,
+        street_address: Some(street.clone()),
+        city: Some(city),
+        state: Some(state),
+        postal_code: Some(postal),
+        country: Some(country),
     };
 
     let result = AddressRow::create(&app.supa, &record).await;
 
     match result {
-        Ok(inserted) => Json(json!({ "status": "ok", "inserted": inserted })).into_response(),
+        Ok(inserted) => Json(json!({ "status": "ok", "existing": false, "inserted": inserted })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": format!("Insert failed: {e:?}") })),
@@ -110,10 +144,12 @@ pub async fn create_address(
     }
 }
 
+
 // ========================================================
-// POST /address/{id}/resolve
+// POST /address/{id}/resolve (Find or create geolocation + uvoxid)
 // ========================================================
 pub async fn resolve_address(State(app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
+    // Step 1: Fetch the address
     let addr: AddressRow = match app
         .supa
         .from("addresses")
@@ -129,6 +165,25 @@ pub async fn resolve_address(State(app): State<AppState>, Path(id): Path<Uuid>) 
         }
     };
 
+    // Step 2: Check if we already have a geolocation for this address
+    if let Ok(existing) = app
+        .supa
+        .from("geolocations")
+        .select("id, lat, lon, elevation_m")
+        .eq("address_id", &id.to_string())
+        .single()
+        .await
+    {
+        eprintln!("♻️ Using existing geolocation for address {}", id);
+        return Json(json!({
+            "status": "ok",
+            "reused": true,
+            "geolocation": existing,
+        }))
+        .into_response();
+    }
+
+    // Step 3: Geocode using OpenCage
     let query = format!(
         "{}, {}, {}, {}",
         addr.street_address.clone().unwrap_or_default(),
@@ -145,8 +200,22 @@ pub async fn resolve_address(State(app): State<AppState>, Path(id): Path<Uuid>) 
     );
 
     let client = reqwest::Client::new();
-    let resp = client.get(&url).send().await.unwrap();
-    let data: Value = resp.json().await.unwrap();
+    let resp = match client.get(&url).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("OpenCage error: {:?}", e);
+            return (StatusCode::BAD_REQUEST, "Failed to contact geocoding service").into_response();
+        }
+    };
+
+    let data: Value = match resp.json().await {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("JSON parse error: {:?}", e);
+            return (StatusCode::BAD_REQUEST, "Bad geocoding response").into_response();
+        }
+    };
+
     let Some(result) = data["results"].get(0) else {
         return (StatusCode::BAD_REQUEST, "No geocode results").into_response();
     };
@@ -155,7 +224,7 @@ pub async fn resolve_address(State(app): State<AppState>, Path(id): Path<Uuid>) 
     let lon = result["geometry"]["lng"].as_f64().unwrap_or(0.0);
     let elevation_m = 0.0;
 
-    // Insert geolocation
+    // Step 4: Insert geolocation
     let geo_result = app
         .supa
         .from("geolocations")
@@ -169,51 +238,85 @@ pub async fn resolve_address(State(app): State<AppState>, Path(id): Path<Uuid>) 
         .execute()
         .await;
 
-    if let Err(e) = &geo_result {
-        eprintln!("Error inserting geolocation: {:?}", e);
-        return (StatusCode::BAD_REQUEST, format!("Insert failed: {e:?}")).into_response();
-    }
+    let geo_value: Value = match geo_result {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Error inserting geolocation: {:?}", e);
+            return (StatusCode::BAD_REQUEST, format!("Insert failed: {e:?}")).into_response();
+        }
+    };
 
-    let geo_value: Value = geo_result.unwrap();
     let geolocation_id = geo_value[0]["id"].as_str().unwrap_or_default().to_string();
 
-    // Compute uvoxid fields
-    const EARTH_RADIUS_M: f64 = 6_371_000.0;
-    let lat_code: i64 = (lat * 1e9) as i64;
-    let lon_code: i64 = (lon * 1e9) as i64;
-    let r_um: i64 = ((EARTH_RADIUS_M + elevation_m) * 1e6) as i64;
-    let frame_id: i64 = 0;
+// Step 5: Compute uvoxid fields
+const EARTH_RADIUS_M: f64 = 6_371_000.0;
+let lat_code: i64 = (lat * 1e9) as i64;
+let lon_code: i64 = (lon * 1e9) as i64;
+let r_um: i64 = ((EARTH_RADIUS_M + elevation_m) * 1e6) as i64;
+let frame_id: i64 = 0;
 
-    let uvox_result = app
-        .supa
-        .from("uvoxid")
-        .insert(json!({
-            "frame_id": frame_id,
-            "r_um": r_um,
-            "lat_code": lat_code,
-            "lon_code": lon_code,
-            "geolocation_id": geolocation_id
-        }))
-        .select("frame_id, r_um, lat_code, lon_code, geolocation_id")
-        .execute()
-        .await;
+// Step 6: Check if a uvoxid already exists for these coordinates
+let existing_uvox = app
+    .supa
+    .from("uvoxid")
+    .select("frame_id, r_um, lat_code, lon_code, geolocation_id")
+    .eq("frame_id", &frame_id.to_string())
+    .eq("r_um", &r_um.to_string())
+    .eq("lat_code", &lat_code.to_string())
+    .eq("lon_code", &lon_code.to_string())
+    .execute()
+    .await;
 
-    match uvox_result {
-        Ok(v) => Json(json!({
-            "status": "ok",
-            "geolocation": geo_value,
-            "uvoxid": v,
-            "lat": lat,
-            "lon": lon,
-            "r_um": r_um
-        }))
-        .into_response(),
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("Uvox insert failed: {e:?}") })),
-        )
-            .into_response(),
+if let Ok(val) = &existing_uvox {
+    if let Some(arr) = val.as_array() {
+        if !arr.is_empty() {
+            eprintln!("✅ Existing uvoxid found, skipping insert.");
+            return Json(json!({
+                "status": "ok",
+                "reused": true,
+                "geolocation": geo_value,
+                "uvoxid": arr[0],
+                "lat": lat,
+                "lon": lon,
+                "r_um": r_um
+            }))
+            .into_response();
+        }
     }
+}
+
+// Step 7: Otherwise insert new uvoxid
+let uvox_result = app
+    .supa
+    .from("uvoxid")
+    .insert(json!({
+        "frame_id": frame_id,
+        "r_um": r_um,
+        "lat_code": lat_code,
+        "lon_code": lon_code,
+        "geolocation_id": geolocation_id
+    }))
+    .select("frame_id, r_um, lat_code, lon_code, geolocation_id")
+    .execute()
+    .await;
+
+match uvox_result {
+    Ok(v) => Json(json!({
+        "status": "ok",
+        "reused": false,
+        "geolocation": geo_value,
+        "uvoxid": v,
+        "lat": lat,
+        "lon": lon,
+        "r_um": r_um
+    }))
+    .into_response(),
+    Err(e) => (
+        StatusCode::BAD_REQUEST,
+        Json(json!({ "error": format!("Uvox insert failed: {e:?}") })),
+    )
+    .into_response(),
+}
 }
 
 // ========================================================

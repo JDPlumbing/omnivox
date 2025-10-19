@@ -21,15 +21,25 @@ mod objex;
 pub use objex::{create_objex, get_objex};
 mod events;
 pub use events::{create_event, list_events_for_sim, list_events_for_entity};
-
+// --- Address API ---
 mod address;
 pub use address::*;
-
+// --- Properties API ---
 mod properties;
 pub use properties::{get_property, list_properties, create_property, delete_property};
+// --- Main API ---
 use crate::shared::app_state::AppState;
+// --- Session API ---
 mod session;
 pub use session::init_session;
+// --- Pages API ---
+mod pages;
+pub use pages::{get_page, create_page, update_page, delete_page, list_pages};
+
+mod auth;
+use auth::{login::login, verify::verify_session, refresh::refresh_token};
+
+
 
 
 pub fn api_router() -> Router<AppState> {
@@ -112,19 +122,40 @@ pub fn api_router() -> Router<AppState> {
         )
         .route("/{id}/generate", post(properties::generate_property_objects));
 
-
+    // Pages routes
+    let pages_routes = Router::new()
+        .route("/", get(list_pages).post(create_page))          // Create
+        .route("/{slug}", get(get_page))         // Read
+        .route("/id/{id}", put(update_page))     // Update
+        .route("/{slug}", delete(delete_page));  // Delete
         
-    // --- Main API router ---
+
+
+
+
+    let auth_routes = Router::new()
+        .route("/login", post(login))
+        .route("/verify", post(verify_session)) 
+        .route("/refresh", post(refresh_token));
+
     Router::new()
+        // --- Test route ---
+        .route("/ping", get(|| async { "pong" }))
+
+        // --- Auth routes ---
+        .nest("/auth", auth_routes)
         .route("/session/init", get(init_session))
+
+        // --- Main API routes ---
         .nest("/address", address_routes)
         .nest("/properties", property_routes)
-        .route("/ping", get(|| async { "pong" }))
+        
         .nest("/users", users_routes)
         .nest("/worlds", worlds_routes)
         .nest("/simulations", simulations_routes)
         .nest("/objex", objex_routes)
         .nest("/events", events_routes)
+        .nest("/pages", pages_routes) 
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
