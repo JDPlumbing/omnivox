@@ -224,7 +224,7 @@ pub async fn generate_property_objects(
             "status": "ok",
             "generated_count": created.len(),
             "property_id": property_id,
-            "entities": created.iter().map(|r| &r.name).collect::<Vec<_>>(),
+            "entities": created,
             "replaced_old": true
         }))
         .into_response(),

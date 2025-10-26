@@ -55,14 +55,7 @@ pub fn api_router() -> Router<AppState> {
         );
 
     // Simulations routes
-    let simulations_routes = Router::new()
-        .route("/", get(simulations::list_simulations).post(simulations::create_simulation))
-        .route("/{id}", get(simulations::get_simulation)
-            .put(simulations::update_simulation)
-            .patch(simulations::patch_simulation)
-            .delete(simulations::delete_simulation))
-        .route("/init", post(simulations::init_simulation))
-        .route("/run", post(simulations::run_simulation));
+let simulations_routes = simulations::routes();
 
     // Objex routes — order matters!
     let objex_routes = Router::new()

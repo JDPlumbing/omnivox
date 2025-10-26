@@ -1,6 +1,5 @@
 use crate::supabasic::properties::PropertyRecord;
-use crate::objex::{Objex, Shape, MaterialLink};
-use crate::objex::core::{MaterialName, MaterialKind};
+use crate::objex::core::{Objex, MaterialLink, MaterialName, MaterialKind, Shape};
 use crate::geospec::shapes::BoxShape;
 use uuid::Uuid;
 
@@ -13,7 +12,7 @@ pub fn generate_roof(property: &PropertyRecord) -> Vec<Objex> {
     let pitch_ratio = 6.0 / 12.0; // 6:12 pitch
 
     let roof_length = side_length + 2.0 * overhang;
-    let roof_width  = side_length + 2.0 * overhang;
+    let roof_width = side_length + 2.0 * overhang;
     let rise = (roof_width / 2.0) * pitch_ratio;
     let roof_height = rise; // approximate
 
@@ -23,21 +22,23 @@ pub fn generate_roof(property: &PropertyRecord) -> Vec<Objex> {
         kind: MaterialKind::Composite,
     };
 
-    let shape = Shape::Box(BoxShape {
-        length: roof_length,
-        width: roof_width,
-        height: roof_height,
-    });
+    let roof = Objex::new(
+        property.frame_id.unwrap_or(0),
+        property.property_id,
+        format!("Roof ({:.0} sqft)", sqft),
+        Shape::Box(BoxShape {
+            length: roof_length,
+            width: roof_width,
+            height: roof_height,
+        }),
+        roof_material,
+    )
+    .with_metadata("trade", "roofing")
+    .with_metadata("category", "roof_structure")
+    .with_metadata("structural", "true")
+    .with_metadata("material_detail", "asphalt_shingle");
 
-    objs.push(Objex {
-        frame_id: property.frame_id.unwrap_or(0),
-        entity_id: Uuid::new_v4(),
-        property_id: property.property_id,
-        name: format!("Roof ({} sqft)", sqft.round()),
-        shape,
-        material: roof_material,
-    });
+    objs.push(roof);
 
     objs
 }
-

@@ -1,5 +1,6 @@
-use crate::objex::core::{Objex, MaterialLink, MaterialName, Shape};
+use crate::objex::core::{Objex, MaterialLink, MaterialName};
 use crate::supabasic::properties::PropertyRecord;
+
 
 /// Generate foundation-related Objex entities for a property.
 ///
@@ -20,33 +21,33 @@ pub fn generate_foundation_objex(property: &PropertyRecord) -> Vec<Objex> {
     let mut objexes = Vec::new();
 
     // 🧱 Foundation slab
-    let slab = Objex {
+    let slab = Objex::new_box(
         frame_id,
-        property_id: Some(property_id),
-        entity_id: uuid::Uuid::new_v4(),
-        name: format!("Foundation Slab ({:.0} sqft)", sqft),
-        shape: Shape::Box(crate::geospec::shapes::BoxShape {
-            length,
-            width,
-            height: 0.5, // 6" slab
-        }),
-        material: MaterialLink::new(MaterialName::Concrete),
-    };
+        Some(property_id),
+        MaterialLink::new(MaterialName::Concrete),
+        length,
+        width,
+        0.5, // 6" slab
+    )
+    .with_metadata("trade", "foundation")
+    .with_metadata("category", "slab")
+    .with_metadata("structural", "true");
+
     objexes.push(slab);
 
     // 🧱 Perimeter footing
-    let footing = Objex {
+    let footing = Objex::new_box(
         frame_id,
-        property_id: Some(property_id),
-        entity_id: uuid::Uuid::new_v4(),
-        name: format!("Perimeter Footing ({:.0} ft perimeter)", perimeter),
-        shape: Shape::Box(crate::geospec::shapes::BoxShape {
-            length: perimeter / 4.0, // simplified linear section representation
-            width: 2.0,              // 2 ft wide
-            height: 2.0,             // 2 ft deep
-        }),
-        material: MaterialLink::new(MaterialName::Concrete),
-    };
+        Some(property_id),
+        MaterialLink::new(MaterialName::Concrete),
+        perimeter / 4.0, // simplified linear section representation
+        2.0,             // 2 ft wide
+        2.0,             // 2 ft deep
+    )
+    .with_metadata("trade", "foundation")
+    .with_metadata("category", "footing")
+    .with_metadata("structural", "true");
+
     objexes.push(footing);
 
     objexes

@@ -1,7 +1,8 @@
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-
+use std::collections::HashMap;
 use crate::geospec::shapes::{Point, Line, Plane, Sphere, BoxShape, Cylinder, Cone};
+use serde_json::json;
 
 /// Shape is an enum that can represent any geometric primitive
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -128,6 +129,8 @@ pub struct Objex {
     pub name: String,                     // readable name
     pub shape: Shape,                     // geometry data
     pub material: MaterialLink,           // material composition
+    // 🆕 carries dynamic contextual data — e.g. trade, category, etc.
+    pub metadata: Option<HashMap<String, String>>,
 }
 
 
@@ -140,6 +143,7 @@ impl Objex {
             name: format!("{:?} Sphere", material),
             shape: Shape::Sphere(Sphere { radius }),
             material,
+            metadata: None,
         }
     }
 
@@ -151,6 +155,7 @@ impl Objex {
             name: format!("{:?} Box", material),
             shape: Shape::Box(BoxShape { length, width, height }),
             material,
+            metadata: None,
         }
     }
 
@@ -162,6 +167,7 @@ impl Objex {
             name: format!("{:?} Cylinder", material),
             shape: Shape::Cylinder(Cylinder { radius, height }),
             material,
+            metadata: None,
         }
     }
 
@@ -173,6 +179,14 @@ impl Objex {
             name: name.into(),
             shape,
             material,
+            metadata: None,
         }
+    }
+
+    pub fn with_metadata(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        let mut map = self.metadata.unwrap_or_default();
+        map.insert(key.into(), value.into());
+        self.metadata = Some(map);
+        self
     }
 }

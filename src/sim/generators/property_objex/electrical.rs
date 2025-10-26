@@ -1,6 +1,5 @@
 use uuid::Uuid;
 use crate::objex::core::{Objex, Shape, MaterialLink, MaterialName};
-
 use crate::supabasic::properties::{PropertyRecord, ElectricalType};
 use crate::geospec::shapes::{Line, BoxShape};
 
@@ -23,59 +22,84 @@ pub fn generate_electrical_objex(property: &PropertyRecord) -> Vec<Objex> {
     let circuits = ((sqft as f64 / 100.0).ceil() as i64) + bathrooms * 2;
 
     // ⚡ Service panel
-    objs.push(Objex::new(
-        frame_id,
-        prop_id,
-        "ServicePanel",
-        Shape::Box(BoxShape {
-            length: 2.0,
-            width: 0.5,
-            height: 3.0,
-        }),
-        MaterialLink::new(MaterialName::Steel),
-    ));
+    objs.push(
+        Objex::new(
+            frame_id,
+            prop_id,
+            "ServicePanel",
+            Shape::Box(BoxShape {
+                length: 2.0,
+                width: 0.5,
+                height: 3.0,
+            }),
+            MaterialLink::new(MaterialName::Steel),
+        )
+        .with_metadata("trade", "electrical")
+        .with_metadata("category", "service_panel")
+        .with_metadata("voltage", "240"),
+    );
 
     // 🔌 Branch circuits
-    objs.push(Objex::new(
-        frame_id,
-        prop_id,
-        "BranchCircuits",
-        Shape::Line(Line { length: sqft as f64 / 8.0 }),
-        material.clone(),
-    ));
+    objs.push(
+        Objex::new(
+            frame_id,
+            prop_id,
+            "BranchCircuits",
+            Shape::Line(Line { length: sqft as f64 / 8.0 }),
+            material.clone(),
+        )
+        .with_metadata("trade", "electrical")
+        .with_metadata("category", "branch_circuit")
+        .with_metadata("circuit_count", &circuits.to_string()),
+    );
 
     // 💡 Lighting groups
     let lighting_groups = ((sqft as f64) / 400.0).ceil() as i64;
     for i in 0..lighting_groups {
-        objs.push(Objex::new(
-            frame_id,
-            prop_id,
-            format!("LightingGroup_{}", i + 1),
-            Shape::Box(BoxShape {
-                length: 5.0,
-                width: 5.0,
-                height: 3.0,
-            }),
-            material.clone(),
-        ));
+        objs.push(
+            Objex::new(
+                frame_id,
+                prop_id,
+                format!("LightingGroup_{}", i + 1),
+                Shape::Box(BoxShape {
+                    length: 5.0,
+                    width: 5.0,
+                    height: 3.0,
+                }),
+                material.clone(),
+            )
+            .with_metadata("trade", "electrical")
+            .with_metadata("category", "lighting_group")
+            .with_metadata("zone", &format!("lighting_zone_{}", i + 1)),
+        );
     }
 
     // ⚙️ Appliances
-    objs.push(Objex::new(
-        frame_id,
-        prop_id,
-        "HVAC_Circuit",
-        Shape::Line(Line { length: 20.0 }),
-        material.clone(),
-    ));
+    objs.push(
+        Objex::new(
+            frame_id,
+            prop_id,
+            "HVAC_Circuit",
+            Shape::Line(Line { length: 20.0 }),
+            material.clone(),
+        )
+        .with_metadata("trade", "electrical")
+        .with_metadata("category", "appliance_circuit")
+        .with_metadata("device", "HVAC"),
+    );
 
-    objs.push(Objex::new(
-        frame_id,
-        prop_id,
-        "RangeCircuit",
-        Shape::Line(Line { length: 15.0 }),
-        material.clone(),
-    ));
+    objs.push(
+        Objex::new(
+            frame_id,
+            prop_id,
+            "RangeCircuit",
+            Shape::Line(Line { length: 15.0 }),
+            material.clone(),
+        )
+        .with_metadata("trade", "electrical")
+        .with_metadata("category", "appliance_circuit")
+        .with_metadata("device", "range"),
+    );
 
     objs
 }

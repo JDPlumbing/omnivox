@@ -1,6 +1,5 @@
 use uuid::Uuid;
 use crate::objex::core::{Objex, Shape, MaterialLink, MaterialName};
-
 use crate::supabasic::properties::{PropertyRecord, PlumbingType};
 use crate::geospec::shapes::{Line, Cylinder, BoxShape};
 
@@ -25,59 +24,86 @@ pub fn generate_plumbing_objex(property: &PropertyRecord) -> Vec<Objex> {
     let fixture_groups = bathrooms + if sqft > 1200 { 1 } else { 0 };
 
     // 🚰 Main water service
-    objs.push(Objex::new(
-        frame_id,
-        prop_id,
-        "MainWaterService",
-        Shape::Line(Line { length: 25.0 }),
-        MaterialLink::new(MaterialName::Copper),
-    ));
+    objs.push(
+        Objex::new(
+            frame_id,
+            prop_id,
+            "MainWaterService",
+            Shape::Line(Line { length: 25.0 }),
+            MaterialLink::new(MaterialName::Copper),
+        )
+        .with_metadata("trade", "plumbing")
+        .with_metadata("category", "service_line")
+        .with_metadata("pressure_zone", "main"),
+    );
 
     // 🔥 Water heater
-    objs.push(Objex::new(
-        frame_id,
-        prop_id,
-        "WaterHeater",
-        Shape::Cylinder(Cylinder {
-            radius: 1.0,
-            height: if sqft > 2500 { 6.0 } else { 5.0 },
-        }),
-        MaterialLink::new(MaterialName::Steel),
-    ));
+    objs.push(
+        Objex::new(
+            frame_id,
+            prop_id,
+            "WaterHeater",
+            Shape::Cylinder(Cylinder {
+                radius: 1.0,
+                height: if sqft > 2500 { 6.0 } else { 5.0 },
+            }),
+            MaterialLink::new(MaterialName::Steel),
+        )
+        .with_metadata("trade", "plumbing")
+        .with_metadata("category", "water_heater")
+        .with_metadata("type", "tank"),
+    );
 
     // 💧 Supply piping
-    objs.push(Objex::new(
-        frame_id,
-        prop_id,
-        "SupplyPiping",
-        Shape::Line(Line {
-            length: (sqft as f64 / 10.0),
-        }),
-        material.clone(),
-    ));
+    objs.push(
+        Objex::new(
+            frame_id,
+            prop_id,
+            "SupplyPiping",
+            Shape::Line(Line {
+                length: (sqft as f64 / 10.0),
+            }),
+            material.clone(),
+        )
+        .with_metadata("trade", "plumbing")
+        .with_metadata("category", "supply_line")
+        .with_metadata("pressure_zone", "distribution"),
+    );
 
     // 🚽 Drain-waste-vent system
-    objs.push(Objex::new(
-        frame_id,
-        prop_id,
-        "DrainWasteVent",
-        Shape::Line(Line { length: (sqft as f64 / 12.0) }),
-        MaterialLink::new(MaterialName::Plastic),
-    ));
+    objs.push(
+        Objex::new(
+            frame_id,
+            prop_id,
+            "DrainWasteVent",
+            Shape::Line(Line {
+                length: (sqft as f64 / 12.0),
+            }),
+            MaterialLink::new(MaterialName::Plastic),
+        )
+        .with_metadata("trade", "plumbing")
+        .with_metadata("category", "dwv")
+        .with_metadata("pressure_zone", "gravity"),
+    );
 
     // 🚿 Fixture clusters
     for i in 0..fixture_groups {
-        objs.push(Objex::new(
-            frame_id,
-            prop_id,
-            format!("FixtureCluster_{}", i + 1),
-            Shape::Box(BoxShape {
-                length: 3.0,
-                width: 3.0,
-                height: 8.0,
-            }),
-            material.clone(),
-        ));
+        objs.push(
+            Objex::new(
+                frame_id,
+                prop_id,
+                format!("FixtureCluster_{}", i + 1),
+                Shape::Box(BoxShape {
+                    length: 3.0,
+                    width: 3.0,
+                    height: 8.0,
+                }),
+                material.clone(),
+            )
+            .with_metadata("trade", "plumbing")
+            .with_metadata("category", "fixture_cluster")
+            .with_metadata("zone", &format!("bathroom_{}", i + 1)),
+        );
     }
 
     objs

@@ -5,7 +5,7 @@ use crate::objex::{Objex, Shape, MaterialLink};
 use crate::objex::core::{MaterialName, MaterialKind};
 
 use serde::{Serialize, Deserialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use uuid::Uuid;
 use serde_json::to_string_pretty;
 
@@ -19,6 +19,8 @@ pub struct ObjectRecord {
     pub shape: Value,                // JSONB blob
     pub material_name: String,       // stringified enum
     pub material_kind: String,       // stringified enum
+    // 🆕 flexible metadata field for tags, trade, category, etc.
+    pub metadata: Option<Value>, // or Option<HashMap<String, String>>
 }
 
 
@@ -37,9 +39,9 @@ pub async fn create(supa: &Supabase, payload: &Self) -> Result<Self, SupabasicEr
         "shape": payload.shape,
         "material_name": payload.material_name,
         "material_kind": payload.material_kind,
-        "frame_id": payload.frame_id
+        "frame_id": payload.frame_id,
+        "metadata": payload.metadata.clone().unwrap_or(json!({}))
     });
-
 
     println!(
         "🧩 FINAL OBJEX INSERT PAYLOAD:\n{}",
@@ -112,6 +114,8 @@ impl From<Objex> for ObjectRecord {
             shape: serde_json::to_value(o.shape).unwrap(),
             material_name: format!("{:?}", o.material.name),
             material_kind: format!("{:?}", o.material.kind),
+            metadata: Some(serde_json::to_value(&o.metadata).unwrap_or(json!({}))),
+
         }
     }
 }
@@ -156,6 +160,11 @@ impl TryFrom<ObjectRecord> for Objex {
                     _ => MaterialKind::Other,
                 },
             },
+            metadata: r.metadata
+            .and_then(|m| serde_json::from_value(m).ok())
+            .unwrap_or_default(),
+
+
         })
     }
 }
