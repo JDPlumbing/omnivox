@@ -7,15 +7,12 @@ use tower_http::cors::{Any, CorsLayer};
 // --- Users API ---
 mod users;
 pub use users::{get_user, get_anon_user, list_anon_users, create_anon_user};
-
 // --- Worlds API ---
 mod worlds;
 pub use worlds::{list_worlds_handler, get_world_handler, create_world_handler};
-
 // --- Simulations API ---
 mod simulations;
-pub use simulations::{list_simulations, get_simulation, seed_simulation};
-
+pub use simulations::{list_simulations, get_simulation, run_simulation, create_simulation};
 // --- Objex + Events API ---
 mod objex;
 pub use objex::{create_objex, get_objex};
@@ -35,12 +32,9 @@ pub use session::init_session;
 // --- Pages API ---
 mod pages;
 pub use pages::{get_page, create_page, update_page, delete_page, list_pages};
-
+// --- Auth API ---
 mod auth;
 use auth::{login::login, verify::verify_session, refresh::refresh_token};
-
-
-
 
 pub fn api_router() -> Router<AppState> {
 
@@ -60,7 +54,6 @@ pub fn api_router() -> Router<AppState> {
             .delete(worlds::delete_world_handler)
         );
 
-
     // Simulations routes
     let simulations_routes = Router::new()
         .route("/", get(simulations::list_simulations).post(simulations::create_simulation))
@@ -68,11 +61,8 @@ pub fn api_router() -> Router<AppState> {
             .put(simulations::update_simulation)
             .patch(simulations::patch_simulation)
             .delete(simulations::delete_simulation))
-        .route("/{id}/seed", post(simulations::seed_simulation))
-        .route("/init", post(simulations::init_simulation));
-
-
-
+        .route("/init", post(simulations::init_simulation))
+        .route("/run", post(simulations::run_simulation));
 
     // Objex routes — order matters!
     let objex_routes = Router::new()
@@ -129,10 +119,6 @@ pub fn api_router() -> Router<AppState> {
         .route("/id/{id}", put(update_page))     // Update
         .route("/{slug}", delete(delete_page));  // Delete
         
-
-
-
-
     let auth_routes = Router::new()
         .route("/login", post(login))
         .route("/verify", post(verify_session)) 

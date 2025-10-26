@@ -5,7 +5,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
 // ------------------------
-// Enums (core controlled vocab)
+// Enums (core controlled vocab) 
 // ------------------------
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

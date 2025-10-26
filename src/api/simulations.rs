@@ -4,16 +4,17 @@ use axum::{
     http::StatusCode,
     Json,
 };
+
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-use serde_json::json;
-use chrono::Utc;
+use serde_json::{ json, Value };
+use crate::tdt::core::TimeDelta;
+use chrono::{Utc, TimeZone};
 
 use crate::shared::app_state::AppState;
 use crate::supabasic::simulations::{UpdateSimulation, SimulationRow};
 use crate::supabasic::events::EventRow;
 use crate::supabasic::objex::ObjectRecord;
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SimulationDto {
@@ -26,6 +27,7 @@ pub struct SimulationDto {
     #[serde(default)]
     pub events: Vec<EventRow>,
 }
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewSimulation {
     pub simulation_id: Option<Uuid>, // optional; generated if missing
@@ -36,7 +38,6 @@ pub struct NewSimulation {
     pub user_owner_id: Option<Uuid>,
     pub anon_owner_id: Option<Uuid>,
 }
-
 
 impl From<SimulationRow> for SimulationDto {
     fn from(row: SimulationRow) -> Self {
@@ -68,6 +69,7 @@ pub async fn create_simulation(
         "user_owner_id": payload.user_owner_id,
         "anon_owner_id": payload.anon_owner_id
     }]);
+    
 
     println!(
         "🧩 FINAL JSON TO SUPABASE:\n{}",
@@ -150,36 +152,105 @@ pub async fn list_simulations(State(app): State<AppState>) -> impl IntoResponse 
 }
 
 // ========================================================
-// POST /api/simulations/:id/seed
+// POST /api/simulations/init
 // ========================================================
 
-// TODO: this function does not work and is pre-refactor. maybe needs to be repurposed
-pub async fn seed_simulation(
+#[derive(Debug, Deserialize)]
+pub struct SimulationInitRequest {
+    pub property_id: Uuid,
+    pub frame_id: Option<i64>,
+    pub tick_rate: Option<i64>,
+    pub anon_owner_id: Option<Uuid>,
+    pub user_owner_id: Option<Uuid>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SimulationInitResponse {
+    pub status: String,
+    pub simulation_id: Uuid,
+    pub frame_id: i64,
+    pub object_count: usize,
+    pub installed_event_count: usize,
+}
+
+pub async fn init_simulation(
     State(app): State<AppState>,
-    Path(sim_id): Path<Uuid>,
+    Json(req): Json<SimulationInitRequest>,
 ) -> impl IntoResponse {
-    // 1️⃣ Get simulation's world frame
-    let sim: serde_json::Value = match app
+    // 1️⃣ Create the new simulation record
+    let sim_id = Uuid::new_v4();
+    let frame_id = req.frame_id.unwrap_or(0);
+
+    let (user_owner_id, anon_owner_id) = match (req.user_owner_id, req.anon_owner_id) {
+        (Some(uid), _) => (json!(uid), serde_json::Value::Null),
+        (None, Some(aid)) => (serde_json::Value::Null, json!(aid)),
+        (None, None) => (serde_json::Value::Null, json!(Uuid::new_v4())),
+    };
+
+    let insert_payload = json!({
+        "simulation_id": sim_id,
+        "frame_id": frame_id,
+        "tick_rate": req.tick_rate.unwrap_or(1),
+        "last_saved": serde_json::Value::Null,
+        "metadata": json!({}),
+        "user_owner_id": user_owner_id,
+        "anon_owner_id": anon_owner_id,
+    });
+
+    println!("🧩 FINAL JSON TO SUPABASE:\n{}", serde_json::to_string_pretty(&insert_payload).unwrap());
+
+    let insert_res = app
         .supa
         .from("simulations")
-        .select("frame_id")
-        .eq("simulation_id", &sim_id.to_string())
+        .insert(insert_payload)
+        .select("simulation_id")
+        .execute()
+        .await;
+
+    if let Err(e) = insert_res {
+        eprintln!("❌ Simulation insert failed: {:?}", e);
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": format!("Simulation insert failed: {e:?}") })),
+        )
+            .into_response();
+    }
+
+    // 2️⃣ Fetch property info → to establish tick 0
+    let property: serde_json::Value = match app
+        .supa
+        .from("properties")
+        .select("year_built")
+        .eq("property_id", &req.property_id.to_string())
         .single()
         .await
     {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("Failed to get simulation: {:?}", e);
+            eprintln!("❌ Failed to fetch property info: {:?}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "error getting simulation" })),
+                Json(json!({ "error": format!("Failed to fetch property info: {e:?}") })),
             )
                 .into_response();
         }
     };
-    let frame_id = sim["frame_id"].as_i64().unwrap_or(0);
 
-    // 2️⃣ Get world objects
+    let year_built = property["year_built"].as_i64().unwrap_or(2000);
+    let install_time = Utc
+        .with_ymd_and_hms(year_built as i32, 1, 1, 0, 0, 0)
+        .unwrap();
+
+    let lived_delta = TimeDelta::until_now(install_time);
+    let lived_days = lived_delta.ticks("days");
+    let lived_pretty = lived_delta.pretty(2);
+
+    println!(
+        "🏗️ Property built in {year_built} → lived for {} days ({})",
+        lived_days, lived_pretty
+    );
+
+    // 3️⃣ Fetch all existing objects for this property
     let objs: Vec<ObjectRecord> = match app
         .supa
         .from("objex_entities")
@@ -190,127 +261,40 @@ pub async fn seed_simulation(
     {
         Ok(list) => list,
         Err(e) => {
-            eprintln!("Failed to fetch objects: {:?}", e);
+            eprintln!("❌ Failed to fetch objects: {:?}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "error fetching objects" })),
+                Json(json!({ "error": format!("Fetch objects failed: {e:?}") })),
             )
                 .into_response();
         }
     };
 
-    // 3️⃣ Create spawn events
+    // 4️⃣ Create Installed events (tick 0 = construction)
     let events: Vec<serde_json::Value> = objs
-        .into_iter()
-        .map(|o| {
-            json!({
-                "simulation_id": sim_id,
-                "entity_id": o.entity_id,
-                "frame_id": frame_id,
-                "ticks": 0,
-                "timestamp": Utc::now(),
-                "kind": "Spawn",
-                "move_offset": null,
-                "payload": null,
-            })
-        })
-        .collect();
-
-    match app.supa.from("events").insert(events).select("*").execute().await {
-        Ok(res) => Json(json!({ "status": "ok", "spawned": res })).into_response(),
-        Err(e) => {
-            eprintln!("Insert failed: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "insert failed" })),
-            )
-                .into_response()
-        }
-    }
-}
-
-// ========================================================
-// POST /api/simulations/init
-// ========================================================
-#[derive(Debug, Deserialize)]
-pub struct SimulationInitRequest {
-    pub frame_id: i64,
-    pub uvoxid: String,
-    pub radius_um: Option<i64>,
-    pub tick_rate: Option<i64>,
-    pub anon_owner_id: Option<Uuid>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct SimulationInitResponse {
-    pub status: String,
-    pub simulation_id: Uuid,
-    pub frame_id: i64,
-    pub object_count: usize,
-    pub spawned_event_count: usize,
-}
-
-pub async fn init_simulation(
-    State(app): State<AppState>,
-    Json(req): Json<SimulationInitRequest>,
-) -> impl IntoResponse {
-    // 1️⃣ Create a new simulation record
-    let sim_id = Uuid::new_v4();
-    let insert_res = app
-        .supa
-        .from("simulations")
-        .insert(json!([{
-            "simulation_id": sim_id,
-            "frame_id": req.frame_id,
-            "tick_rate": req.tick_rate.unwrap_or(1),
-            "anon_owner_id": req.anon_owner_id,
-        }]))
-        .select("simulation_id")
-        .execute()
-        .await;
-
-    if let Err(e) = insert_res {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("Simulation insert failed: {e:?}") })),
-        )
-            .into_response();
-    }
-
-    // 2️⃣ Get nearby objects (simplified for now)
-    let objs: Vec<ObjectRecord> = match app
-        .supa
-        .from("objex_entities")
-        .select("entity_id, frame_id")
-        .eq("frame_id", &req.frame_id.to_string())
-        .execute_typed()
-        .await
-    {
-        Ok(list) => list,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": format!("Fetch objects failed: {e:?}") })),
-            )
-                .into_response()
-        }
-    };
-
-    // 3️⃣ Create spawn events
-    let events: Vec<_> = objs
         .iter()
         .map(|o| {
             json!({
                 "simulation_id": sim_id,
                 "entity_id": o.entity_id,
-                "frame_id": req.frame_id,
-                "ticks": 0,
-                "timestamp": Utc::now(),
-                "kind": "Spawn",
+                "frame_id": frame_id,
+                "ticks": 0, // tick 0 = year built
+                "timestamp": install_time,
+                "kind": "Installed",
+                "move_offset": serde_json::Value::Null,
+                "payload": json!({
+                    "installed_at_year": year_built,
+                    "elapsed_since_install_days": lived_days,
+                    "elapsed_pretty": lived_pretty,
+                    "source": "property_init"
+                })
             })
         })
         .collect();
 
+    println!("🧾 Final Installed events payload:\n{}", serde_json::to_string_pretty(&events).unwrap());
+
+    // 5️⃣ Insert events
     let insert_events = app
         .supa
         .from("events")
@@ -319,20 +303,25 @@ pub async fn init_simulation(
         .execute()
         .await;
 
-    let spawned_count = match insert_events {
+    let inserted_count = match insert_events {
         Ok(v) => v.as_array().map(|a| a.len()).unwrap_or(0),
-        Err(_) => 0,
+        Err(e) => {
+            eprintln!("⚠️ Failed to insert Installed events: {:?}", e);
+            0
+        }
     };
 
+    // ✅ Done
     Json(SimulationInitResponse {
         status: "initialized".to_string(),
         simulation_id: sim_id,
-        frame_id: req.frame_id,
+        frame_id,
         object_count: objs.len(),
-        spawned_event_count: spawned_count,
+        installed_event_count: inserted_count,
     })
     .into_response()
 }
+
 
 // ========================================================
 // PUT /api/simulations/{id}
@@ -421,4 +410,91 @@ pub async fn delete_simulation(
         )
             .into_response(),
     }
+}
+
+// ========================================================
+// POST /api/simulations/run
+// ========================================================
+#[derive(Debug, Deserialize)]
+pub struct RunSimulationRequest {
+    pub simulation_id: Uuid,
+    pub frame_id: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RunSimulationResponse {
+    pub status: String,
+    pub total_objects: usize,
+    pub new_events: usize,
+    pub sample: Vec<serde_json::Value>,
+}
+
+pub async fn run_simulation(
+    State(app): State<AppState>,
+    Json(req): Json<RunSimulationRequest>,
+) -> impl IntoResponse {
+    let objs: Vec<ObjectRecord> = match app
+        .supa
+        .from("objex_entities")
+        .select("entity_id, name, frame_id")
+        .eq("frame_id", &req.frame_id.to_string())
+        .execute_typed()
+        .await
+    {
+        Ok(list) => list,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": format!("Failed to load objects: {e:?}") })),
+            )
+                .into_response();
+        }
+    };
+
+    let now = Utc::now();
+    let mut events = Vec::new();
+
+    for o in &objs {
+        if rand::random::<f32>() < 0.1 {
+            events.push(json!({
+                "simulation_id": req.simulation_id,
+                "entity_id": o.entity_id,
+                "frame_id": req.frame_id,
+                "timestamp": now,
+                "kind": "DegradationStart"
+            }));
+        }
+        if rand::random::<f32>() < 0.01 {
+            events.push(json!({
+                "simulation_id": req.simulation_id,
+                "entity_id": o.entity_id,
+                "frame_id": req.frame_id,
+                "timestamp": now,
+                "kind": "Failure"
+            }));
+        }
+    }
+
+    let inserted = match app
+        .supa
+        .from("events")
+        .insert(events.clone())
+        .select("id")
+        .execute()
+        .await
+    {
+        Ok(v) => v.as_array().map(|a| a.len()).unwrap_or(0),
+        Err(e) => {
+            eprintln!("⚠️ Failed to insert events: {:?}", e);
+            0
+        }
+    };
+
+    Json(RunSimulationResponse {
+        status: "ok".to_string(),
+        total_objects: objs.len(),
+        new_events: inserted,
+        sample: events.iter().take(5).cloned().collect(),
+    })
+    .into_response()
 }
