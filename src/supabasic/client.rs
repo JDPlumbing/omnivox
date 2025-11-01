@@ -221,6 +221,20 @@ impl QueryBuilder {
         Ok(serde_json::from_value(val)?)
     }
 
+    pub async fn maybe_single_typed<T: DeserializeOwned>(
+        self,
+    ) -> Result<Option<T>> {
+        let raw = self.execute().await?;
+
+        // Try to decode into a Vec<T> because Supabase always returns arrays
+        let parsed: Vec<T> = serde_json::from_value(raw.clone())
+            .map_err(|e| SupabasicError::Other(format!(
+                "decode error in maybe_single_typed: {e:?}, raw={raw}"
+            )))?;
+
+        Ok(parsed.into_iter().next())
+    }
+
     pub async fn execute(self) -> Result<Value> {
         let url = format!("{}/rest/v1/{}{}", self.client.url, self.table, self.query);
 

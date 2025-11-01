@@ -90,24 +90,28 @@ pub async fn create(supa: &Supabase, payload: &Self) -> Result<Self, SupabasicEr
     // -----------------------------------
     // LIST BY FRAME
     // -----------------------------------
-    pub async fn list_for_frame(supa: &Supabase, frame_id: i64) -> Result<Vec<Self>, SupabasicError> {
-        supa.from(Self::table())
-            .select("id,simulation_id,entity_id,frame_id,r_um,lat_code,lon_code,ticks,timestamp,kind,payload,created_at")
-            .eq("frame_id", &frame_id.to_string())
-            .execute_typed::<Self>()
-            .await
-    }
+pub async fn list_for_frame(supa: &Supabase, frame_id: i64) -> Result<Vec<Self>, SupabasicError> {
+    supa.from(Self::table())
+        .select("id,simulation_id,entity_id,frame_id,r_um,lat_code,lon_code,ticks,timestamp,kind,payload,created_at")
+        .eq("frame_id", &frame_id.to_string())
+        .execute_typed::<Self>()
+        .await
+}
 
     // -----------------------------------
     // LIST BY ENTITY
     // -----------------------------------
-    pub async fn list_for_entity(supa: &Supabase, entity_id: &Uuid) -> Result<Vec<Self>, SupabasicError> {
-        supa.from(Self::table())
-            .select("id,simulation_id,entity_id,frame_id,r_um,lat_code,lon_code,ticks,timestamp,kind,payload,created_at")
-            .eq("entity_id", &entity_id.to_string())
-            .execute_typed::<Self>()
-            .await
-    }
+pub async fn list_for_entity(
+    supa: &Supabase,
+    entity_id: &Uuid,
+) -> Result<Vec<Self>, SupabasicError> {
+    supa.from(Self::table())
+        .select("id,simulation_id,entity_id,frame_id,r_um,lat_code,lon_code,ticks,timestamp,kind,payload,created_at")
+        .eq("entity_id", &entity_id.to_string())
+        .execute_typed::<Self>()
+        .await
+}
+
 
     // -----------------------------------
     // GET SINGLE

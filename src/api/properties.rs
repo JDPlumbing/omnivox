@@ -1,4 +1,5 @@
 use axum::{
+    debug_handler,
     extract::{Path, State},
     response::IntoResponse,
     http::StatusCode,

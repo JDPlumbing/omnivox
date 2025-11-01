@@ -21,3 +21,18 @@ pub struct NewWorld {
     pub name: Option<String>,
     pub description: Option<String>,
 }
+
+impl Default for World {
+    fn default() -> Self {
+        Self {
+            // whatever fields you have — just make a minimal stub
+            frame_id: 0,
+            name: Some("Test-Earth".into()),
+            description: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            deleted_at: None,
+            events: vec![],
+        }
+    }
+}

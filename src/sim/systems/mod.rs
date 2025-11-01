@@ -1,12 +1,14 @@
 use crate::chronovox::ChronoEvent;
 use crate::sim::world::World;
+use crate::sim::simulation::Simulation;
 
-pub trait System : Send{
+
+pub trait System: Send + Sync {
     fn name(&self) -> &'static str;
-    
-    fn run(&mut self, world: &mut World) -> Vec<ChronoEvent>;
+    fn tick(&mut self, world: &mut World) -> Vec<ChronoEvent>;
 
 }
 
-//pub mod movement;
-//pub use movement::*;
+
+pub mod movement;
+pub use movement::*;

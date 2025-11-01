@@ -183,6 +183,25 @@ impl PropertyRecord {
     }
 
     pub async fn create(supa: &Supabase, payload: &Self) -> Result<Self, SupabasicError> {
+        // ✅ 1. Check if a property already exists with the same address_id
+        if let Some(addr_id) = payload.address_id {
+            match supa
+                .from(Self::table())
+                .select("*")
+                .eq("address_id", &addr_id.to_string())
+                .maybe_single_typed::<Self>() // 👈 only returns Some(record) or None
+                .await
+            {
+                Ok(Some(existing)) => {
+                    eprintln!("🏠 Reusing existing property for address_id={}", addr_id);
+                    return Ok(existing);
+                }
+                Ok(None) => eprintln!("ℹ️ No existing property found for address_id={}", addr_id),
+                Err(e) => eprintln!("⚠️ Dedup check failed: {:?}", e),
+            }
+        }
+
+        // ✅ 2. Otherwise insert a new record
         let raw = supa
             .from(Self::table())
             .insert(payload)
@@ -193,7 +212,9 @@ impl PropertyRecord {
         let inserted: Vec<Self> = serde_json::from_value(raw.clone())
             .map_err(|e| SupabasicError::Other(format!("decode error: {e:?}, raw={raw}")))?;
 
-        inserted.into_iter().next()
+        inserted
+            .into_iter()
+            .next()
             .ok_or_else(|| SupabasicError::Other("empty insert response".into()))
     }
 

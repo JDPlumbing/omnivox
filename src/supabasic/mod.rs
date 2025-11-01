@@ -20,8 +20,6 @@ pub use geolocations::GeolocationRecord;
 // src/supabasic/mod.rs
 pub use self::worlds::WorldRow;
 pub use self::worlds::NewWorld as NewWorldRow;
-pub use properties::PropertyRecord;
-
 
 // simulations: just re-export the model
 pub use simulations::SimulationRow;
@@ -30,5 +28,45 @@ pub use simulations::SimulationRow;
 pub use crate::sim::world::{World, NewWorld};
 pub mod objex;
 pub mod events;
-pub use events::EventRow;
 
+use crate::supabasic::{properties::PropertyRecord, objex::ObjectRecord, events::EventRow};
+use uuid::Uuid;
+
+impl Supabase {
+    pub async fn get_property_by_frame(&self, frame_id: i64) -> anyhow::Result<PropertyRecord> {
+        let res = self
+            .from("properties")
+            .select("*")
+            .eq("frame_id", &frame_id.to_string())
+
+            .single()
+            
+            .await?;
+
+        Ok(serde_json::from_value(res)?)
+    }
+
+    pub async fn list_objex_for_property(&self, property_id: Uuid) -> anyhow::Result<Vec<ObjectRecord>> {
+        let res = self
+            .from("objex_entities")
+            .select("*")
+            .eq("property_id", &property_id.to_string())
+            .execute()
+            .await?; // ✅ add await
+
+
+
+        Ok(serde_json::from_value(res)?)
+    }
+
+    pub async fn list_events_for_property(&self, property_id: Uuid) -> anyhow::Result<Vec<EventRow>> {
+        let res = self
+            .from("events")
+            .select("*")
+            .eq("property_id", &property_id.to_string())
+            .execute()
+            .await?; // ✅ add await
+
+        Ok(serde_json::from_value(res)?)
+    }
+}

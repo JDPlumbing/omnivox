@@ -26,6 +26,15 @@ pub enum OmnivoxError {
 
     #[error("Invalid simulation row: {0}")]
     InvalidRow(String),
+
+    #[error("Database error: {0}")]
+    DatabaseError(String),
+
+    #[error("Simulation load error: {0}")]
+    LoadError(String),
+
+    #[error("Other error: {0}")]
+    Other(String),
 }
 
 pub type Result<T> = std::result::Result<T, OmnivoxError>;

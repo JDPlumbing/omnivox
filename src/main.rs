@@ -6,6 +6,7 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
     dotenvy::dotenv().ok();
 
     let app_state = AppState::new_from_env()?;

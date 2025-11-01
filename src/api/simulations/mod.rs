@@ -2,10 +2,10 @@ use axum::{
     routing::{get, post, put, patch, delete},
     Router,
 };
-
 use crate::shared::app_state::AppState;
 
 // --- Submodules ---
+pub mod runtime;
 mod types;
 mod create;
 mod delete;
@@ -25,10 +25,12 @@ pub use update::{update_simulation, patch_simulation};
 pub use init::init_simulation;
 pub use run::run_simulation;
 
+use runtime::{start_sim, tick_sim, stop_sim, list_sims};
 
 /// Builds the simulation routes (used by `api/mod.rs`)
 pub fn routes() -> Router<AppState> {
     Router::new()
+        // Simulation DB routes
         .route("/", get(list_simulations).post(create_simulation))
         .route(
             "/{id}",
@@ -39,4 +41,9 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/init", post(init_simulation))
         .route("/run", post(run_simulation))
+        // Runtime control routes
+        .route("/runtime/start", post(start_sim))
+        .route("/runtime/{id}/tick", post(tick_sim))
+        .route("/runtime/{id}/stop", post(stop_sim))
+        .route("/runtime/list", get(list_sims))
 }

@@ -112,10 +112,12 @@ pub async fn init_simulation(
     let objs: Vec<ObjectRecord> = match app
         .supa
         .from("objex_entities")
-        .select("entity_id, name, shape, material_name, material_kind, frame_id")
+        .select("entity_id, name, shape, material_name, material_kind, frame_id, property_id")
+        .eq("property_id", &req.property_id.to_string())
         .eq("frame_id", &frame_id.to_string())
         .execute_typed()
         .await
+
     {
         Ok(list) => list,
         Err(e) => {
@@ -137,7 +139,8 @@ use std::collections::BTreeMap;
 
 let events: Vec<Value> = objs.iter().map(|o| {
     let mut map = BTreeMap::new();
-    map.insert("frame_id".to_string(), json!(frame_id));
+    map.insert("frame_id".to_string(), json!(o.frame_id));
+
     map.insert("r_um".to_string(), json!(0));
     map.insert("lat_code".to_string(), json!(0));
     map.insert("lon_code".to_string(), json!(0));
