@@ -3,6 +3,7 @@ use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::orm::DbModel;
 use crate::objex::{Objex, Shape, MaterialLink};
 use crate::objex::core::{MaterialName, MaterialKind};
+use crate::uvoxid::UvoxId;
 
 use serde::{Serialize, Deserialize};
 use serde_json::{json, Value};
@@ -12,15 +13,20 @@ use serde_json::to_string_pretty;
 /// Mirrors your `objex_entities` table
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ObjectRecord {
-    pub entity_id: Option<Uuid>,     // PK
-    pub property_id: Option<Uuid>,   // FK → properties
-    pub frame_id: i64,               // FK → worlds
+    pub entity_id: Option<Uuid>,
+    pub property_id: Option<Uuid>,
+    pub frame_id: i64,
+    #[serde(default)]
+    pub r_um: i64,
+    #[serde(default)]
+    pub lat_code: i64,
+    #[serde(default)]
+    pub lon_code: i64,
     pub name: String,
-    pub shape: Value,                // JSONB blob
-    pub material_name: String,       // stringified enum
-    pub material_kind: String,       // stringified enum
-    // 🆕 flexible metadata field for tags, trade, category, etc.
-    pub metadata: Option<Value>, // or Option<HashMap<String, String>>
+    pub shape: Value,
+    pub material_name: String,
+    pub material_kind: String,
+    pub metadata: Option<Value>,
 }
 
 
@@ -40,6 +46,9 @@ pub async fn create(supa: &Supabase, payload: &Self) -> Result<Self, SupabasicEr
         "material_name": payload.material_name,
         "material_kind": payload.material_kind,
         "frame_id": payload.frame_id,
+        "r_um": payload.r_um,
+        "lat_code": payload.lat_code,
+        "lon_code": payload.lon_code,
         "metadata": payload.metadata.clone().unwrap_or(json!({}))
     });
 
@@ -110,6 +119,9 @@ impl From<Objex> for ObjectRecord {
             entity_id: Some(o.entity_id),
             property_id: o.property_id, // 👈 new
             frame_id: o.frame_id,
+            r_um: o.uvoxid.r_um,
+            lat_code: o.uvoxid.lat_code,
+            lon_code: o.uvoxid.lon_code,
             name: o.name,
             shape: serde_json::to_value(o.shape).unwrap(),
             material_name: format!("{:?}", o.material.name),
@@ -129,7 +141,7 @@ impl TryFrom<ObjectRecord> for Objex {
             frame_id: r.frame_id, // 🔥 include this
             entity_id: r.entity_id.ok_or_else(|| anyhow::anyhow!("missing entity_id"))?,
             property_id: r.property_id,
-
+            uvoxid: UvoxId::new(r.frame_id, r.r_um, r.lat_code, r.lon_code),
             name: r.name,
             shape: serde_json::from_value(r.shape)?,
             material: MaterialLink {

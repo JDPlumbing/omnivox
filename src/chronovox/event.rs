@@ -1,6 +1,7 @@
 use crate::chronovox::{UvoxId, TimeDelta, Cartesian};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
+use crate::supabasic::events::EventRow;
 
 /// A Chronovox event: something happening at a place + time.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +32,8 @@ pub enum EventKind {
     // === Movement & Position ===
     /// Object moves relative to its current position.
     Move { dr: i64, dlat: i64, dlon: i64 },
+    Accelerate { ar: f64, alat: f64, alon: f64 },
+
     /// Object jumps to a new absolute position.
     Teleport { r_um: u64, lat_code: i64, lon_code: i64 },
 
@@ -82,6 +85,18 @@ impl ChronoEvent {
             t: TimeDelta::from_now(),
             kind: EventKind::Spawn,
             payload: None,
+        }
+    }
+}
+
+
+impl From<EventRow> for ChronoEvent {
+    fn from(r: EventRow) -> Self {
+        ChronoEvent {
+            id: UvoxId::new(r.frame_id, r.r_um, r.lat_code, r.lon_code),
+            t: TimeDelta::from_ticks(r.ticks, "nanoseconds"),
+            kind: serde_json::from_str(&r.kind).unwrap_or(EventKind::Custom(r.kind)),
+            payload: r.payload,
         }
     }
 }

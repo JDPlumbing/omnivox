@@ -55,3 +55,16 @@ pub struct NewWorld {
     pub name: Option<String>,
     pub description: Option<String>,
 }
+
+impl Default for WorldRow {
+    fn default() -> Self {
+        Self {
+            frame_id: 0,
+            name: Some("Default World".into()),
+            description: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            deleted_at: None,
+        }
+    }
+}

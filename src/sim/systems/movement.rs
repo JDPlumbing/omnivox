@@ -1,11 +1,9 @@
 use crate::{
     chronovox::{ChronoEvent, EventKind},
-    sim::systems::System,
-    sim::world::World,
+    sim::{systems::System, world::WorldState, components::Velocity},
     tdt::core::TimeDelta,
 };
 
-/// Simple movement system that updates object positions based on `Move` events
 pub struct MovementSystem;
 
 impl System for MovementSystem {
@@ -13,28 +11,27 @@ impl System for MovementSystem {
         "MovementSystem"
     }
 
-    fn tick(&mut self, world: &mut World) -> Vec<ChronoEvent> {
+    fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut triggered_events = Vec::new();
 
-        // For now, fake a tick counter if we don’t yet track it in `World`
-        let tick = 0_i64;
+        // Iterate over all velocity components (only entities that can move)
+        for (entity_id, velocity) in world.velocity_components.iter() {
+            // Find matching object in the world
+            if let Some(obj) = world.objects.get_mut(&entity_id.to_string()) {
+                // Apply velocity to position (uvoxid encodes r_um, lat, lon)
+                obj.uvoxid.r_um += velocity.dr as i64;
+                obj.uvoxid.lat_code += velocity.dlat as i64;
+                obj.uvoxid.lon_code += velocity.dlon as i64;
 
-        // Example placeholder — replace later with world.timeline or similar
-        let active_events: Vec<ChronoEvent> = Vec::new();
-
-        for ev in active_events.iter().filter(|e| e.t.ticks("nanoseconds") == tick) {
-            if let EventKind::Move { dr, dlat, dlon } = ev.kind {
-                let mut new_id = ev.id.clone();
-
-                new_id.r_um = (new_id.r_um + dr).max(0);
-                new_id.lat_code += dlat;
-                new_id.lon_code += dlon;
-
+                // Emit movement event
                 triggered_events.push(ChronoEvent {
-                    id: new_id,
+                    id: obj.uvoxid.clone(),
                     t: TimeDelta::from_ticks(1, "nanoseconds"),
-
-                    kind: ev.kind.clone(),
+                    kind: EventKind::Move {
+                        dr: velocity.dr as i64,
+                        dlat: velocity.dlat as i64,
+                        dlon: velocity.dlon as i64,
+                    },
                     payload: None,
                 });
             }
@@ -42,5 +39,4 @@ impl System for MovementSystem {
 
         triggered_events
     }
-
 }

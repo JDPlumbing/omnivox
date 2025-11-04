@@ -86,6 +86,9 @@ impl Timeline {
                         s.lon_code += dlon;
                     }
                 }
+                &EventKind::Accelerate { ar, alat, alon } => {
+                    tracing::debug!("⚡ Accelerating object: Δr={} Δlat={} Δlon={}", ar, alat, alon);
+                },
 
 
                 EventKind::Teleport { r_um, lat_code, lon_code } => {
@@ -207,6 +210,10 @@ impl Timeline {
                         s.lon_code += dlon;
                     }
                 }
+                &EventKind::Accelerate { ar, alat, alon } => {
+                    tracing::debug!("⚡ Accelerating: Δr={} Δlat={} Δlon={}", ar, alat, alon);
+                },
+
                 EventKind::Teleport { r_um, lat_code, lon_code } => {
                     if let Some(s) = state.get_mut(&e.id) {
                         s.r_um = *r_um;

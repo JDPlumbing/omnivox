@@ -3,6 +3,9 @@ use uuid::Uuid;
 use std::collections::HashMap;
 use crate::geospec::shapes::{Point, Line, Plane, Sphere, BoxShape, Cylinder, Cone};
 use serde_json::json;
+use crate::uvoxid::UvoxId;
+use crate::supabasic::objex::ObjectRecord;
+
 
 /// Shape is an enum that can represent any geometric primitive
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,15 +126,16 @@ impl MaterialLink {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Objex {
-    pub frame_id: i64,                    // world scope
-    pub entity_id: Uuid,                  // unique object id
-    pub property_id: Option<Uuid>,        // FK → properties (nullable)
-    pub name: String,                     // readable name
-    pub shape: Shape,                     // geometry data
-    pub material: MaterialLink,           // material composition
-    // 🆕 carries dynamic contextual data — e.g. trade, category, etc.
+    pub frame_id: i64,
+    pub entity_id: Uuid,
+    pub property_id: Option<Uuid>,
+    pub uvoxid: UvoxId,
+    pub name: String,
+    pub shape: Shape,
+    pub material: MaterialLink,
     pub metadata: Option<HashMap<String, String>>,
 }
+
 
 
 impl Objex {
@@ -139,6 +143,7 @@ impl Objex {
         Self {
             frame_id,
             property_id,
+            uvoxid: UvoxId::new(frame_id, 0, 0, 0), // TODO: real coords later
             entity_id: Uuid::new_v4(),
             name: format!("{:?} Sphere", material),
             shape: Shape::Sphere(Sphere { radius }),
@@ -151,6 +156,7 @@ impl Objex {
         Self {
             frame_id,
             property_id,
+            uvoxid: UvoxId::new(frame_id, 0, 0, 0), // TODO: real coords later
             entity_id: Uuid::new_v4(),
             name: format!("{:?} Box", material),
             shape: Shape::Box(BoxShape { length, width, height }),
@@ -163,6 +169,7 @@ impl Objex {
         Self {
             frame_id,
             property_id,
+            uvoxid: UvoxId::new(frame_id, 0, 0, 0), // TODO: real coords later
             entity_id: Uuid::new_v4(),
             name: format!("{:?} Cylinder", material),
             shape: Shape::Cylinder(Cylinder { radius, height }),
@@ -175,6 +182,7 @@ impl Objex {
         Self {
             frame_id,
             property_id,
+            uvoxid: UvoxId::new(frame_id, 0, 0, 0), // TODO: real coords later
             entity_id: Uuid::new_v4(),
             name: name.into(),
             shape,
@@ -190,3 +198,5 @@ impl Objex {
         self
     }
 }
+
+

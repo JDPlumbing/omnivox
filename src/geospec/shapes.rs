@@ -81,7 +81,7 @@ impl Dimensions for Sphere {
 }
 
 /// A 3D rectangular box (prism)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BoxShape {
     pub length: f64,
     pub width: f64,

@@ -8,7 +8,7 @@ use std::ops::{Add, AddAssign};
 /// - `r_um`: radial distance from frame center (in µm, always ≥ 0)
 /// - `lat_code`: latitude code (-90e6 to +90e6)
 /// - `lon_code`: longitude code (-180e6 to +180e6)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct UvoxId {
     pub frame_id: i64,
     pub r_um: i64,
