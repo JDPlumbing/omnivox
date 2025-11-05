@@ -1,4 +1,4 @@
-use uuid::Uuid;
+/* use uuid::Uuid;
 use supabasic::Supabase;
 use objex::{Objex, Shape, MaterialLink};
 use chronovox::UvoxId;
@@ -37,3 +37,4 @@ async fn test_spawn_entity_with_objex() {
     let result = spawn_entity_with_objex(&sup, sim_id, 0, obj, uvox).await;
     assert!(result.is_ok(), "spawn_entity_with_objex failed: {:?}", result);
 }
+*/

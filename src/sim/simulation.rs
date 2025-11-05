@@ -8,7 +8,7 @@ use crate::objex::core::types::Objex;
 use crate::supabasic::WorldRow;
 use crate::objex::core::types::MaterialLink;
 use crate::sim::components::{Velocity, Acceleration};
-use crate::sim::systems::{System, MovementSystem, AccelerationSystem, CollisionSystem};
+use crate::sim::systems::{System, MovementSystem, AccelerationSystem, CollisionSystem, GravitySystem};
 
 pub struct Simulation {
     pub simulation_id: Uuid,
@@ -18,7 +18,6 @@ pub struct Simulation {
     pub world: WorldState,
     pub systems: Vec<Box<dyn System + Send + Sync>>,
 }
-
 
 impl Simulation {
     pub fn new(meta_world: WorldRow) -> Self {
@@ -31,7 +30,6 @@ impl Simulation {
         );
 
         world_state.velocity_components.insert(test_id, Velocity::new(1.0, 0.0, 0.0));
-        world_state.acceleration_components.insert(test_id, Acceleration::new(0.0, -9.81, 0.0));
 
         tracing::info!(
             "🧩 Created test object: {:?}\nVelocity keys: {:?}\nAcceleration keys: {:?}",
@@ -39,15 +37,28 @@ impl Simulation {
             world_state.velocity_components.keys().collect::<Vec<_>>(),
             world_state.acceleration_components.keys().collect::<Vec<_>>()
         );
+        if let Some(obj) = world_state.objects.get(&test_id.to_string()) {
+        if let Some(props) = obj.material.props() {
+            tracing::info!(
+                "🧪 Material properties for {:?}: density = {:.2}, elastic_modulus = {:.2}, hardness = {:.2}",
+                obj.material.name,
+                props.density,
+                props.elastic_modulus,
+                props.hardness
+            );
+        } else {
+            tracing::info!("⚠️ No matcat properties found for {:?}", obj.material.name);
+        }
+    }
 
 
         // ✅ Define systems here
         let systems: Vec<Box<dyn System + Send + Sync>> = vec![
+            Box::new(GravitySystem),
             Box::new(AccelerationSystem),
             Box::new(MovementSystem),
             Box::new(CollisionSystem),
         ];
-
 
         Self {
             simulation_id: Uuid::new_v4(),

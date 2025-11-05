@@ -57,7 +57,35 @@ pub async fn get_objex(State(app): State<AppState>, Path(entity_id): Path<Uuid>)
 // ------------------------------------------------------------
 pub async fn list_objex(State(app): State<AppState>) -> impl IntoResponse {
     match ObjectRecord::list(&app.supa).await {
-        Ok(objs) => Json(json!(objs)).into_response(),
+        Ok(objs) => {
+            // Enrich each record with its material description
+            let enriched: Vec<_> = objs
+                .into_iter()
+                .map(|r| {
+                    // Convert ObjectRecord → Objex → MaterialLink
+                    let objex = Objex::try_from(r.clone()).ok();
+                    let material_json = objex
+                        .as_ref()
+                        .map(|o| o.material.describe_json())
+                        .unwrap_or_else(|| json!({ "error": "material unavailable" }));
+
+                    json!({
+                        "entity_id": r.entity_id,
+                        "name": r.name,
+                        "shape": r.shape,
+                        "material_name": r.material_name,
+                        "material_kind": r.material_kind,
+                        "material": material_json,
+                        "frame_id": r.frame_id,
+                        "property_id": r.property_id,
+                        "metadata": r.metadata,
+                    })
+                })
+                .collect();
+
+            Json(json!(enriched)).into_response()
+        }
+
         Err(e) => {
             eprintln!("Error listing Objex entities: {:?}", e);
             (

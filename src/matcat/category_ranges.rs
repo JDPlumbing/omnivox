@@ -409,3 +409,68 @@ pub fn generate_props_from_category(cat: u8, rng: &mut impl Rng) -> Option<MatPr
     })
 }
 
+pub fn generate_props_for_material(cat: u8, variant: u16, grade: u16) -> MatProps {
+    let mut rng = rand::thread_rng();
+
+    // Step 1: Base range by category
+    let base = get_category_ranges(cat).expect("invalid material category");
+
+    // Step 2: Apply variant bias (e.g., copper vs steel within 'metal')
+    // Variant shifts the midpoint slightly ±10%
+    let bias_factor = (variant as f32 / 65535.0) * 0.2 - 0.1;
+
+    // Step 3: Grade tightens range — higher grade = narrower band
+    let grade_factor = 1.0 - (grade as f32 / 65535.0) * 0.8; // 0.2–1.0 scaling
+
+    // Step 4: Generate around the midpoint with slight random deviation
+    fn jitter(base: (f32, f32), bias: f32, tightness: f32, rng: &mut impl rand::Rng) -> f32 {
+        let mid = (base.0 + base.1) / 2.0;
+        let span = (base.1 - base.0) * tightness * 0.5;
+        let val = mid * (1.0 + bias) + rng.gen_range(-span..span);
+        val.clamp(base.0, base.1)
+    }
+
+    let mut props = MatProps {
+        density: jitter(base.density, bias_factor, grade_factor, &mut rng),
+        elastic_modulus: jitter(base.elastic_modulus, bias_factor, grade_factor, &mut rng),
+        tensile_strength: jitter(base.tensile_strength, bias_factor, grade_factor, &mut rng),
+        compressive_strength: jitter(base.compressive_strength, bias_factor, grade_factor, &mut rng),
+        hardness: jitter(base.hardness, bias_factor, grade_factor, &mut rng),
+        fracture_toughness: jitter(base.fracture_toughness, bias_factor, grade_factor, &mut rng),
+        fatigue_resistance: jitter(base.fatigue_resistance, bias_factor, grade_factor, &mut rng),
+        thermal_conductivity: jitter(base.thermal_conductivity, bias_factor, grade_factor, &mut rng),
+        thermal_expansion: jitter(base.thermal_expansion, bias_factor, grade_factor, &mut rng),
+        melting_point: jitter(base.melting_point, bias_factor, grade_factor, &mut rng),
+        corrosion_resistance: jitter(base.corrosion_resistance, bias_factor, grade_factor, &mut rng),
+        solubility: jitter(base.solubility, bias_factor, grade_factor, &mut rng),
+        permeability: jitter(base.permeability, bias_factor, grade_factor, &mut rng),
+        flammability: jitter(base.flammability, bias_factor, grade_factor, &mut rng),
+        electrical_conductivity: jitter(base.electrical_conductivity, bias_factor, grade_factor, &mut rng),
+        magnetic_permeability: jitter(base.magnetic_permeability, bias_factor, grade_factor, &mut rng),
+    };
+
+    normalize_props(&mut props);
+    props
+}
+/// Normalize numeric properties to bring all values into expected ranges.
+/// Useful for clamping noisy random data.
+fn normalize_props(props: &mut crate::matcat::materials::MatProps) {
+    use num_traits::clamp;
+
+    props.density = clamp(props.density, 0.0, 2.5e4);
+    props.elastic_modulus = clamp(props.elastic_modulus, 0.0, 1e12);
+    props.tensile_strength = clamp(props.tensile_strength, 0.0, 1e4);
+    props.compressive_strength = clamp(props.compressive_strength, 0.0, 1e4);
+    props.hardness = clamp(props.hardness, 0.0, 10.0);
+    props.fracture_toughness = clamp(props.fracture_toughness, 0.0, 300.0);
+    props.fatigue_resistance = clamp(props.fatigue_resistance, 0.0, 1.0);
+    props.thermal_conductivity = clamp(props.thermal_conductivity, 0.0, 2e3);
+    props.thermal_expansion = clamp(props.thermal_expansion, 0.0, 1e-2);
+    props.melting_point = clamp(props.melting_point, -300.0, 7000.0);
+    props.corrosion_resistance = clamp(props.corrosion_resistance, 0.0, 1.0);
+    props.solubility = clamp(props.solubility, 0.0, 1.0);
+    props.permeability = clamp(props.permeability, 0.0, 2.0);
+    props.flammability = clamp(props.flammability, 0.0, 1.0);
+    props.electrical_conductivity = clamp(props.electrical_conductivity, 0.0, 1e8);
+    props.magnetic_permeability = clamp(props.magnetic_permeability, 0.0, 1e6);
+}

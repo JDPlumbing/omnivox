@@ -13,3 +13,5 @@ pub mod acceleration;
 pub use acceleration::*;
 pub mod collision;
 pub use collision::*;
+pub mod gravity;
+pub use gravity::*;

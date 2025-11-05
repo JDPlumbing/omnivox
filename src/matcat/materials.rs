@@ -1,9 +1,12 @@
+use serde::{Serialize, Deserialize};
+
 /// 5-byte compact material identifier
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MatCatId {
-    pub category: u8,   // e.g., Metal = 1
-    pub variant: u16,   // e.g., Copper = 42
-    pub grade: u16,     // e.g., Type L = 999
+    pub category: u8,
+    pub variant: u16,
+    pub grade: u16,
 }
 
 impl MatCatId {
@@ -14,6 +17,23 @@ impl MatCatId {
     /// Collapse into a single 64-bit seed for procedural generation
     pub fn seed(&self) -> u64 {
         ((self.category as u64) << 32) | ((self.variant as u64) << 16) | (self.grade as u64)
+    }
+    
+     /// Serialize to 5-byte array
+    pub fn name(&self) -> String {
+        let cat = crate::matcat::categories::CATEGORY_MAP.get(&self.category).unwrap_or(&"Unknown");
+        let variant = crate::matcat::variants::VARIANT_MAP
+            .get(&(self.category, self.variant))
+            .unwrap_or(&"Generic");
+        let grade = crate::matcat::grades::GRADE_MAP
+            .get(&(self.category, self.variant, self.grade))
+            .unwrap_or(&"Standard");
+        format!("{cat} - {variant} - {grade}")
+    }
+
+    pub fn props(&self) -> Option<crate::matcat::materials::MatProps> {
+        let mut rng = rand::thread_rng();
+        crate::matcat::category_ranges::generate_props_from_category(self.category, &mut rng)
     }
 }
 
@@ -135,5 +155,13 @@ pub fn find_closest_material(target: &MatProps, search_space: &[MatCatId]) -> Op
     }
 
     best_id.zip(best_props)
+}
+
+impl MatCatId {
+    pub fn steel_lowcarbon() -> Self { Self::new(1, 1, 1) }
+    pub fn metal_cu() -> Self { Self::new(1, 2, 1) }
+    pub fn masonry_generic() -> Self { Self::new(2, 1, 1) }
+    pub fn gas_air() -> Self { Self::new(3, 1, 1) }
+    pub fn liquid_water() -> Self { Self::new(4, 1, 1) }
 }
 

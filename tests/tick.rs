@@ -70,9 +70,6 @@ async fn test_tick_spawns_and_moves() -> anyhow::Result<()> {
     Ok(())
 }
 
-use omnivox::sim::world::SimWorld;
-use omnivox::chronovox::{EventKind, UvoxId};
-use omnivox::objex::{Objex, Shape, MaterialLink};
 use omnivox::geospec::shapes::Sphere;
 
 #[tokio::test]

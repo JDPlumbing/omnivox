@@ -20,6 +20,7 @@ pub fn generate_roof(property: &PropertyRecord) -> Vec<Objex> {
         id: Uuid::new_v4(),
         name: MaterialName::Custom("AsphaltShingle".into()),
         kind: MaterialKind::Composite,
+        matcat_id: None,
     };
 
     let roof = Objex::new(

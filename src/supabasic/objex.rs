@@ -4,6 +4,7 @@ use crate::supabasic::orm::DbModel;
 use crate::objex::{Objex, Shape, MaterialLink};
 use crate::objex::core::{MaterialName, MaterialKind};
 use crate::uvoxid::UvoxId;
+use crate::matcat::MatCatId;
 
 use serde::{Serialize, Deserialize};
 use serde_json::{json, Value};
@@ -171,6 +172,19 @@ impl TryFrom<ObjectRecord> for Objex {
                     "Composite" => MaterialKind::Composite,
                     _ => MaterialKind::Other,
                 },
+                matcat_id: MatCatId::from_name(&match r.material_name.as_str() {
+                    "Concrete" => MaterialName::Concrete,
+                    "Steel" => MaterialName::Steel,
+                    "Copper" => MaterialName::Copper,
+                    "Aluminum" => MaterialName::Aluminum,
+                    "Wood" => MaterialName::Wood,
+                    "Plastic" => MaterialName::Plastic,
+                    "Rubber" => MaterialName::Rubber,
+                    "Glass" => MaterialName::Glass,
+                    "Air" => MaterialName::Air,
+                    "Water" => MaterialName::Water,
+                    other => MaterialName::Custom(other.to_string()),
+                }),
             },
             metadata: r.metadata
             .and_then(|m| serde_json::from_value(m).ok())

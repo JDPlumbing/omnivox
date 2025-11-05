@@ -2,10 +2,10 @@ use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use std::collections::HashMap;
 use crate::geospec::shapes::{Point, Line, Plane, Sphere, BoxShape, Cylinder, Cone};
-use serde_json::json;
+use serde_json::{json, Value};
 use crate::uvoxid::UvoxId;
 use crate::supabasic::objex::ObjectRecord;
-
+use crate::matcat;
 
 /// Shape is an enum that can represent any geometric primitive
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,6 +93,7 @@ pub struct MaterialLink {
     pub id: Uuid,
     pub name: MaterialName,
     pub kind: MaterialKind,
+    pub matcat_id: Option<matcat::MatCatId>,
 }
 
 impl MaterialLink {
@@ -111,18 +112,101 @@ impl MaterialLink {
             MaterialName::Custom(_) => MaterialKind::Other,
         };
 
+        // Attempt to auto-link to matcat if a standard material
+        let matcat_id = matcat::MatCatId::from_name(&name);
+
         Self {
             id: Uuid::new_v4(),
             name,
             kind,
+            matcat_id,
         }
     }
 
-    /// Example: treat “vacuum” as just air for now
     pub fn vacuum() -> Self {
         Self::new(MaterialName::Air)
     }
+
+    pub fn props(&self) -> Option<matcat::MatProps> {
+        self.matcat_id.map(|id| matcat::props_for(&id))
+    }
+
+        /// Return a formatted human-readable description of the material
+    pub fn describe(&self) -> String {
+        let name = format!("{:?}", self.name);
+        let kind = format!("{:?}", self.kind);
+
+        let matcat_str = if let Some(id) = &self.matcat_id {
+            let label = id.name();
+            let props = id.props();
+            if let Some(p) = props {
+                format!(
+                    "{} ({})\n  density = {:.2} kg/m³\n  elastic_modulus = {:.2e} Pa\n  hardness = {:.2}\n  melting_point = {:.1}°C",
+                    label,
+                    kind,
+                    p.density,
+                    p.elastic_modulus,
+                    p.hardness,
+                    p.melting_point
+                )
+            } else {
+                format!("{} ({}) [no props found]", label, kind)
+            }
+        } else {
+            format!("{} ({}) [no MatCat ID linked]", name, kind)
+        };
+
+        matcat_str
+    }
+
+        /// Return a structured JSON description of the material
+    pub fn describe_json(&self) -> Value {
+        let matcat_info = if let Some(id) = &self.matcat_id {
+            let label = id.name();
+            let props = id.props();
+            match props {
+                Some(p) => json!({
+                    "name": label,
+                    "category": id.category,
+                    "variant": id.variant,
+                    "grade": id.grade,
+                    "properties": {
+                        "density": p.density,
+                        "elastic_modulus": p.elastic_modulus,
+                        "tensile_strength": p.tensile_strength,
+                        "compressive_strength": p.compressive_strength,
+                        "hardness": p.hardness,
+                        "fracture_toughness": p.fracture_toughness,
+                        "thermal_conductivity": p.thermal_conductivity,
+                        "thermal_expansion": p.thermal_expansion,
+                        "melting_point": p.melting_point,
+                        "corrosion_resistance": p.corrosion_resistance,
+                        "flammability": p.flammability,
+                        "electrical_conductivity": p.electrical_conductivity,
+                        "magnetic_permeability": p.magnetic_permeability,
+                    }
+                }),
+                None => json!({
+                    "name": label,
+                    "category": id.category,
+                    "variant": id.variant,
+                    "grade": id.grade,
+                    "properties": null
+                }),
+            }
+        } else {
+            json!({
+                "name": format!("{:?}", self.name),
+                "kind": format!("{:?}", self.kind),
+                "matcat_id": null,
+                "properties": null
+            })
+        };
+
+        matcat_info
+    }
 }
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Objex {

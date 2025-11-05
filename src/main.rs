@@ -29,3 +29,26 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::matcat::materials::MatCatId;
+
+    #[test]
+    fn test_matcat_integrity() {
+        // Pick a few canonical IDs
+        let ids = vec![
+            MatCatId::new(1, 1, 0), // Metal - Steel - Standard
+            MatCatId::new(2, 1, 0), // Plastic - PVC
+            MatCatId::new(3, 0, 0), // Wood - Generic
+            MatCatId::new(9, 0, 0), // Concrete
+        ];
+
+        for id in ids {
+            let name = id.name();
+            let props = id.props().expect("should generate props");
+            println!("🧱 {name}: {:?}", props);
+        }
+    }
+}
