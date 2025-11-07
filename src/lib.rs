@@ -11,3 +11,4 @@ pub mod uvoxid;    // spatial ID system
 pub mod uvoxxyz;   // coordinate utils
 pub mod api;      // web API (Axum)
 pub mod shared;
+pub mod physox;    // physics engine

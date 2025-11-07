@@ -177,3 +177,28 @@ impl Dimensions for Cone {
         })
     }
 }
+
+
+// --- Utility: approximate radius for collision detection ---
+impl crate::objex::core::types::Shape {
+    pub fn approx_radius_um(&self) -> i64 {
+        match self {
+            crate::objex::core::types::Shape::Sphere(s) => (s.radius * 1_000_000.0) as i64,
+            crate::objex::core::types::Shape::Box(b) => {
+                let half_diag = ((b.length.powi(2) + b.width.powi(2) + b.height.powi(2)).sqrt() / 2.0) * 1_000_000.0;
+                half_diag as i64
+            }
+            crate::objex::core::types::Shape::Cylinder(c) => {
+                let r = c.radius * 1_000_000.0;
+                let h = c.height * 1_000_000.0 / 2.0;
+                ((r.powi(2) + h.powi(2)).sqrt()) as i64
+            }
+            crate::objex::core::types::Shape::Cone(c) => {
+                let r = c.radius * 1_000_000.0;
+                let h = c.height * 1_000_000.0 / 2.0;
+                ((r.powi(2) + h.powi(2)).sqrt()) as i64
+            }
+            _ => 1_000_000, // fallback = ~1 meter
+        }
+    }
+}

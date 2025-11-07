@@ -43,3 +43,18 @@ impl MatCatId {
         generate_props_from_category(self.category, &mut rng)
     }
 }
+/*
+#[get("/api/matcat/<category>/<variant>/<grade>")]
+pub fn get_material(category: u8, variant: u16, grade: u16) -> Json<MaterialResponse> {
+    use crate::matcat::materials::{MatCatId, props_for};
+
+    let id = MatCatId::new(category, variant, grade);
+    let props = props_for(&id);
+
+    Json(MaterialResponse {
+        id,
+        name: id.name(),
+        props,
+    })
+}
+*/

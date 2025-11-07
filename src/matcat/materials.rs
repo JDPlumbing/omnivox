@@ -1,13 +1,19 @@
 use serde::{Serialize, Deserialize};
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use std::sync::Mutex;
+use crate::matcat::category_ranges::generate_props_from_category;
+use rand::{SeedableRng, rngs::StdRng};
 
 /// 5-byte compact material identifier
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct MatCatId {
     pub category: u8,
     pub variant: u16,
     pub grade: u16,
 }
+
 
 impl MatCatId {
     pub fn new(category: u8, variant: u16, grade: u16) -> Self {
@@ -34,6 +40,17 @@ impl MatCatId {
     pub fn props(&self) -> Option<crate::matcat::materials::MatProps> {
         let mut rng = rand::thread_rng();
         crate::matcat::category_ranges::generate_props_from_category(self.category, &mut rng)
+    }
+
+    pub fn from_str(name: &str) -> Option<Self> {
+        match name.to_lowercase().as_str() {
+            "concrete" => Some(MatCatId::masonry_generic()),
+            "steel" => Some(MatCatId::steel_lowcarbon()),
+            "copper" => Some(MatCatId::metal_cu()),
+            "water" => Some(MatCatId::liquid_water()),
+            "air" => Some(MatCatId::gas_air()),
+            _ => None,
+        }
     }
 }
 
@@ -74,16 +91,33 @@ fn lcg(mut seed: u64) -> impl FnMut() -> f32 {
         (bits as f32) / (u32::MAX as f32) // → [0.0, 1.0]
     }
 }
+pub fn restitution_from_props(props: &MatProps) -> f64 {
+    // Approximation: elasticity ratio → restitution coefficient
+    // Metals ≈ 0.7–0.9, ceramics ≈ 0.1–0.3, polymers ≈ 0.4–0.6
+    let e = props.elastic_modulus as f64;
+    let toughness = props.fracture_toughness as f64;
+    ((e / (e + toughness.max(1.0))) * 0.9).clamp(0.05, 0.95)
+}
 
 /// Procedurally derive material properties from MatCatId
-use crate::matcat::category_ranges::generate_props_from_category;
+
+static MATPROPS_CACHE: Lazy<Mutex<HashMap<MatCatId, MatProps>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 pub fn props_for(id: &MatCatId) -> MatProps {
-    if let Some(props) = generate_props_from_category(id.category, &mut rand::rng()) {
+    // First, try the cache
+    {
+        let cache = MATPROPS_CACHE.lock().unwrap();
+        if let Some(cached) = cache.get(id) {
+            return *cached;
+        }
+    }
+    let mut rng = StdRng::seed_from_u64(id.seed());
+    let props = if let Some(props) = generate_props_from_category(id.category, &mut rng) {
         props
     } else {
-        // fallback to old RNG if category is undefined
         let mut rng = lcg(id.seed());
+
         MatProps {
             density: 500.0 + rng() * 20000.0,
             elastic_modulus: rng() * 4e11,
@@ -92,21 +126,23 @@ pub fn props_for(id: &MatCatId) -> MatProps {
             hardness: rng() * 10.0,
             fracture_toughness: rng() * 50.0,
             fatigue_resistance: rng(),
-
             thermal_conductivity: rng() * 400.0,
             thermal_expansion: rng() * 1e-4,
             melting_point: rng() * 4000.0,
-
             corrosion_resistance: rng(),
             solubility: rng(),
             permeability: rng(),
             flammability: rng(),
-
             electrical_conductivity: rng(),
             magnetic_permeability: rng() * 1000.0,
         }
-    }
+    };
+
+    // Store in cache
+    MATPROPS_CACHE.lock().unwrap().insert(*id, props);
+    props
 }
+
 
 
 use std::f32;

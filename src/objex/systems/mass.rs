@@ -1,4 +1,4 @@
-use crate::objex::core::Object;
+use crate::objex::core::{Objex, Object, Shape}; // ✅ bring in Objex + Shape
 use crate::geospec::{Dimensions, Volume, SurfaceArea};
 
 #[derive(Debug)]
@@ -22,5 +22,24 @@ pub fn derive_mass<T: Dimensions + Volume + SurfaceArea>(obj: &Object<T>) -> Mas
         volume,
         surface_area,
         surface_to_volume: surface_area / volume,
+    }
+}
+
+/// Wrapper for untyped Objex → computes mass by dispatching on Shape.
+pub fn derive_mass_from_objex(obj: &Objex) -> f64 {
+    match &obj.shape {
+        Shape::Box(b) => {
+            let mat_id = obj.material.matcat_id.unwrap_or_default();
+            derive_mass(&Object::new(b.clone(), mat_id)).mass
+        }
+        Shape::Sphere(s) => {
+            let mat_id = obj.material.matcat_id.unwrap_or_default();
+            derive_mass(&Object::new(s.clone(), mat_id)).mass
+        }
+        Shape::Cylinder(c) => {
+            let mat_id = obj.material.matcat_id.unwrap_or_default();
+            derive_mass(&Object::new(c.clone(), mat_id)).mass
+        }
+        _ => 0.0, // fallback for shapes not yet handled
     }
 }

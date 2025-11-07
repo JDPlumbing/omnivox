@@ -5,7 +5,8 @@ use crate::supabasic::WorldRow;
 use std::collections::HashMap;
 use crate::objex::core::types::Objex;
 use uuid::Uuid;
-use crate::sim::components::{Velocity, Acceleration};   
+use crate::sim::components::{Velocity, Acceleration}; 
+use crate::sim::components::{FractureData, CorrosionData};  
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct World {
@@ -53,6 +54,10 @@ pub struct WorldState {
     pub objects: HashMap<String, Objex>, // runtime objects
     pub velocity_components: HashMap<Uuid, Velocity>,
     pub acceleration_components: HashMap<Uuid, Acceleration>,
+
+        // transient reaction components
+    pub fracture_components: HashMap<Uuid, FractureData>,
+    pub corrosion_components: HashMap<Uuid, CorrosionData>,
 }
 
 impl WorldState {
@@ -63,6 +68,11 @@ impl WorldState {
             objects: HashMap::new(),
             velocity_components: HashMap::new(),
             acceleration_components: HashMap::new(),
+            fracture_components: HashMap::new(),
+            corrosion_components: HashMap::new(),
+            
+
+            
         }
     }
 }

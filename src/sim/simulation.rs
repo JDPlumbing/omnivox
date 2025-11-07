@@ -8,7 +8,7 @@ use crate::objex::core::types::Objex;
 use crate::supabasic::WorldRow;
 use crate::objex::core::types::MaterialLink;
 use crate::sim::components::{Velocity, Acceleration};
-use crate::sim::systems::{System, MovementSystem, AccelerationSystem, CollisionSystem, GravitySystem};
+use crate::sim::systems::{System, MovementSystem, AccelerationSystem, CollisionSystem, GravitySystem, FractureSystem};
 
 pub struct Simulation {
     pub simulation_id: Uuid,
@@ -58,6 +58,8 @@ impl Simulation {
             Box::new(AccelerationSystem),
             Box::new(MovementSystem),
             Box::new(CollisionSystem),
+            Box::new(FractureSystem),
+            
         ];
 
         Self {
