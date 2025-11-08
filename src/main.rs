@@ -1,8 +1,11 @@
+#![cfg_attr(debug_assertions, allow(warnings))]
+
 use axum::Router;
 use tower_http::cors::{Any, CorsLayer};
 use omnivox::api::api_router;
 use omnivox::shared::app_state::AppState;
 use tokio::net::TcpListener;
+
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

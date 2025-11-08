@@ -6,6 +6,7 @@ use serde_json::{json, Value};
 use crate::uvoxid::UvoxId;
 use crate::supabasic::objex::ObjectRecord;
 use crate::matcat;
+use crate::geospec::traits::{Dimensions, Volume, SurfaceArea};
 
 /// Shape is an enum that can represent any geometric primitive
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -283,4 +284,41 @@ impl Objex {
     }
 }
 
+impl Dimensions for Shape {
+    fn as_json(&self) -> serde_json::Value {
+        match self {
+            Shape::Point(p) => p.as_json(),
+            Shape::Line(l) => l.as_json(),
+            Shape::Plane(pl) => pl.as_json(),
+            Shape::Sphere(s) => s.as_json(),
+            Shape::Box(b) => b.as_json(),
+            Shape::Cylinder(c) => c.as_json(),
+            Shape::Cone(cn) => cn.as_json(),
+        }
+    }
+}
 
+impl Volume for Shape {
+    fn volume(&self) -> f64 {
+        match self {
+            Shape::Box(b) => b.volume(),
+            Shape::Sphere(s) => s.volume(),
+            Shape::Cylinder(c) => c.volume(),
+            Shape::Cone(cn) => cn.volume(),
+            _ => 0.0,
+        }
+    }
+}
+
+impl SurfaceArea for Shape {
+    fn surface_area(&self) -> f64 {
+        match self {
+            Shape::Box(b) => b.surface_area(),
+            Shape::Sphere(s) => s.surface_area(),
+            Shape::Cylinder(c) => c.surface_area(),
+            Shape::Cone(cn) => cn.surface_area(),
+            Shape::Plane(p) => p.surface_area(),
+            _ => 0.0,
+        }
+    }
+}

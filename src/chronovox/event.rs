@@ -87,6 +87,15 @@ impl ChronoEvent {
             payload: None,
         }
     }
+
+    pub fn new() -> Self {
+        Self {
+            id: UvoxId::new(0, 0, 0, 0),
+            t: TimeDelta::from_ticks(0, "nanoseconds"),
+            kind: EventKind::Custom("Undefined".into()),
+            payload: None,
+        }
+    }
 }
 
 

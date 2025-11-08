@@ -25,6 +25,13 @@ pub struct PropRange {
     // Electrical / Magnetic
     pub electrical_conductivity: (f32, f32),
     pub magnetic_permeability: (f32, f32),
+
+    // Optical
+    pub refractive_index: (f32, f32),
+    pub transparency: (f32, f32),
+    pub reflectivity: (f32, f32),
+    pub absorption: (f32, f32),
+    
 }
 
 
@@ -73,6 +80,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 0.1),
             electrical_conductivity: (1e6, 1e7),
             magnetic_permeability: (1.0, 1000.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x02 => Some(PropRange { // Alloy
             density: (5000.0, 15000.0),
@@ -91,6 +103,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 0.1),
             electrical_conductivity: (1e5, 8e6),
             magnetic_permeability: (1.0, 2000.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x03 => Some(PropRange { // Ceramic
             density: (2000.0, 6500.0),
@@ -109,6 +126,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 0.1),
             electrical_conductivity: (0.0, 10.0),
             magnetic_permeability: (0.0, 2.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x04 => Some(PropRange { // Plastic
             density: (800.0, 2200.0),
@@ -127,6 +149,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.5, 1.0),
             electrical_conductivity: (0.0, 1.0),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x05 => Some(PropRange { // Foam
             density: (10.0, 500.0),
@@ -145,6 +172,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.6, 1.0),
             electrical_conductivity: (0.0, 0.1),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x06 => Some(PropRange { // Glass
             density: (2000.0, 6000.0),
@@ -163,6 +195,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 0.1),
             electrical_conductivity: (0.0, 1.0),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x07 => Some(PropRange { // Wood
             density: (200.0, 1200.0),
@@ -181,6 +218,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.7, 1.0),
             electrical_conductivity: (0.0, 0.5),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x08 => Some(PropRange { // Stone
             density: (2200.0, 3000.0),
@@ -199,6 +241,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 0.1),
             electrical_conductivity: (0.0, 1.0),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x09 => Some(PropRange { // Concrete
             density: (2200.0, 2600.0),
@@ -217,6 +264,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 0.1),
             electrical_conductivity: (0.0, 0.5),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x0A => Some(PropRange { // Composite (e.g. carbon fiber, laminates)
             density: (1200.0, 2000.0),
@@ -235,6 +287,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.2, 0.8),
             electrical_conductivity: (0.0, 1e6),
             magnetic_permeability: (0.0, 10.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x0B => Some(PropRange { // Rubber / Elastomer
             density: (900.0, 1300.0),
@@ -253,6 +310,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.6, 1.0),
             electrical_conductivity: (0.0, 1.0),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x0C => Some(PropRange { // Liquid (generic, e.g. water, oil)
             density: (500.0, 2000.0),
@@ -271,6 +333,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 1.0),
             electrical_conductivity: (0.0, 1e4),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x0D => Some(PropRange { // Gas
             density: (0.1, 10.0),
@@ -289,6 +356,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 1.0),
             electrical_conductivity: (0.0, 1.0),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x0E => Some(PropRange { // Soil / Earth
             density: (1200.0, 2200.0),
@@ -307,6 +379,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 0.2),
             electrical_conductivity: (0.0, 100.0),
             magnetic_permeability: (0.0, 10.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x0F => Some(PropRange { // Textile / Fabric
             density: (100.0, 1500.0),
@@ -325,6 +402,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.6, 1.0),
             electrical_conductivity: (0.0, 1.0),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x10 => Some(PropRange { // Biological Tissue
             density: (900.0, 1200.0),
@@ -343,6 +425,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.5, 0.9),
             electrical_conductivity: (0.0, 10.0),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x11 => Some(PropRange { // Ice
             density: (900.0, 1000.0),
@@ -361,6 +448,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 0.1),
             electrical_conductivity: (0.0, 0.5),
             magnetic_permeability: (0.0, 1.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
         0x12 => Some(PropRange { // Exotic (e.g. superconductors, special alloys)
             density: (3000.0, 12000.0),
@@ -379,6 +471,11 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             flammability: (0.0, 0.1),
             electrical_conductivity: (1e6, 1e8),
             magnetic_permeability: (0.0, 10000.0),
+            refractive_index: (1.0, 2.5),
+            transparency: (0.0, 1.0),
+            reflectivity: (0.0, 1.0),
+            absorption: (0.0, 1.0),
+
         }),
 
         _ => None,
@@ -406,6 +503,11 @@ pub fn generate_props_from_category(cat: u8, rng: &mut impl Rng) -> Option<MatPr
         flammability: rng.random_range(r.flammability.0..r.flammability.1),
         electrical_conductivity: rng.random_range(r.electrical_conductivity.0..r.electrical_conductivity.1),
         magnetic_permeability: rng.random_range(r.magnetic_permeability.0..r.magnetic_permeability.1),
+        refractive_index: rng.random_range(r.refractive_index.0..r.refractive_index.1),
+        transparency: rng.random_range(r.transparency.0..r.transparency.1),
+        reflectivity: rng.random_range(r.reflectivity.0..r.reflectivity.1),
+        absorption: rng.random_range(r.absorption.0..r.absorption.1),
+
     })
 }
 
@@ -430,24 +532,31 @@ pub fn generate_props_for_material(cat: u8, variant: u16, grade: u16) -> MatProp
         val.clamp(base.0, base.1)
     }
 
-    let mut props = MatProps {
-        density: jitter(base.density, bias_factor, grade_factor, &mut rng),
-        elastic_modulus: jitter(base.elastic_modulus, bias_factor, grade_factor, &mut rng),
-        tensile_strength: jitter(base.tensile_strength, bias_factor, grade_factor, &mut rng),
-        compressive_strength: jitter(base.compressive_strength, bias_factor, grade_factor, &mut rng),
-        hardness: jitter(base.hardness, bias_factor, grade_factor, &mut rng),
-        fracture_toughness: jitter(base.fracture_toughness, bias_factor, grade_factor, &mut rng),
-        fatigue_resistance: jitter(base.fatigue_resistance, bias_factor, grade_factor, &mut rng),
-        thermal_conductivity: jitter(base.thermal_conductivity, bias_factor, grade_factor, &mut rng),
-        thermal_expansion: jitter(base.thermal_expansion, bias_factor, grade_factor, &mut rng),
-        melting_point: jitter(base.melting_point, bias_factor, grade_factor, &mut rng),
-        corrosion_resistance: jitter(base.corrosion_resistance, bias_factor, grade_factor, &mut rng),
-        solubility: jitter(base.solubility, bias_factor, grade_factor, &mut rng),
-        permeability: jitter(base.permeability, bias_factor, grade_factor, &mut rng),
-        flammability: jitter(base.flammability, bias_factor, grade_factor, &mut rng),
-        electrical_conductivity: jitter(base.electrical_conductivity, bias_factor, grade_factor, &mut rng),
-        magnetic_permeability: jitter(base.magnetic_permeability, bias_factor, grade_factor, &mut rng),
-    };
+let mut props = MatProps {
+    density: jitter(base.density, bias_factor, grade_factor, &mut rng),
+    elastic_modulus: jitter(base.elastic_modulus, bias_factor, grade_factor, &mut rng),
+    tensile_strength: jitter(base.tensile_strength, bias_factor, grade_factor, &mut rng),
+    compressive_strength: jitter(base.compressive_strength, bias_factor, grade_factor, &mut rng),
+    hardness: jitter(base.hardness, bias_factor, grade_factor, &mut rng),
+    fracture_toughness: jitter(base.fracture_toughness, bias_factor, grade_factor, &mut rng),
+    fatigue_resistance: jitter(base.fatigue_resistance, bias_factor, grade_factor, &mut rng),
+    thermal_conductivity: jitter(base.thermal_conductivity, bias_factor, grade_factor, &mut rng),
+    thermal_expansion: jitter(base.thermal_expansion, bias_factor, grade_factor, &mut rng),
+    melting_point: jitter(base.melting_point, bias_factor, grade_factor, &mut rng),
+    corrosion_resistance: jitter(base.corrosion_resistance, bias_factor, grade_factor, &mut rng),
+    solubility: jitter(base.solubility, bias_factor, grade_factor, &mut rng),
+    permeability: jitter(base.permeability, bias_factor, grade_factor, &mut rng),
+    flammability: jitter(base.flammability, bias_factor, grade_factor, &mut rng),
+    electrical_conductivity: jitter(base.electrical_conductivity, bias_factor, grade_factor, &mut rng),
+    magnetic_permeability: jitter(base.magnetic_permeability, bias_factor, grade_factor, &mut rng),
+
+    // 🔧 Fix: these should use `base`, not `r`
+    refractive_index: jitter(base.refractive_index, bias_factor, grade_factor, &mut rng),
+    transparency: jitter(base.transparency, bias_factor, grade_factor, &mut rng),
+    reflectivity: jitter(base.reflectivity, bias_factor, grade_factor, &mut rng),
+    absorption: jitter(base.absorption, bias_factor, grade_factor, &mut rng),
+};
+
 
     normalize_props(&mut props);
     props
@@ -473,4 +582,10 @@ fn normalize_props(props: &mut crate::matcat::materials::MatProps) {
     props.flammability = clamp(props.flammability, 0.0, 1.0);
     props.electrical_conductivity = clamp(props.electrical_conductivity, 0.0, 1e8);
     props.magnetic_permeability = clamp(props.magnetic_permeability, 0.0, 1e6);
+    props.refractive_index = clamp(props.refractive_index, 1.0, 3.0);
+    props.transparency = clamp(props.transparency, 0.0, 1.0);
+    props.reflectivity = clamp(props.reflectivity, 0.0, 1.0);
+    props.absorption = clamp(props.absorption, 0.0, 1.0);
+    
+    
 }

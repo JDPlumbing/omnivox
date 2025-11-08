@@ -1,8 +1,22 @@
 use crate::objex::core::Object;
 use crate::geospec::{Dimensions, Volume, SurfaceArea};
+
+#[derive(Debug, Clone)]
+pub struct CompositeProps {
+    pub effective_density: f32,
+    pub effective_strength: f32,
+}
+
 /// Composite object made of multiple layers of different materials
 pub struct CompositeObject<T: Dimensions + Volume + SurfaceArea> {
     pub layers: Vec<Object<T>>,
+}
+
+impl CompositeProps {
+    pub fn total_mass(&self) -> f64 {
+        // temporary stub until you wire real composites up
+        self.effective_density as f64
+    }
 }
 
 impl<T: Dimensions + Volume + SurfaceArea> CompositeObject<T> {
@@ -27,3 +41,4 @@ impl<T: Dimensions + Volume + SurfaceArea> CompositeObject<T> {
             .fold(f32::INFINITY, f32::min)
     }
 }
+

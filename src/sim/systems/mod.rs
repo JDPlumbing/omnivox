@@ -18,3 +18,20 @@ pub use gravity::*;
 
 pub mod fracture;
 pub use fracture::*;
+
+pub mod degradation;
+pub use degradation::*;
+pub mod electrical;
+pub use electrical::*;
+pub mod mass;
+pub use mass::*;
+pub mod mechanical;
+pub use mechanical::*;
+pub mod optical;
+pub use optical::*;
+pub mod composite;
+pub use composite::*;
+pub mod strength;
+pub use strength::*;
+pub mod thermal;
+pub use thermal::*;

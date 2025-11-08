@@ -81,6 +81,13 @@ pub struct MatProps {
     // --- Electrical / Magnetic ---
     pub electrical_conductivity: f32, // 0.0–1.0
     pub magnetic_permeability: f32,   // relative μ
+
+        // --- Optical ---
+    pub refractive_index: f32,  // e.g. 1.0–2.5
+    pub transparency: f32,      // 0.0–1.0
+    pub reflectivity: f32,      // 0.0–1.0
+    pub absorption: f32,        // 0.0–1.0
+
 }
 
 /// Small deterministic PRNG for procedural props
@@ -135,6 +142,12 @@ pub fn props_for(id: &MatCatId) -> MatProps {
             flammability: rng(),
             electrical_conductivity: rng(),
             magnetic_permeability: rng() * 1000.0,
+            refractive_index: 1.0 + rng() * 1.5,
+            transparency: rng(),
+            reflectivity: rng(),
+            absorption: rng(),
+
+
         }
     };
 
@@ -201,3 +214,29 @@ impl MatCatId {
     pub fn liquid_water() -> Self { Self::new(4, 1, 1) }
 }
 
+
+pub fn default_props() -> MatProps {
+    MatProps {
+        density: 1000.0,
+        elastic_modulus: 1e9,
+        tensile_strength: 10.0,
+        compressive_strength: 20.0,
+        hardness: 5.0,
+        fracture_toughness: 5.0,
+        fatigue_resistance: 0.5,
+        thermal_conductivity: 0.5,
+        thermal_expansion: 1e-5,
+        melting_point: 150.0,
+        corrosion_resistance: 0.5,
+        solubility: 0.5,
+        permeability: 0.5,
+        flammability: 0.5,
+        electrical_conductivity: 0.5,
+        magnetic_permeability: 1.0,
+        refractive_index: 1.5,
+        transparency: 0.5,
+        reflectivity: 0.3,
+        absorption: 0.2,
+
+    }
+}
