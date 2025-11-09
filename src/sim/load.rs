@@ -18,6 +18,7 @@ use std::convert::TryFrom;
 use crate::objex::core::types::Objex;
 
 
+
 /// Helper: load all data needed to build a runtime `WorldState` from a property.
 async fn load_world_from_property(
     sup: &Supabase,
@@ -109,6 +110,14 @@ impl Simulation {
             Box::new(MovementSystem),
         ];
 
+        use chrono::{Utc, Duration};
+        use crate::sim::clock::SimClock;
+
+        let now = Utc::now();
+        let start = now - Duration::days(365 * 10); // or derive this from property metadata
+        let step = Duration::days(30);
+        let clock = SimClock::new(start, now, step);
+
         // 5. Build Simulation
         Ok(Simulation {
             simulation_id: row.simulation_id,
@@ -117,6 +126,7 @@ impl Simulation {
             world: world_state,
             timeline,
             systems,
+            clock,
         })
     }
 }

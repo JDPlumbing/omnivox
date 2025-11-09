@@ -3,7 +3,7 @@ use crate::{
     sim::{systems::System, world::WorldState, components::corrosion::CorrosionData},
     tdt::core::TimeDelta,
     matcat::materials::props_for,
-    objex::systems::mass::derive_mass,
+    objex::systems::mass::{derive_mass, derive_mass_from_objex},
 };
 use uuid::Uuid;
 use tracing::info;
@@ -28,6 +28,7 @@ impl System for CorrosionSystem {
 
                     // Derive geometry data
                     let geom = derive_mass_from_objex(obj);
+
                     let surface_area = geom.surface_area_m2;
 
                     // Initialize or update corrosion state

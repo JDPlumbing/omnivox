@@ -7,5 +7,5 @@ pub struct CorrosionData {
     pub thickness_loss: f64,   // m, material lost over time
     pub rate: f64,             // m/s (corrosion rate)
     pub environment_factor: f32, // humidity, salinity, acidity, etc.
-    pub severity: f32,         // 0.0–1.0, normalized damage
+    pub severity: f64,         // 0.0–1.0, normalized damage
 }

@@ -35,3 +35,5 @@ pub mod strength;
 pub use strength::*;
 pub mod thermal;
 pub use thermal::*;
+pub mod corrosion;
+pub use corrosion::*;
