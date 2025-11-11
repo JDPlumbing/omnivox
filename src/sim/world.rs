@@ -10,12 +10,17 @@ use crate::objex::systems::{
     degradation::DegradationProps,
     electrical::ElectricalProps,
     mechanical::MechanicalProps,
-    thermal::ThermalProps,
+    
     strength::StrengthProps,
     mass::MassProps,
     optical::OpticalProps,
 };
 use crate::objex::core::composite::CompositeProps;
+use crate::sim::clock::SimClock;
+use crate::sim::systems::sun::SunlightProps;
+use crate::sim::systems::solar_exposure::SolarExposureData;
+use crate::sim::systems::uv_degradation::UVDegradationData;
+use crate::sim::components::thermal::{ThermalData, ThermalExposure};
 
 /// Persistent world metadata (used in Supabase)
 #[derive(Debug, Serialize, Deserialize)]
@@ -59,9 +64,12 @@ impl Default for World {
 /// In-memory simulation state for a running world
 #[derive(Debug)]
 pub struct WorldState {
-    pub meta: WorldRow,                    // persisted metadata
-    pub events: Vec<EventRow>,             // runtime events
-    pub objects: HashMap<String, Objex>,   // active objects
+    pub meta: WorldRow,
+    pub events: Vec<EventRow>,
+    pub objects: HashMap<String, Objex>,
+
+    // ✅ new field
+    pub clock: Option<SimClock>,
 
     // basic physics
     pub velocity_components: HashMap<Uuid, Velocity>,
@@ -75,12 +83,24 @@ pub struct WorldState {
     pub mass_components: HashMap<Uuid, MassProps>,
     pub mechanical_components: HashMap<Uuid, MechanicalProps>,
     pub strength_components: HashMap<Uuid, StrengthProps>,
-    pub thermal_components: HashMap<Uuid, ThermalProps>,
+   
     pub electrical_components: HashMap<Uuid, ElectricalProps>,
     pub degradation_components: HashMap<Uuid, DegradationProps>,
     pub optical_components: HashMap<Uuid, OpticalProps>,
     pub composite_components: HashMap<Uuid, CompositeProps>,
+
+        // ☀️ add this
+    pub sunlight_components: HashMap<Uuid, SunlightProps>,
+    pub solar_exposure_components: HashMap<Uuid, SolarExposureData>,
+    pub uv_degradation_components: HashMap<Uuid, UVDegradationData>,
+    pub thermal_components: HashMap<Uuid, ThermalData>,
+    pub thermal_exposure: HashMap<Uuid, ThermalExposure>,
+
+
+
+
 }
+
 
 impl WorldState {
     pub fn new(meta: WorldRow) -> Self {
@@ -88,6 +108,7 @@ impl WorldState {
             meta,
             events: Vec::new(),
             objects: HashMap::new(),
+            clock: None, // ✅ add this line
             velocity_components: HashMap::new(),
             acceleration_components: HashMap::new(),
             fracture_components: HashMap::new(),
@@ -95,14 +116,21 @@ impl WorldState {
             mass_components: HashMap::new(),
             mechanical_components: HashMap::new(),
             strength_components: HashMap::new(),
-            thermal_components: HashMap::new(),
+            
             electrical_components: HashMap::new(),
             degradation_components: HashMap::new(),
             optical_components: HashMap::new(),
             composite_components: HashMap::new(),
+            sunlight_components: HashMap::new(), // ✅ add this
+            solar_exposure_components: HashMap::new(), // ✅ add this
+            uv_degradation_components: HashMap::new(), // ✅ add this
+            thermal_components: HashMap::new(),
+            thermal_exposure: HashMap::new(),
+
         }
     }
 }
+
 
 impl Default for WorldState {
     fn default() -> Self {

@@ -71,7 +71,7 @@ pub struct MatProps {
     pub thermal_conductivity: f32, // W/m·K
     pub thermal_expansion: f32,    // 1/K
     pub melting_point: f32,        // °C
-
+    pub specific_heat: f32,       // J/kg·K
     // --- Chemical ---
     pub corrosion_resistance: f32, // 0.0–1.0
     pub solubility: f32,           // 0.0–1.0
@@ -87,6 +87,9 @@ pub struct MatProps {
     pub transparency: f32,      // 0.0–1.0
     pub reflectivity: f32,      // 0.0–1.0
     pub absorption: f32,        // 0.0–1.0
+
+    pub uv_resistance: f32,    // 0.0–1.0
+    
 
 }
 
@@ -136,6 +139,7 @@ pub fn props_for(id: &MatCatId) -> MatProps {
             thermal_conductivity: rng() * 400.0,
             thermal_expansion: rng() * 1e-4,
             melting_point: rng() * 4000.0,
+            specific_heat: 100.0 + rng() * 2000.0,
             corrosion_resistance: rng(),
             solubility: rng(),
             permeability: rng(),
@@ -146,6 +150,7 @@ pub fn props_for(id: &MatCatId) -> MatProps {
             transparency: rng(),
             reflectivity: rng(),
             absorption: rng(),
+            uv_resistance: rng(),
 
 
         }
@@ -174,6 +179,7 @@ fn distance(a: &MatProps, b: &MatProps) -> f32 {
         (a.thermal_conductivity - b.thermal_conductivity).powi(2),
         (a.thermal_expansion - b.thermal_expansion).powi(2),
         (a.melting_point - b.melting_point).powi(2),
+        (a.specific_heat - b.specific_heat).powi(2),
 
         (a.corrosion_resistance - b.corrosion_resistance).powi(2),
         (a.solubility - b.solubility).powi(2),
@@ -182,6 +188,7 @@ fn distance(a: &MatProps, b: &MatProps) -> f32 {
 
         (a.electrical_conductivity - b.electrical_conductivity).powi(2),
         (a.magnetic_permeability - b.magnetic_permeability).powi(2),
+        (a.uv_resistance - b.uv_resistance).powi(2),
     ];
 
     diffs.iter().sum::<f32>().sqrt()
@@ -227,6 +234,7 @@ pub fn default_props() -> MatProps {
         thermal_conductivity: 0.5,
         thermal_expansion: 1e-5,
         melting_point: 150.0,
+        specific_heat: 500.0,
         corrosion_resistance: 0.5,
         solubility: 0.5,
         permeability: 0.5,
@@ -237,6 +245,6 @@ pub fn default_props() -> MatProps {
         transparency: 0.5,
         reflectivity: 0.3,
         absorption: 0.2,
-
+        uv_resistance: 0.5,
     }
 }

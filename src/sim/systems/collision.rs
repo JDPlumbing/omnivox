@@ -4,22 +4,21 @@ use crate::{
     tdt::core::TimeDelta,
     physox::{interaction::{restitution, damage}, energy::kinetic_energy},
     matcat::materials::{props_for, MatCatId, MatProps},
-    
+    uvoxid::units::{um_to_m, um_to_cm, HumanLength},
 };
 use uuid::Uuid;
 use serde_json::json;
 use crate::sim::components::fracture::FractureData;
 use crate::objex::systems::mass::derive_mass;
+
 pub struct CollisionSystem;
 
 impl System for CollisionSystem {
-    fn name(&self) -> &'static str {
-        "CollisionSystem"
-    }
+    fn name(&self) -> &'static str { "CollisionSystem" }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
-        const EARTH_RADIUS: i64 = 6_371_000_000_000; // micrometers
+        const EARTH_RADIUS: i64 = 6_371_000_000_000; // µm
 
         // === Object–Object collisions (simplified radial) ===
         let object_ids: Vec<_> = world.objects.keys().cloned().collect();
@@ -33,12 +32,15 @@ impl System for CollisionSystem {
                 let rb = obj_b.shape.approx_radius_um();
 
                 if dr <= (ra + rb) {
+                    // stop both
                     if let Some(v) = world.velocity_components.get_mut(&Uuid::parse_str(id_a).unwrap()) {
                         v.dr = 0.0; v.dlat = 0.0; v.dlon = 0.0;
                     }
                     if let Some(v) = world.velocity_components.get_mut(&Uuid::parse_str(id_b).unwrap()) {
                         v.dr = 0.0; v.dlat = 0.0; v.dlon = 0.0;
                     }
+
+                    let dr_human = dr.to_human();
 
                     events.push(ChronoEvent {
                         id: obj_a.uvoxid.clone(),
@@ -48,9 +50,13 @@ impl System for CollisionSystem {
                             "object_a": id_a,
                             "object_b": id_b,
                             "r_um": obj_a.uvoxid.r_um,
-                            "impact_distance_um": dr
+                            "impact_distance_um": dr,
+                            "impact_distance_m": um_to_m(dr),
+                            "impact_distance_cm": um_to_cm(dr),
+                            "impact_distance_human": dr_human
                         })),
                     });
+
                     events.push(ChronoEvent {
                         id: obj_b.uvoxid.clone(),
                         t: TimeDelta::from_ticks(1, "nanoseconds"),
@@ -96,6 +102,7 @@ impl System for CollisionSystem {
                                 payload: Some(json!({
                                     "impact_energy": impact_energy,
                                     "threshold": props.fracture_toughness,
+                                    "impact_energy_human": format!("{:.2} J", impact_energy),
                                 })),
                             });
                         } else {
@@ -123,7 +130,11 @@ impl System for CollisionSystem {
                     id: obj.uvoxid.clone(),
                     t: TimeDelta::from_ticks(1, "nanoseconds"),
                     kind: EventKind::Custom("GroundCollision".into()),
-                    payload: None,
+                    payload: Some(json!({
+                        "altitude_um": obj.uvoxid.r_um - EARTH_RADIUS,
+                        "altitude_m": um_to_m(obj.uvoxid.r_um - EARTH_RADIUS),
+                        "altitude_human": (obj.uvoxid.r_um - EARTH_RADIUS).to_human(),
+                    })),
                 });
             }
         }

@@ -15,6 +15,7 @@ pub struct PropRange {
     pub thermal_conductivity: (f32, f32),
     pub thermal_expansion: (f32, f32),
     pub melting_point: (f32, f32),
+    pub specific_heat: (f32, f32),
 
     // Chemical
     pub corrosion_resistance: (f32, f32),
@@ -31,6 +32,9 @@ pub struct PropRange {
     pub transparency: (f32, f32),
     pub reflectivity: (f32, f32),
     pub absorption: (f32, f32),
+
+    // UV Resistance
+    pub uv_resistance: (f32, f32),
     
 }
 
@@ -74,6 +78,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (15.0, 400.0),
             thermal_expansion: (1e-6, 2.5e-5),
             melting_point: (600.0, 3400.0),
+            specific_heat: (300.0, 900.0),
             corrosion_resistance: (0.1, 0.9),
             solubility: (0.0, 0.01),
             permeability: (0.0, 0.1),
@@ -84,6 +89,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x02 => Some(PropRange { // Alloy
@@ -97,6 +103,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (10.0, 250.0),
             thermal_expansion: (5e-6, 2.0e-5),
             melting_point: (800.0, 3200.0),
+            specific_heat: (300.0, 900.0),
             corrosion_resistance: (0.2, 0.95),
             solubility: (0.0, 0.02),
             permeability: (0.0, 0.2),
@@ -107,6 +114,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x03 => Some(PropRange { // Ceramic
@@ -120,6 +128,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (1.0, 60.0),
             thermal_expansion: (2e-6, 1.0e-5),
             melting_point: (1000.0, 3000.0),
+            specific_heat: (500.0, 1500.0),
             corrosion_resistance: (0.7, 1.0),
             solubility: (0.0, 0.05),
             permeability: (0.0, 0.1),
@@ -130,6 +139,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x04 => Some(PropRange { // Plastic
@@ -143,6 +153,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.1, 0.5),
             thermal_expansion: (5e-5, 2e-4),
             melting_point: (100.0, 400.0),
+            specific_heat: (100.0, 2000.0),
             corrosion_resistance: (0.7, 1.0),
             solubility: (0.0, 0.5),
             permeability: (0.1, 0.9),
@@ -153,6 +164,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x05 => Some(PropRange { // Foam
@@ -166,6 +178,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.01, 0.2),
             thermal_expansion: (2e-5, 2e-4),
             melting_point: (50.0, 300.0),
+            specific_heat: (500.0, 3000.0),
             corrosion_resistance: (0.5, 0.9),
             solubility: (0.0, 0.8),
             permeability: (0.5, 1.0),
@@ -176,6 +189,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x06 => Some(PropRange { // Glass
@@ -189,6 +203,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.8, 2.0),
             thermal_expansion: (3e-6, 1e-5),
             melting_point: (1000.0, 1600.0),
+            specific_heat: (700.0, 1500.0),
             corrosion_resistance: (0.9, 1.0),
             solubility: (0.0, 0.1),
             permeability: (0.0, 0.1),
@@ -199,6 +214,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x07 => Some(PropRange { // Wood
@@ -212,6 +228,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.05, 0.3),
             thermal_expansion: (1e-5, 5e-5),
             melting_point: (200.0, 600.0),
+            specific_heat: (1000.0, 2500.0),
             corrosion_resistance: (0.2, 0.6),
             solubility: (0.1, 0.5),
             permeability: (0.3, 0.9),
@@ -222,6 +239,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x08 => Some(PropRange { // Stone
@@ -235,6 +253,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (1.5, 5.0),
             thermal_expansion: (4e-6, 1.2e-5),
             melting_point: (800.0, 1800.0),
+            specific_heat: (700.0, 1500.0),
             corrosion_resistance: (0.8, 1.0),
             solubility: (0.0, 0.01),
             permeability: (0.0, 0.2),
@@ -245,6 +264,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x09 => Some(PropRange { // Concrete
@@ -258,6 +278,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.8, 2.0),
             thermal_expansion: (6e-6, 1.2e-5),
             melting_point: (1000.0, 1600.0),
+            specific_heat: (800.0, 1500.0),
             corrosion_resistance: (0.7, 0.95),
             solubility: (0.0, 0.05),
             permeability: (0.1, 0.5),
@@ -268,6 +289,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x0A => Some(PropRange { // Composite (e.g. carbon fiber, laminates)
@@ -281,6 +303,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.1, 20.0),
             thermal_expansion: (1e-6, 3e-5),
             melting_point: (200.0, 1200.0),
+            specific_heat: (300.0, 1500.0),
             corrosion_resistance: (0.5, 0.95),
             solubility: (0.0, 0.1),
             permeability: (0.0, 0.2),
@@ -291,6 +314,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x0B => Some(PropRange { // Rubber / Elastomer
@@ -304,6 +328,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.1, 0.5),
             thermal_expansion: (1e-4, 6e-4),
             melting_point: (200.0, 600.0),
+            specific_heat: (1000.0, 3000.0),
             corrosion_resistance: (0.4, 0.8),
             solubility: (0.1, 0.9),
             permeability: (0.4, 1.0),
@@ -314,6 +339,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x0C => Some(PropRange { // Liquid (generic, e.g. water, oil)
@@ -327,6 +353,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.05, 1.0),
             thermal_expansion: (1e-4, 1e-3),
             melting_point: (-200.0, 500.0),
+            specific_heat: (1000.0, 4000.0),
             corrosion_resistance: (0.0, 1.0),
             solubility: (0.5, 1.0),
             permeability: (1.0, 1.1),
@@ -337,6 +364,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x0D => Some(PropRange { // Gas
@@ -350,6 +378,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.01, 0.5),
             thermal_expansion: (1e-3, 1e-2),
             melting_point: (-270.0, 0.0),
+            specific_heat: (1000.0, 5000.0),
             corrosion_resistance: (0.0, 1.0),
             solubility: (0.0, 1.0),
             permeability: (1.0, 1.1),
@@ -360,6 +389,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x0E => Some(PropRange { // Soil / Earth
@@ -373,6 +403,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.2, 2.0),
             thermal_expansion: (1e-5, 5e-5),
             melting_point: (0.0, 1200.0),
+            specific_heat: (800.0, 2000.0),
             corrosion_resistance: (0.3, 0.8),
             solubility: (0.0, 0.3),
             permeability: (0.2, 0.9),
@@ -383,6 +414,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x0F => Some(PropRange { // Textile / Fabric
@@ -396,6 +428,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.01, 0.2),
             thermal_expansion: (5e-5, 5e-4),
             melting_point: (100.0, 600.0),
+            specific_heat: (1000.0, 3000.0),
             corrosion_resistance: (0.4, 0.8),
             solubility: (0.0, 0.6),
             permeability: (0.5, 1.0),
@@ -406,6 +439,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x10 => Some(PropRange { // Biological Tissue
@@ -419,6 +453,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (0.2, 0.6),
             thermal_expansion: (5e-5, 5e-4),
             melting_point: (0.0, 100.0),
+            specific_heat: (2000.0, 4000.0),
             corrosion_resistance: (0.2, 0.7),
             solubility: (0.5, 1.0),
             permeability: (0.5, 1.0),
@@ -429,6 +464,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x11 => Some(PropRange { // Ice
@@ -442,6 +478,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (2.0, 5.0),
             thermal_expansion: (5e-5, 1e-4),
             melting_point: (-10.0, 0.0),
+            specific_heat: (500.0, 2000.0),
             corrosion_resistance: (0.8, 1.0),
             solubility: (0.0, 0.1),
             permeability: (0.0, 0.2),
@@ -452,6 +489,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
         0x12 => Some(PropRange { // Exotic (e.g. superconductors, special alloys)
@@ -465,6 +503,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             thermal_conductivity: (10.0, 1000.0),
             thermal_expansion: (0.0, 5e-6),
             melting_point: (1000.0, 5000.0),
+            specific_heat: (500.0, 2000.0),
             corrosion_resistance: (0.5, 1.0),
             solubility: (0.0, 0.01),
             permeability: (0.0, 0.1),
@@ -475,6 +514,7 @@ pub fn get_category_ranges(cat: u8) -> Option<PropRange> {
             transparency: (0.0, 1.0),
             reflectivity: (0.0, 1.0),
             absorption: (0.0, 1.0),
+            uv_resistance: (0.0, 1.0),
 
         }),
 
@@ -497,6 +537,7 @@ pub fn generate_props_from_category(cat: u8, rng: &mut impl Rng) -> Option<MatPr
         thermal_conductivity: rng.random_range(r.thermal_conductivity.0..r.thermal_conductivity.1),
         thermal_expansion: rng.random_range(r.thermal_expansion.0..r.thermal_expansion.1),
         melting_point: rng.random_range(r.melting_point.0..r.melting_point.1),
+        specific_heat: rng.random_range(r.specific_heat.0..r.specific_heat.1),
         corrosion_resistance: rng.random_range(r.corrosion_resistance.0..r.corrosion_resistance.1),
         solubility: rng.random_range(r.solubility.0..r.solubility.1),
         permeability: rng.random_range(r.permeability.0..r.permeability.1),
@@ -507,6 +548,7 @@ pub fn generate_props_from_category(cat: u8, rng: &mut impl Rng) -> Option<MatPr
         transparency: rng.random_range(r.transparency.0..r.transparency.1),
         reflectivity: rng.random_range(r.reflectivity.0..r.reflectivity.1),
         absorption: rng.random_range(r.absorption.0..r.absorption.1),
+        uv_resistance: rng.random_range(r.uv_resistance.0..r.uv_resistance.1),  
 
     })
 }
@@ -543,6 +585,8 @@ let mut props = MatProps {
     thermal_conductivity: jitter(base.thermal_conductivity, bias_factor, grade_factor, &mut rng),
     thermal_expansion: jitter(base.thermal_expansion, bias_factor, grade_factor, &mut rng),
     melting_point: jitter(base.melting_point, bias_factor, grade_factor, &mut rng),
+    specific_heat: jitter(base.specific_heat, bias_factor, grade_factor, &mut rng),
+
     corrosion_resistance: jitter(base.corrosion_resistance, bias_factor, grade_factor, &mut rng),
     solubility: jitter(base.solubility, bias_factor, grade_factor, &mut rng),
     permeability: jitter(base.permeability, bias_factor, grade_factor, &mut rng),
@@ -555,6 +599,7 @@ let mut props = MatProps {
     transparency: jitter(base.transparency, bias_factor, grade_factor, &mut rng),
     reflectivity: jitter(base.reflectivity, bias_factor, grade_factor, &mut rng),
     absorption: jitter(base.absorption, bias_factor, grade_factor, &mut rng),
+    uv_resistance: jitter(base.uv_resistance, bias_factor, grade_factor, &mut rng),
 };
 
 
@@ -576,6 +621,8 @@ fn normalize_props(props: &mut crate::matcat::materials::MatProps) {
     props.thermal_conductivity = clamp(props.thermal_conductivity, 0.0, 2e3);
     props.thermal_expansion = clamp(props.thermal_expansion, 0.0, 1e-2);
     props.melting_point = clamp(props.melting_point, -300.0, 7000.0);
+    props.specific_heat = clamp(props.specific_heat, 100.0, 5000.0);
+
     props.corrosion_resistance = clamp(props.corrosion_resistance, 0.0, 1.0);
     props.solubility = clamp(props.solubility, 0.0, 1.0);
     props.permeability = clamp(props.permeability, 0.0, 2.0);
@@ -586,6 +633,7 @@ fn normalize_props(props: &mut crate::matcat::materials::MatProps) {
     props.transparency = clamp(props.transparency, 0.0, 1.0);
     props.reflectivity = clamp(props.reflectivity, 0.0, 1.0);
     props.absorption = clamp(props.absorption, 0.0, 1.0);
+    props.uv_resistance = clamp(props.uv_resistance, 0.0, 1.0);
     
     
 }

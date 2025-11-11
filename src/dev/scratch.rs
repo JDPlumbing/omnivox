@@ -14,7 +14,7 @@ use omnivox::{
     matcat::materials::MatCatId,
 };
 use uuid::Uuid;
-use chrono::{Utc, Duration};
+use chrono::{Utc, Duration, Timelike};
 use std::fs::File;
 use std::io::Write;
 use serde_json::json;
@@ -32,11 +32,17 @@ fn main() {
         Box::new(ElectricalSystem),
         Box::new(OpticalSystem),
         Box::new(CompositeSystem),
+        Box::new(omnivox::sim::systems::SunSystem),
+        Box::new(omnivox::sim::systems::SolarExposureSystem),
+        Box::new(omnivox::sim::systems::UVDegradationSystem),
+        
+
+
     ];
 
     // 🕒 SimClock: 10 years, 1-month steps
     let now = Utc::now();
-    let start = now - Duration::days(365 * 10);
+    let start = now - Duration::days(365 * 1);
     let step = Duration::days(30);
     let mut clock = SimClock::new(start, now, step);
 
@@ -61,6 +67,9 @@ fn main() {
 
     // 🧮 Main simulation loop
     while clock.current < clock.end {
+        // ✅ keep world’s clock synced
+        world.clock = Some(clock.clone());
+
         let mut tick_events = vec![];
         for system in systems.iter_mut() {
             let events = system.tick(&mut world);
@@ -78,6 +87,7 @@ fn main() {
 
         clock.advance();
     }
+
 
     // 💾 Write all events to file
     let json_output = serde_json::to_string_pretty(&all_events).unwrap();

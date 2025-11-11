@@ -6,8 +6,9 @@ use std::ops::{Add, AddAssign};
 /// A UVoxID as 4x64-bit *signed* fields:
 /// - `frame_id`: reference frame anchor (0 = Earth, 1 = Moon, etc.)
 /// - `r_um`: radial distance from frame center (in µm, always ≥ 0)
-/// - `lat_code`: latitude code (-90e6 to +90e6)
-/// - `lon_code`: longitude code (-180e6 to +180e6)
+/// - `lat_code`: latitude code (-90e11 to +90e11)
+/// - `lon_code`: longitude code (-180e11 to +180e11)
+
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct UvoxId {
     pub frame_id: i64,
@@ -15,6 +16,8 @@ pub struct UvoxId {
     pub lat_code: i64,
     pub lon_code: i64,
 }
+// new angular scaling factor: 1e11
+const ANG_SCALE: i128 = 100_000_000_000;
 
 impl UvoxId {
     /// Construct directly
@@ -52,20 +55,21 @@ impl UvoxId {
         let mut lon = self.lon_code as i128 + delta.dlon as i128;
 
         // loop in case the delta is huge (crossing poles multiple times)
-        while lat > 90_000_000 {
-            lat = 180_000_000 - lat;
-            lon += 180_000_000;
+        while lat > 90 * ANG_SCALE {
+            lat = 180 * ANG_SCALE - lat;
+            lon += 180 * ANG_SCALE;
         }
-        while lat < -90_000_000 {
-            lat = -180_000_000 - lat;
-            lon += 180_000_000;
+        while lat < -90 * ANG_SCALE {
+            lat = -180 * ANG_SCALE - lat;
+            lon += 180 * ANG_SCALE;
         }
 
-        // clamp latitude into safe range
-        self.lat_code = lat.clamp(-90_000_000, 90_000_000) as i64;
+    // clamp latitude into safe range
+    self.lat_code = lat.clamp(-90 * ANG_SCALE, 90 * ANG_SCALE) as i64;
 
-        // wrap longitude into [-180e6, 180e6)
-        self.lon_code = ((lon + 180_000_000).rem_euclid(360_000_000) - 180_000_000) as i64;
+    // wrap longitude into [-180°, 180°)
+    self.lon_code =
+    ((lon + 180 * ANG_SCALE).rem_euclid(360 * ANG_SCALE) - 180 * ANG_SCALE) as i64;
     }
 
     /// Serialize to packed 256-bit hex string (still deterministic)

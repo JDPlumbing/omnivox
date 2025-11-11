@@ -2,7 +2,9 @@ use crate::{
     chronovox::{ChronoEvent, EventKind},
     sim::{systems::System, world::WorldState, components::Velocity},
     tdt::core::TimeDelta,
+    uvoxid::units::{um_to_m, HumanLength},
 };
+use serde_json::json;
 
 pub struct MovementSystem;
 
@@ -14,14 +16,20 @@ impl System for MovementSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut triggered_events = Vec::new();
 
-        // Iterate over all velocity components (only entities that can move)
         for (entity_id, velocity) in world.velocity_components.iter() {
-            // Find matching object in the world
             if let Some(obj) = world.objects.get_mut(&entity_id.to_string()) {
-                // Apply velocity to position (uvoxid encodes r_um, lat, lon)
-                obj.uvoxid.r_um += velocity.dr as i64;
+                // Compute displacement in µm (still your internal integer grid)
+                let dr_total = velocity.dr as i64;
+
+                obj.uvoxid.r_um += dr_total;
                 obj.uvoxid.lat_code += velocity.dlat as i64;
                 obj.uvoxid.lon_code += velocity.dlon as i64;
+
+                // Convert to meters for reporting
+                let displacement_m = um_to_m(dr_total);
+
+                // Add a human-readable field
+                let human_disp = dr_total.to_human();
 
                 // Emit movement event
                 triggered_events.push(ChronoEvent {
@@ -32,7 +40,11 @@ impl System for MovementSystem {
                         dlat: velocity.dlat as i64,
                         dlon: velocity.dlon as i64,
                     },
-                    payload: None,
+                    payload: Some(json!({
+                        "displacement_um": dr_total,
+                        "displacement_m": displacement_m,
+                        "displacement_human": human_disp,
+                    })),
                 });
             }
         }
