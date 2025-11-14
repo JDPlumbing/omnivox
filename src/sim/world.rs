@@ -16,11 +16,14 @@ use crate::objex::systems::{
     optical::OpticalProps,
 };
 use crate::objex::core::composite::CompositeProps;
+use crate::objex::templates::Sun;
 use crate::sim::clock::SimClock;
-use crate::sim::systems::sun::SunlightProps;
-use crate::sim::systems::solar_exposure::SolarExposureData;
 use crate::sim::systems::uv_degradation::UVDegradationData;
 use crate::sim::components::thermal::{ThermalData, ThermalExposure};
+use crate::sim::components::sunlight::SunlightComponent;
+use crate::sim::components::sun_emitter::SunEmitter;
+use crate::sim::components::SolarExposureData;
+use crate::sim::components::OrbitalMotion;
 
 /// Persistent world metadata (used in Supabase)
 #[derive(Debug, Serialize, Deserialize)]
@@ -90,11 +93,14 @@ pub struct WorldState {
     pub composite_components: HashMap<Uuid, CompositeProps>,
 
         // ☀️ add this
-    pub sunlight_components: HashMap<Uuid, SunlightProps>,
+    pub sunlight_components: HashMap<Uuid, SunlightComponent>,
+    pub sun_emitter_components: HashMap<Uuid, SunEmitter>,
+    
     pub solar_exposure_components: HashMap<Uuid, SolarExposureData>,
     pub uv_degradation_components: HashMap<Uuid, UVDegradationData>,
     pub thermal_components: HashMap<Uuid, ThermalData>,
     pub thermal_exposure: HashMap<Uuid, ThermalExposure>,
+    pub orbital_components: HashMap<Uuid, OrbitalMotion>,
 
 
 
@@ -121,11 +127,16 @@ impl WorldState {
             degradation_components: HashMap::new(),
             optical_components: HashMap::new(),
             composite_components: HashMap::new(),
+
+
+            sun_emitter_components: HashMap::new(),
             sunlight_components: HashMap::new(), // ✅ add this
             solar_exposure_components: HashMap::new(), // ✅ add this
             uv_degradation_components: HashMap::new(), // ✅ add this
             thermal_components: HashMap::new(),
             thermal_exposure: HashMap::new(),
+            orbital_components: HashMap::new(),
+
 
         }
     }

@@ -64,6 +64,7 @@ pub enum MaterialKind {
     Liquid,
     Gas,
     Composite,
+    Plasma,
     Other,
 }
 
@@ -82,6 +83,7 @@ pub enum MaterialName {
     Glass,
     Air,
     Water,
+    Plasma,
 
     // Catch-all for anything not predefined
     Custom(String),
@@ -110,6 +112,8 @@ impl MaterialLink {
             MaterialName::Glass => MaterialKind::Glass,
             MaterialName::Air => MaterialKind::Gas,
             MaterialName::Water => MaterialKind::Liquid,
+            MaterialName::Plasma => MaterialKind::Plasma,
+
             MaterialName::Custom(_) => MaterialKind::Other,
         };
 

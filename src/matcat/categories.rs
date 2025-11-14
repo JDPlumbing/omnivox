@@ -34,6 +34,8 @@ pub static CATEGORY_MAP: Lazy<HashMap<u8, &'static str>> = Lazy::new(|| {
 
     // ☁️ Other / Environmental
     m.insert(25, "Soil");
+    m.insert(26, "Plasma");
+    m.insert(27, "Water");
 
     m
 });

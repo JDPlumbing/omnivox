@@ -1,80 +1,62 @@
 use crate::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState, clock::SimClock},
+    sim::{systems::System, world::WorldState},
+    sim::components::{SunlightComponent, SolarExposureData},
     tdt::core::TimeDelta,
+    tdt::sim_time::SimDuration,      // <-- REQUIRED
 };
 use uuid::Uuid;
 use serde_json::json;
-use chrono::Datelike;
-
-#[derive(Debug, Clone)]
-pub struct SolarExposureData {
-    pub cumulative_irradiance_j_m2: f64,
-    pub cumulative_uv_j_m2: f64,
-    pub cycle_count: u32,
-}
 
 pub struct SolarExposureSystem;
 
 impl System for SolarExposureSystem {
-    fn name(&self) -> &'static str {
-        "SolarExposureSystem"
-    }
+    fn name(&self) -> &'static str { "SolarExposureSystem" }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
-        let Some(clock) = &world.clock else { return events };
+        let Some(clock) = &world.clock else {
+            return events;
+        };
 
-        let dt_s = clock.step.num_seconds();
+        let dt_s = clock.step_seconds();
 
-        for (entity_id_str, _) in &world.objects {
-            let uuid = match Uuid::parse_str(entity_id_str) {
-                Ok(id) => id,
-                Err(_) => continue,
-            };
+        // Clone avoids borrow checker problems
+        for (id, sunlight) in world.sunlight_components.clone() {
 
-            let Some(sun) = world.sunlight_components.get(&uuid) else { continue; };
+            let exposure = world.solar_exposure_components
+                .entry(id)
+                .or_insert(SolarExposureData {
+                    energy_j_m2: 0.0,
+                    uv_j_m2: 0.0,
+                });
 
-            // Retrieve or initialize accumulated exposure
-            let entry = world.solar_exposure_components.entry(uuid).or_insert_with(|| SolarExposureData {
-                cumulative_irradiance_j_m2: 0.0,
-                cumulative_uv_j_m2: 0.0,
-                cycle_count: 0,
-            });
+            // ------------------------------
+            // Correct energy accumulation
+            // ------------------------------
+            let radiant_energy = sunlight.irradiance_w_m2 * dt_s;
+            exposure.energy_j_m2 += radiant_energy;
 
-            // Integrate sunlight energy over this step
-            // Compute latitude-dependent daylight fraction using solar declination
-            let lat_deg = world.objects.get(entity_id_str)
-                .map(|o| o.uvoxid.lat_code as f64 / 1e6)
-                .unwrap_or(0.0);
+            let uv_factor = sunlight.uv_index / 100.0;
+            let uv_energy = radiant_energy * uv_factor;
+            exposure.uv_j_m2 += uv_energy;
 
-            let day_of_year = clock.current.ordinal() as f64;
-            let decl = (23.44 * (2.0 * std::f64::consts::PI * (day_of_year - 81.0) / 365.0).sin()).to_radians();
-            let lat = lat_deg.to_radians();
-
-            // Hour angle for sunrise/sunset
-            let cos_omega = (-lat.tan() * decl.tan()).clamp(-1.0, 1.0);
-            let daylight_fraction = (1.0 / std::f64::consts::PI) * (cos_omega.acos() * 2.0);
-            let daylight_fraction = daylight_fraction.clamp(0.0, 1.0);
-
-
-            entry.cumulative_irradiance_j_m2 += sun.irradiance_w_m2 * dt_s as f64 * daylight_fraction;
-            entry.cumulative_uv_j_m2 += (sun.uv_index as f64 * 5.0) * dt_s as f64 * daylight_fraction;
-
-
-            // Count day/night cycles based on elapsed simulated days
-            entry.cycle_count += (clock.step.num_days().max(1)) as u32;
-
+            // ------------------------------
+            // Emit event
+            // ------------------------------
             events.push(ChronoEvent {
-                id: crate::uvoxid::UvoxId::default(),
-                t: TimeDelta::from_ticks(dt_s, "seconds"),
+                id: world.objects[&id.to_string()].uvoxid,
+
+                t: TimeDelta::from_sim_duration(
+                    SimDuration::from_ns(clock.step_ns)
+                ),
+
                 kind: EventKind::Custom("SolarExposureUpdate".into()),
                 payload: Some(json!({
-                    "date": clock.current.to_rfc3339(),
-                    "irradiance_total_j_m2": entry.cumulative_irradiance_j_m2,
-                    "irradiance_total_kj_m2": entry.cumulative_irradiance_j_m2 / 1000.0,
-                    "uv_total_j_m2": entry.cumulative_uv_j_m2,
-                    "cycle_count": entry.cycle_count,
+                    "uuid": id.to_string(),
+                    "energy_j_m2": exposure.energy_j_m2,
+                    "uv_j_m2": exposure.uv_j_m2,
+                    "timestamp": clock.current_datetime().to_rfc3339(),
                 })),
             });
         }

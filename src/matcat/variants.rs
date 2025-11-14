@@ -126,5 +126,12 @@ pub static VARIANT_MAP: Lazy<HashMap<(u8, u16), &'static str>> = Lazy::new(|| {
     m.insert((25, 1), "Gray Granite");
     m.insert((25, 2), "Red Granite");
 
+    // 26 - Plasma
+    m.insert((26, 1), "Stellar Plasma");
+
+    // 27 - Water
+    m.insert((27, 1), "Fresh Water");
+    m.insert((27, 2), "Salt Water");
+
     m
 });

@@ -32,6 +32,8 @@ impl MatCatId {
             MaterialName::Concrete => Some(MatCatId::masonry_generic()),
             MaterialName::Air => Some(MatCatId::gas_air()),
             MaterialName::Water => Some(MatCatId::liquid_water()),
+            MaterialName::Plasma => Some(MatCatId::plasma_stellar()),
+
             _ => None,
         }
     }

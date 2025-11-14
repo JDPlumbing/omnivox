@@ -6,6 +6,7 @@ use crate::{
 };
 use serde_json::json;
 use uuid::Uuid;
+use crate::tdt::sim_time::SimDuration;
 
 /// Tracks UV degradation accumulation per object
 #[derive(Debug, Clone)]
@@ -20,24 +21,18 @@ pub struct UVDegradationSystem;
 impl UVDegradationSystem {
     /// Convert cumulative UV dose into degradation severity (0–1)
     fn severity_from_dose(dose: f64, resistance: f64) -> f64 {
-        // materials with higher resistance need more UV to degrade
+        // Materials with higher UV resistance tolerate more dose
         let effective_dose = dose / (resistance.clamp(0.01, 1.0) * 1e10);
         effective_dose.min(1.0)
     }
 }
 
 impl System for UVDegradationSystem {
-    fn name(&self) -> &'static str {
-        "UVDegradationSystem"
-    }
+    fn name(&self) -> &'static str { "UVDegradationSystem" }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
-
-        let clock = match &world.clock {
-            Some(c) => c,
-            None => return events,
-        };
+        let Some(clock) = &world.clock else { return events };
 
         for (entity_id_str, obj) in &world.objects {
             let uuid = match Uuid::parse_str(entity_id_str) {
@@ -45,11 +40,12 @@ impl System for UVDegradationSystem {
                 Err(_) => continue,
             };
 
-            // requires solar exposure data
+            // Require solar exposure data
             let Some(exposure) = world.solar_exposure_components.get(&uuid) else {
                 continue;
             };
 
+            // Material must have a MatCatId
             let props = if let Some(mat_id) = &obj.material.matcat_id {
                 props_for(mat_id)
             } else {
@@ -57,45 +53,47 @@ impl System for UVDegradationSystem {
             };
 
             let resistance = props.uv_resistance as f64;
-            let cumulative_uv = exposure.cumulative_uv_j_m2;
+
+            // -----------------------------
+            // FIXED: correct field name
+            // -----------------------------
+            let cumulative_uv = exposure.uv_j_m2;
 
             let severity = Self::severity_from_dose(cumulative_uv, resistance);
 
-            let entry = world.uv_degradation_components.entry(uuid).or_insert_with(|| UVDegradationData {
-                cumulative_uv_j_m2: 0.0,
-                severity: 0.0,
-                rate_m_per_year: 0.0,
-            });
+            // Update entry
+            let entry = world.uv_degradation_components
+                .entry(uuid)
+                .or_insert(UVDegradationData {
+                    cumulative_uv_j_m2: 0.0,
+                    severity: 0.0,
+                    rate_m_per_year: 0.0,
+                });
 
             entry.cumulative_uv_j_m2 = cumulative_uv;
             entry.severity = severity;
 
-            // emit events
-            if severity >= 1.0 {
-                events.push(ChronoEvent {
-                    id: obj.uvoxid.clone(),
-                    t: TimeDelta::from_ticks(clock.step.num_seconds(), "seconds"),
-                    kind: EventKind::Custom("UVDegradationFailure".into()),
-                    payload: Some(json!({
-                        "date": clock.current.to_rfc3339(),
-                        "uv_total_j_m2": cumulative_uv,
-                        "severity": severity,
-                        "resistance": resistance
-                    })),
-                });
+            // Emit event
+            let event_name = if severity >= 1.0 {
+                "UVDegradationFailure"
             } else {
-                events.push(ChronoEvent {
-                    id: obj.uvoxid.clone(),
-                    t: TimeDelta::from_ticks(clock.step.num_seconds(), "seconds"),
-                    kind: EventKind::Custom("UVDegradationProgress".into()),
-                    payload: Some(json!({
-                        "date": clock.current.to_rfc3339(),
-                        "uv_total_j_m2": cumulative_uv,
-                        "severity": severity,
-                        "resistance": resistance
-                    })),
-                });
-            }
+                "UVDegradationProgress"
+            };
+
+            events.push(ChronoEvent {
+                id: obj.uvoxid,
+                t: TimeDelta::from_sim_duration(
+                    SimDuration::from_ns(clock.step_ns)
+                ),
+                kind: EventKind::Custom(event_name.into()),
+                payload: Some(json!({
+                    "date": clock.current_datetime().to_rfc3339(),
+                    "uv_total_j_m2": cumulative_uv,
+                    "severity": severity,
+                    "resistance": resistance
+                })),
+            });
+
         }
 
         events

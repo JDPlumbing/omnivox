@@ -37,8 +37,10 @@ pub mod thermal;
 pub use thermal::*;
 pub mod corrosion;
 pub use corrosion::*;
-pub mod sun; // ✅ register SunSystem
-pub use sun::*;
+pub mod solar_motion;
+pub use solar_motion::*;
+pub mod solar_raycast;
+pub use solar_raycast::*;
 pub mod solar_exposure;
 pub use solar_exposure::*;
 pub mod uv_degradation;

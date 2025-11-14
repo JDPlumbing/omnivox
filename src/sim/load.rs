@@ -16,7 +16,8 @@ use crate::supabasic::events::EventRow;
 use crate::sim::systems::MovementSystem;
 use std::convert::TryFrom;
 use crate::objex::core::types::Objex;
-
+use crate::tdt::sim_time::SimTime;
+use crate::sim::clock::SimClock;
 
 
 /// Helper: load all data needed to build a runtime `WorldState` from a property.
@@ -116,18 +117,22 @@ impl Simulation {
         let now = Utc::now();
         let start = now - Duration::days(365 * 10); // or derive this from property metadata
         let step = Duration::days(30);
-        let clock = SimClock::new(start, now, step);
+        let clock = SimClock::from_wall_dates(start, now, step);
 
         // 5. Build Simulation
+        let current_ns = clock.current_ns;
+
         Ok(Simulation {
             simulation_id: row.simulation_id,
-            current_tick: 0,
             frame_id: row.frame_id,
             world: world_state,
             timeline,
             systems,
             clock,
+            sim_time: SimTime::from_ns(current_ns),
         })
+
+
     }
 }
 

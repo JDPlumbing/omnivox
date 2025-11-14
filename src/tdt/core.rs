@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
+use crate::tdt::sim_time::SimDuration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimeDelta {
@@ -89,12 +90,26 @@ impl TimeDelta {
             "minutes" => chrono::Duration::minutes(ticks),
             "hours" => chrono::Duration::hours(ticks),
             _ => chrono::Duration::nanoseconds(ticks), // default fallback
-        };
+        };  
 
         let epoch = DateTime::<Utc>::from_timestamp(0, 0).unwrap();
         Self {
             start: epoch,
             end: epoch + duration,
+        }
+    }
+
+    /// Convert a SimDuration (i128 nanoseconds) into a TimeDelta
+    pub fn from_sim_duration(dur: SimDuration) -> Self {
+        // Clamp i128 → i64 for chrono
+        let ns = dur.as_ns().clamp(i64::MIN as i128, i64::MAX as i128) as i64;
+
+        let epoch = DateTime::<Utc>::from_timestamp(0, 0).unwrap();
+        let end = epoch + chrono::Duration::nanoseconds(ns);
+
+        Self {
+            start: epoch,
+            end,
         }
     }
 

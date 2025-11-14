@@ -1,6 +1,7 @@
 pub mod core;
 pub mod systems;
 pub mod error;
+pub mod templates;
 
 pub use error::{ObjexError, Result};
 
@@ -18,4 +19,9 @@ pub use systems::{
     mechanical,
     composite as systems_composite,
     electrical,
+};
+
+pub use templates::{
+    Sun,
+    Moon,
 };

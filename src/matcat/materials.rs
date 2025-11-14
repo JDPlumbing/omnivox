@@ -38,7 +38,7 @@ impl MatCatId {
     }
 
     pub fn props(&self) -> Option<crate::matcat::materials::MatProps> {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         crate::matcat::category_ranges::generate_props_from_category(self.category, &mut rng)
     }
 
@@ -49,6 +49,8 @@ impl MatCatId {
             "copper" => Some(MatCatId::metal_cu()),
             "water" => Some(MatCatId::liquid_water()),
             "air" => Some(MatCatId::gas_air()),
+            "plasma" => Some(MatCatId::plasma_stellar()),
+
             _ => None,
         }
     }
@@ -123,6 +125,50 @@ pub fn props_for(id: &MatCatId) -> MatProps {
         }
     }
     let mut rng = StdRng::seed_from_u64(id.seed());
+        if id.category == 26 {
+
+        // Explicit stellar plasma properties
+        let props = MatProps {
+            // Mechanical (mostly irrelevant for plasma)
+            density: 0.0002,             // kg/m³ (solar photosphere)
+            elastic_modulus: 0.0,
+            tensile_strength: 0.0,
+            compressive_strength: 0.0,
+            hardness: 0.0,
+            fracture_toughness: 0.0,
+            fatigue_resistance: 0.0,
+
+            // Thermal
+            thermal_conductivity: 1.0e5_f32,
+            thermal_expansion: 0.0,
+            melting_point: 6000.0_f32,
+            specific_heat: 1.0e4_f32,
+
+
+            // Chemical
+            corrosion_resistance: 1.0,
+            solubility: 0.0,
+            permeability: 1.0,
+            flammability: 0.0,
+
+            // Electrical / Magnetic
+            electrical_conductivity: 1.0,     // max normalized
+            magnetic_permeability: 1.0,
+
+            // Optical
+            refractive_index: 1.0,
+            transparency: 0.0,
+            reflectivity: 0.1,
+            absorption: 1.0,
+
+            uv_resistance: 1.0,
+        };
+
+        // cache and return
+        MATPROPS_CACHE.lock().unwrap().insert(*id, props);
+        return props;
+    }
+
     let props = if let Some(props) = generate_props_from_category(id.category, &mut rng) {
         props
     } else {
@@ -219,6 +265,11 @@ impl MatCatId {
     pub fn masonry_generic() -> Self { Self::new(2, 1, 1) }
     pub fn gas_air() -> Self { Self::new(3, 1, 1) }
     pub fn liquid_water() -> Self { Self::new(4, 1, 1) }
+    pub fn plasma_stellar() -> Self {
+        // Category 26 = Plasma
+        Self::new(26, 1, 1)
+    }
+
 }
 
 

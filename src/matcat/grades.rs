@@ -55,8 +55,15 @@ pub static GRADE_MAP: Lazy<HashMap<(u8, u16, u16), &'static str>> = Lazy::new(||
     m.insert((8, 1, 2), "Medium");
     m.insert((8, 1, 3), "Hard");
 
+    // Plasma
+    m.insert((26, 1, 1), "Default Stellar");
+
+    // Water
+    m.insert((27, 1, 1), "Freshwater Standard");
+    m.insert((27, 2, 1), "Saltwater Standard");
+
     // General fallback tiers for any category/variant
-    for cat in 1..=25 {
+    for cat in 1..=27 {
         for var in 1..=5 {
             m.entry((cat, var, 99)).or_insert("Standard Grade");
             m.entry((cat, var, 100)).or_insert("High Grade");
