@@ -18,7 +18,7 @@ impl System for SolarExposureSystem {
         let Some(clock) = &world.clock else {
             return events;
         };
-
+        let now = clock.current;
         let dt_s = clock.step_seconds();
 
         // Clone avoids borrow checker problems
@@ -47,9 +47,7 @@ impl System for SolarExposureSystem {
             events.push(ChronoEvent {
                 id: world.objects[&id.to_string()].uvoxid,
 
-                t: TimeDelta::from_sim_duration(
-                    SimDuration::from_ns(clock.step_ns())
-                ),
+               t: now,
 
                 kind: EventKind::Custom("SolarExposureUpdate".into()),
                 payload: Some(json!({

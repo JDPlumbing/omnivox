@@ -50,7 +50,7 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(meta_world: WorldRow) -> Self {
         let mut world_state = WorldState::new(meta_world);
-
+        
         // Example boot object (your same logic)
         let test_id = uuid::Uuid::new_v4();
         world_state.objects.insert(
@@ -119,7 +119,7 @@ impl Simulation {
         self.world.clock = Some(self.clock.clone());
 
         let mut all_events = Vec::new();
-
+        let now = self.sim_time;
         // Execute all systems
         for system in &mut self.systems {
             let mut events = system.tick(&mut self.world);
@@ -130,9 +130,7 @@ impl Simulation {
         if all_events.is_empty() {
             all_events.push(ChronoEvent {
                 id: UvoxId::new(0, 0, 0, 0),
-                t: TimeDelta::from_sim_duration(
-                    SimDuration::from_ns(self.clock.step_ns())
-                ),
+                t: now,
                 kind: EventKind::Custom("EmptyTick".into()),
                 payload: None,
             });

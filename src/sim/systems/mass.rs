@@ -33,7 +33,9 @@ impl System for MassSystem {
 
             let props = derive_mass(&object);
 
-            world.mass_components.insert(Uuid::parse_str(id).unwrap_or_default(), props);
+            let uuid = objex.entity_id;
+            world.mass_components.insert(uuid, props);
+
 
         }
 

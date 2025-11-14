@@ -33,7 +33,7 @@ impl System for UVDegradationSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
         let Some(clock) = &world.clock else { return events };
-
+        let now = clock.current;
         for (entity_id_str, obj) in &world.objects {
             let uuid = match Uuid::parse_str(entity_id_str) {
                 Ok(id) => id,
@@ -82,9 +82,7 @@ impl System for UVDegradationSystem {
 
             events.push(ChronoEvent {
                 id: obj.uvoxid,
-                t: TimeDelta::from_sim_duration(
-                    SimDuration::from_ns(clock.step_ns())
-                ),
+                t: now,
                 kind: EventKind::Custom(event_name.into()),
                 payload: Some(json!({
                     "date": clock.current_wall_time().to_rfc3339(),

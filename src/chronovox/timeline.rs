@@ -1,8 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use crate::chronovox::{ChronoEvent, EventKind, UvoxId, Cartesian};
+use crate::chronovox::{ChronoEvent, EventKind, UvoxId};
 use serde::{Serialize, Deserialize};
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Timeline {
@@ -19,8 +18,6 @@ pub struct EntityState {
     pub pressure: f64,
 }
 
-
-
 impl Timeline {
     pub fn new() -> Self {
         Self { events: Vec::new() }
@@ -32,18 +29,19 @@ impl Timeline {
 
     pub fn insert(&mut self, event: ChronoEvent) {
         self.events.push(event);
-        self.events.sort(); // keep it ordered
+        self.events.sort();
     }
 
     pub fn iter_chronological(&self) -> impl Iterator<Item = &ChronoEvent> {
         self.events.iter()
     }
 
-    pub fn query_time_range(&self, start_ns: i64, end_ns: i64) -> Vec<&ChronoEvent> {
+    /// Query events inside a time range (ns)
+    pub fn query_time_range(&self, start_ns: i128, end_ns: i128) -> Vec<&ChronoEvent> {
         self.events
             .iter()
             .filter(|e| {
-                let t = e.t.ticks("nanoseconds");
+                let t = e.t.as_ns();
                 t >= start_ns && t <= end_ns
             })
             .collect()
@@ -55,19 +53,19 @@ impl Timeline {
 
     pub fn playback(&self) -> HashMap<UvoxId, EntityState> {
         let mut state = HashMap::new();
+
         for e in self.iter_chronological() {
             match &e.kind {
-                // === Core Lifecycle ===
                 EventKind::Spawn => {
                     state.insert(
                         e.id,
                         EntityState {
-                            r_um: 6_731_000_000, // approx Earth's radius in um
+                            r_um: 6_731_000_000,
                             lat_code: 0,
                             lon_code: 0,
                             alive: true,
-                            temperature: 20.0, // default room temp
-                            pressure: 101_325.0, // default 1 atm
+                            temperature: 20.0,
+                            pressure: 101_325.0,
                         },
                     );
                 }
@@ -78,7 +76,6 @@ impl Timeline {
                     }
                 }
 
-                // === Movement ===
                 EventKind::Move { dr, dlat, dlon } => {
                     if let Some(s) = state.get_mut(&e.id) {
                         s.r_um = ((s.r_um as i64) + dr).max(0) as u64;
@@ -86,10 +83,10 @@ impl Timeline {
                         s.lon_code += dlon;
                     }
                 }
-                &EventKind::Accelerate { ar, alat, alon } => {
-                    tracing::debug!("⚡ Accelerating object: Δr={} Δlat={} Δlon={}", ar, alat, alon);
-                },
 
+                &EventKind::Accelerate { ar, alat, alon } => {
+                    tracing::debug!("⚡ Accelerating: Δr={} Δlat={} Δlon={}", ar, alat, alon);
+                }
 
                 EventKind::Teleport { r_um, lat_code, lon_code } => {
                     if let Some(s) = state.get_mut(&e.id) {
@@ -99,120 +96,92 @@ impl Timeline {
                     }
                 }
 
-
-                // === Environment ===
                 EventKind::TemperatureChange { delta_c } => {
                     if let Some(s) = state.get_mut(&e.id) {
                         s.temperature += delta_c;
                     }
                 }
+
                 EventKind::PressureChange { delta_pa } => {
                     if let Some(s) = state.get_mut(&e.id) {
                         s.pressure += delta_pa;
                     }
                 }
 
-                EventKind::Radiation { dose: _ } => {
-                    // TODO
-                }
-                EventKind::Shock { g: _ } => {
-                    // TODO
-                }
-
-                // === Material / Integrity ===
-                EventKind::Degrade { rate: _ } => {
-                    // TODO
-                }
-                EventKind::Leak { severity: _ } => {
-                    // TODO
-                }
-                EventKind::Fracture { plane: _ } => {
-                    // TODO
-                }
-
-                // === Interactions ===
-                EventKind::Bond { with: _ } => {
-                    // TODO: mark bonded state
-                }
-                EventKind::Unbond { from: _ } => {
-                    // TODO: mark bond broken
-                }
-                EventKind::Transfer { to: _, what: _, amount: _ } => {
-                    // TODO: transfer logic
-                }
-
-                // === Wild Card ===
-                EventKind::Custom(_) => {
-                    // maybe log it or trigger hooks
-                }
+                _ => {}
             }
         }
+
         state
     }
 
-    
-    /// Reconstruct state up to a given time (with interpolation for Move)
-    pub fn playback_until(&self, cutoff_ns: i64) -> HashMap<UvoxId, EntityState> {
+    /// State as of an absolute time, with interpolation for Move events.
+    pub fn playback_until(&self, cutoff_ns: i128) -> HashMap<UvoxId, EntityState> {
         let mut state: HashMap<UvoxId, EntityState> = HashMap::new();
         let mut last_event_by_id: HashMap<UvoxId, &ChronoEvent> = HashMap::new();
 
         for e in self.iter_chronological() {
-            let t = e.t.ticks("nanoseconds");
+            let t = e.t.as_ns();
 
             if t > cutoff_ns {
-                // Handle interpolation between two Move events
                 if let Some(prev) = last_event_by_id.get(&e.id)
-                    && let (EventKind::Move { dr: prev_dr, dlat: prev_dlat, dlon: prev_dlon },
-                            EventKind::Move { dr: next_dr, dlat: next_dlat, dlon: next_dlon }) = (&prev.kind, &e.kind)
+                    && let (
+                        EventKind::Move { dr: prev_dr, dlat: prev_dlat, dlon: prev_dlon },
+                        EventKind::Move { dr: next_dr, dlat: next_dlat, dlon: next_dlon },
+                    ) = (&prev.kind, &e.kind)
                 {
-                    let t_prev = prev.t.ticks("nanoseconds");
+                    let t_prev = prev.t.as_ns();
                     let t_next = t;
-                    let frac = (cutoff_ns - t_prev) as f64 / (t_next - t_prev) as f64;
+
+                    let dt_prev = (cutoff_ns - t_prev) as f64;
+                    let dt_total = (t_next - t_prev) as f64;
+                    let frac = dt_prev / dt_total;
 
                     if let Some(s) = state.get_mut(&e.id) {
-                        s.r_um = (s.r_um as i64 + ((*prev_dr + *next_dr) as f64 * frac) as i64).max(0) as u64;
+                        s.r_um = (s.r_um as i64 +
+                            ((*prev_dr + *next_dr) as f64 * frac) as i64
+                        ).max(0) as u64;
+
                         s.lat_code += ((*prev_dlat + *next_dlat) as f64 * frac) as i64;
                         s.lon_code += ((*prev_dlon + *next_dlon) as f64 * frac) as i64;
                     }
                 }
 
-                break; // stop at cutoff
+                break;
             }
 
-            // Normal event application
             match &e.kind {
-                // === Core Lifecycle ===
                 EventKind::Spawn => {
                     state.insert(
                         e.id,
                         EntityState {
-                            r_um: 6_731_000_000, // approx Earth's radius in um
+                            r_um: 6_731_000_000,
                             lat_code: 0,
                             lon_code: 0,
                             alive: true,
-                            temperature: 20.0,   // default °C
-                            pressure: 101_325.0, // default Pa
+                            temperature: 20.0,
+                            pressure: 101_325.0,
                         },
                     );
                 }
+
                 EventKind::Despawn => {
                     if let Some(s) = state.get_mut(&e.id) {
                         s.alive = false;
                     }
                 }
 
-                // === Movement ===
                 EventKind::Move { dr, dlat, dlon } => {
                     if let Some(s) = state.get_mut(&e.id) {
-                        // apply spherical deltas instead of Cartesian
-                        s.r_um = (s.r_um as i64 + dr).max(0) as u64; // safe cast, avoid underflow
+                        s.r_um = (s.r_um as i64 + dr).max(0) as u64;
                         s.lat_code += dlat;
                         s.lon_code += dlon;
                     }
                 }
+
                 &EventKind::Accelerate { ar, alat, alon } => {
                     tracing::debug!("⚡ Accelerating: Δr={} Δlat={} Δlon={}", ar, alat, alon);
-                },
+                }
 
                 EventKind::Teleport { r_um, lat_code, lon_code } => {
                     if let Some(s) = state.get_mut(&e.id) {
@@ -222,52 +191,19 @@ impl Timeline {
                     }
                 }
 
-
-                // === Environment ===
                 EventKind::TemperatureChange { delta_c } => {
                     if let Some(s) = state.get_mut(&e.id) {
                         s.temperature += delta_c;
                     }
                 }
+
                 EventKind::PressureChange { delta_pa } => {
                     if let Some(s) = state.get_mut(&e.id) {
                         s.pressure += delta_pa;
                     }
                 }
 
-                EventKind::Radiation { dose: _ } => {
-                    // TODO: accumulate radiation dose
-                }
-                EventKind::Shock { g: _ } => {
-                    // TODO: apply shock/damage
-                }
-
-                // === Material / Integrity ===
-                EventKind::Degrade { rate: _ } => {
-                    // TODO: mark progressive degradation
-                }
-                EventKind::Leak { severity: _ } => {
-                    // TODO: track fluid/gas loss
-                }
-                EventKind::Fracture { plane: _ } => {
-                    // TODO: mark fracture in state
-                }
-
-                // === Interactions ===
-                EventKind::Bond { with: _ } => {
-                    // TODO: link entities
-                }
-                EventKind::Unbond { from: _ } => {
-                    // TODO: unlink entities
-                }
-                EventKind::Transfer { to: _, what: _, amount: _ } => {
-                    // TODO: handle resource transfer
-                }
-
-                // === Wild Card ===
-                EventKind::Custom(_) => {
-                    // TODO: maybe just record it
-                }
+                _ => {}
             }
 
             last_event_by_id.insert(e.id, e);
@@ -275,7 +211,6 @@ impl Timeline {
 
         state
     }
-
 
     pub fn len(&self) -> usize {
         self.events.len()
@@ -286,27 +221,27 @@ impl Timeline {
     }
 }
 
-// ===== Trait Implementations =====
+// ========= Sorting impls (updated for SimTime.as_ns()) ==========
 
 impl PartialEq for ChronoEvent {
     fn eq(&self, other: &Self) -> bool {
-        self.t.ticks("nanoseconds") == other.t.ticks("nanoseconds")
+        self.t.as_ns() == other.t.as_ns()
     }
 }
+
 impl Eq for ChronoEvent {}
 
 impl PartialOrd for ChronoEvent {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.t.ticks("nanoseconds").cmp(&other.t.ticks("nanoseconds")))
-    }
-}
-impl Ord for ChronoEvent {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.t.ticks("nanoseconds").cmp(&other.t.ticks("nanoseconds"))
+        Some(self.t.as_ns().cmp(&other.t.as_ns()))
     }
 }
 
-// ===== Iterators =====
+impl Ord for ChronoEvent {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.t.as_ns().cmp(&other.t.as_ns())
+    }
+}
 
 impl IntoIterator for Timeline {
     type Item = ChronoEvent;

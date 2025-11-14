@@ -36,7 +36,7 @@ impl System for CorrosionSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
         let Some(clock) = &world.clock else { return events };
-
+        let now = clock.current;
         // Convert sim step to fractional years
         let dt_years = clock.step_seconds() / (365.0 * 86400.0);
 
@@ -104,8 +104,8 @@ impl System for CorrosionSystem {
 
             // Emit event using real simtime
             events.push(ChronoEvent {
-                id: obj.uvoxid,
-                t: TimeDelta::from_sim_duration(SimDuration::from_ns(clock.step_ns())),
+                id: obj.uvoxid.clone(),  // ← FIXED
+                t: now,
                 kind: EventKind::Custom(event_type.into()),
                 payload: Some(json!({
                     "surface_area_m2": entry.surface_area,
@@ -113,8 +113,8 @@ impl System for CorrosionSystem {
                     "details": details
                 })),
             });
-        }
 
+        }
         events
     }
 }

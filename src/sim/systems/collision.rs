@@ -1,15 +1,17 @@
 use crate::{
     chronovox::{ChronoEvent, EventKind},
     sim::{systems::System, world::WorldState},
-    tdt::core::TimeDelta,
-    physox::{interaction::{restitution, damage}, energy::kinetic_energy},
+    tdt::{sim_time::SimTime, sim_duration::SimDuration},
+    physox::{
+        interaction::{restitution, damage}, 
+        energy::kinetic_energy
+    },
     matcat::materials::{props_for, MatCatId, MatProps},
     uvoxid::units::{um_to_m, um_to_cm, HumanLength},
 };
 use uuid::Uuid;
 use serde_json::json;
 use crate::sim::components::fracture::FractureData;
-use crate::objex::systems::mass::derive_mass;
 
 pub struct CollisionSystem;
 
@@ -20,7 +22,11 @@ impl System for CollisionSystem {
         let mut events = Vec::new();
         const EARTH_RADIUS: i64 = 6_371_000_000_000; // µm
 
-        // === Object–Object collisions (simplified radial) ===
+        // Pull sim time
+        let start = world.sim_time;
+        let end = world.sim_time.add(world.sim_delta);
+
+        // === Object–Object collisions ===
         let object_ids: Vec<_> = world.objects.keys().cloned().collect();
         for (i, id_a) in object_ids.iter().enumerate() {
             for id_b in object_ids.iter().skip(i + 1) {
@@ -32,7 +38,7 @@ impl System for CollisionSystem {
                 let rb = obj_b.shape.approx_radius_um();
 
                 if dr <= (ra + rb) {
-                    // stop both
+                    // Stop both
                     if let Some(v) = world.velocity_components.get_mut(&Uuid::parse_str(id_a).unwrap()) {
                         v.dr = 0.0; v.dlat = 0.0; v.dlon = 0.0;
                     }
@@ -44,7 +50,8 @@ impl System for CollisionSystem {
 
                     events.push(ChronoEvent {
                         id: obj_a.uvoxid.clone(),
-                        t: TimeDelta::from_ticks(1, "nanoseconds"),
+                        t: end,
+
                         kind: EventKind::Custom(format!("Collision with {}", id_b)),
                         payload: Some(json!({
                             "object_a": id_a,
@@ -59,7 +66,8 @@ impl System for CollisionSystem {
 
                     events.push(ChronoEvent {
                         id: obj_b.uvoxid.clone(),
-                        t: TimeDelta::from_ticks(1, "nanoseconds"),
+                        t: end,
+
                         kind: EventKind::Custom(format!("Collision with {}", id_a)),
                         payload: None,
                     });
@@ -97,7 +105,8 @@ impl System for CollisionSystem {
 
                             events.push(ChronoEvent {
                                 id: obj.uvoxid.clone(),
-                                t: TimeDelta::from_ticks(1, "nanoseconds"),
+                                t: end,
+
                                 kind: EventKind::Fracture { plane },
                                 payload: Some(json!({
                                     "impact_energy": impact_energy,
@@ -106,14 +115,13 @@ impl System for CollisionSystem {
                                 })),
                             });
                         } else {
-                            // Bounce using material restitution
+                            // bounce
                             v.dr = -v.dr * restitution;
                             v.dlat *= restitution * 0.8;
                             v.dlon *= restitution * 0.8;
                         }
                     }
 
-                    // Stop acceleration if fractured
                     if fractured {
                         if let Some(a) = world.acceleration_components.get_mut(&entity_uuid) {
                             a.ar = 0.0;
@@ -128,7 +136,8 @@ impl System for CollisionSystem {
 
                 events.push(ChronoEvent {
                     id: obj.uvoxid.clone(),
-                    t: TimeDelta::from_ticks(1, "nanoseconds"),
+                    t: end,
+
                     kind: EventKind::Custom("GroundCollision".into()),
                     payload: Some(json!({
                         "altitude_um": obj.uvoxid.r_um - EARTH_RADIUS,

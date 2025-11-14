@@ -17,7 +17,7 @@ pub struct EventRow {
     pub r_um: i64,
     pub lat_code: i64,
     pub lon_code: i64,
-    pub ticks: i64,
+    pub ticks: i128,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timestamp: Option<DateTime<Utc>>,
     pub kind: String,

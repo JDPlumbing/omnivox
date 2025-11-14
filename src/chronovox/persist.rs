@@ -7,7 +7,7 @@ use serde_json::json;
 use crate::chronovox::{Timeline, ChronoEvent, EventKind};
 use crate::uvoxid::UvoxId;
 use crate::tdt::core::TimeDelta;
-
+use crate::tdt::sim_time::SimTime;
 
 pub async fn insert_event_for_entity(
     supa: &Supabase,
@@ -21,7 +21,8 @@ pub async fn insert_event_for_entity(
         "r_um": event.id.r_um as i64,
         "lat_code": event.id.lat_code as i64,
         "lon_code": event.id.lon_code as i64,
-        "ticks": event.t.ticks("nanoseconds"),
+        "ticks": event.t.as_ns(),
+
         "timestamp": chrono::Utc::now(),
         "kind": format!("{:?}", event.kind),
         "move_offset": event.payload,
@@ -56,7 +57,8 @@ struct EventRowDb {
     r_um: i64,
     lat_code: i64,
     lon_code: i64,
-    ticks: i64,
+    ticks: i128,
+
     kind: String,
     move_offset: Option<serde_json::Value>,
     payload: Option<serde_json::Value>,
@@ -71,7 +73,7 @@ impl EventRowDb {
                 lat_code: self.lat_code, // ✅ keep as i64
                 lon_code: self.lon_code, // ✅ keep as i64
             },
-            t: TimeDelta::from_ticks(self.ticks, "nanoseconds"),
+            t: SimTime::from_ns(self.ticks as i128),
             kind: match self.kind.as_str() {
                 "Spawn" => EventKind::Spawn,
                 "Despawn" => EventKind::Despawn,

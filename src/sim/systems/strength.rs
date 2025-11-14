@@ -33,7 +33,11 @@ impl System for StrengthSystem {
             let failed = will_fail(&object, 100.0);
 
             if failed {
-                events.push(ChronoEvent::dummy());
+                events.push(ChronoEvent::new(
+                    objex.uvoxid.clone(),
+                    world.clock.as_ref().unwrap().current,
+                    crate::chronovox::EventKind::Custom("StrengthFailure".to_string()),
+                ));
             }
             world.strength_components.insert(Uuid::parse_str(id).unwrap_or_default(), props);
 

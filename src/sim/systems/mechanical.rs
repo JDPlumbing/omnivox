@@ -30,7 +30,9 @@ impl System for MechanicalSystem {
             };
 
             let props = derive_mechanical(&object);
-            world.mechanical_components.insert(Uuid::parse_str(id).unwrap_or_default(), props);
+            let uuid = objex.entity_id;
+            world.mechanical_components.insert(uuid, props);
+
 
 
         }

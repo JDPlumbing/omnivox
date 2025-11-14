@@ -38,7 +38,7 @@ impl MatCatId {
 
     /// Generate material properties (category fallback logic)
     pub fn props(&self) -> Option<crate::matcat::materials::MatProps> {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         // for now, we just go by category until variant-level ranges exist
         generate_props_from_category(self.category, &mut rng)
     }

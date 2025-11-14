@@ -66,7 +66,7 @@ impl SimulationManager {
                     r_um: ev.id.r_um,
                     lat_code: ev.id.lat_code,
                     lon_code: ev.id.lon_code,
-                    ticks: ev.t.ticks("nanoseconds"),
+                    ticks: ev.t.as_ns(),
                     timestamp: Some(Utc::now()),
                     kind: format!("{:?}", ev.kind),
                     payload: ev.payload.clone(),

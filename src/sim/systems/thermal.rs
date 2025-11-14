@@ -20,7 +20,7 @@ impl System for ThermalSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
         let Some(clock) = &world.clock else { return events };
-
+        let now = world.clock.as_ref().unwrap().current;
         // REAL sim time delta in seconds
         let dt_s = clock.step_seconds();
 
@@ -99,7 +99,7 @@ impl System for ThermalSystem {
             // Emit thermal update event
             events.push(ChronoEvent {
                 id: obj.uvoxid,
-                t: TimeDelta::from_sim_duration(SimDuration::from_ns(clock.step_ns())),
+                t: now,
                 kind: EventKind::Custom("ThermalUpdate".into()),
                 payload: Some(json!({
                     "temperature_c": entry.temperature_c,
@@ -113,7 +113,7 @@ impl System for ThermalSystem {
             // Emit exposure event
             events.push(ChronoEvent {
                 id: obj.uvoxid,
-                t: TimeDelta::from_sim_duration(SimDuration::from_ns(clock.step_ns())),
+                t: now,
                 kind: EventKind::Custom("ThermalExposureUpdate".into()),
                 payload: Some(json!({
                     "total_energy_j": exposure.total_energy_j,

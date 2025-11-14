@@ -22,7 +22,7 @@ impl System for SolarRaycastSystem {
             return events;
         };
         let dt_s = world.clock.as_ref().unwrap().step_seconds();
-
+        let now = clock.current;
 
         // --- FIND SUN OBJECT ---
         let (sun_id_str, sun_obj) = match world.objects.iter().find(|(_, o)| o.name == "Sun") {
@@ -91,9 +91,7 @@ impl System for SolarRaycastSystem {
             events.push(ChronoEvent {
                 id: obj.uvoxid,
 
-                t: TimeDelta::from_sim_duration(
-                    SimDuration::from_ns(clock.step_ns())
-                ),
+              t: now,
 
                 kind: EventKind::Custom("SolarRaycastUpdate".into()),
                 payload: Some(json!({

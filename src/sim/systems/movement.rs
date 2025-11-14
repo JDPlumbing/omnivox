@@ -34,7 +34,8 @@ impl System for MovementSystem {
                 // Emit movement event
                 triggered_events.push(ChronoEvent {
                     id: obj.uvoxid.clone(),
-                    t: TimeDelta::from_ticks(1, "nanoseconds"),
+                    t: world.clock.as_ref().unwrap().current, 
+
                     kind: EventKind::Move {
                         dr: velocity.dr as i64,
                         dlat: velocity.dlat as i64,
@@ -46,6 +47,7 @@ impl System for MovementSystem {
                         "displacement_human": human_disp,
                     })),
                 });
+
             }
         }
 

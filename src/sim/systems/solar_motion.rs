@@ -16,7 +16,7 @@ impl System for SolarMotionSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let Some(clock) = &world.clock else { return vec![] };
         let dt_s = clock.step_seconds();
-
+        let now = clock.current;
         let mut events = vec![];
 
         // --- locate the Sun ---
@@ -86,9 +86,7 @@ impl System for SolarMotionSystem {
         // -------------------------------
         events.push(ChronoEvent {
             id: obj.uvoxid,
-            t: TimeDelta::from_sim_duration(
-                SimDuration::from_ns(clock.step_ns())
-            ),
+            t: now,
             kind: EventKind::Custom("SolarPositionUpdate".into()),
             payload: Some(json!({
                 "lat_code": obj.uvoxid.lat_code,

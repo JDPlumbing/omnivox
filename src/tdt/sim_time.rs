@@ -1,8 +1,9 @@
 // tdt/sim_time.rs
 use chrono::{DateTime, TimeZone, Utc};
+use serde::{Serialize, Deserialize};
 
 /// Absolute point in simulation time: nanoseconds since Unix epoch.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct SimTime(pub i128);
 
 impl SimTime {
@@ -38,5 +39,16 @@ impl SimTime {
     /// Subtract two SimTimes → SimDuration
     pub fn diff(self, other: SimTime) -> super::sim_duration::SimDuration {
         super::sim_duration::SimDuration(self.0 - other.0)
+    }
+
+    #[inline]
+    pub fn as_ns(&self) -> i128 {
+        self.0
+    }
+
+    // Compatibility adapter for old code:
+    #[inline]
+    pub fn ticks(&self, _unit: &str) -> i128 {
+        self.0
     }
 }

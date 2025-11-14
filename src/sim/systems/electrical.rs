@@ -2,12 +2,11 @@ use crate::{
     objex::core::{Objex, Object},
     objex::systems::electrical::{derive_electrical, ElectricalProps},
     sim::{systems::System, world::WorldState},
-    objex::Shape,
+    chronovox::ChronoEvent,
 
     matcat::materials::{props_for, default_props},
-    chronovox::ChronoEvent,
 };
-use uuid::Uuid;
+
 pub struct ElectricalSystem;
 
 impl System for ElectricalSystem {
@@ -18,12 +17,13 @@ impl System for ElectricalSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        for (id, objex) in &world.objects {
-            let mat = if let Some(mat_id) = &objex.material.matcat_id {
-                props_for(mat_id)
-            } else {
-                default_props()
-            };
+        for (_id_str, objex) in &world.objects {
+            let mat = objex
+                .material
+                .matcat_id
+                .map(|id| props_for(&id))
+
+                .unwrap_or_else(default_props);
 
             let object = Object {
                 shape: objex.shape.clone(),
@@ -31,9 +31,9 @@ impl System for ElectricalSystem {
             };
 
             let props = derive_electrical(&object);
-            
-            world.electrical_components.insert(Uuid::parse_str(id).unwrap_or_default(), props);
 
+            // FIX: use the object’s actual UUID
+            world.electrical_components.insert(objex.entity_id, props);
         }
 
         events
