@@ -24,6 +24,9 @@ use crate::sim::components::sunlight::SunlightComponent;
 use crate::sim::components::sun_emitter::SunEmitter;
 use crate::sim::components::SolarExposureData;
 use crate::sim::components::OrbitalMotion;
+use crate::tdt::sim_time::SimTime;
+use crate::tdt::sim_duration::SimDuration;
+
 
 /// Persistent world metadata (used in Supabase)
 #[derive(Debug, Serialize, Deserialize)]
@@ -72,7 +75,11 @@ pub struct WorldState {
     pub objects: HashMap<String, Objex>,
 
     // ✅ new field
+    
+    pub sim_time: SimTime,
+    pub sim_delta: SimDuration,
     pub clock: Option<SimClock>,
+   
 
     // basic physics
     pub velocity_components: HashMap<Uuid, Velocity>,
@@ -114,33 +121,40 @@ impl WorldState {
             meta,
             events: Vec::new(),
             objects: HashMap::new(),
-            clock: None, // ✅ add this line
+
+            // 🕒 Time fields
+            sim_time: SimTime::from_ns(0),
+            sim_delta: SimDuration::from_ns(0),
+            clock: None,
+
+            // Basic physics
             velocity_components: HashMap::new(),
             acceleration_components: HashMap::new(),
+
+            // Derived + special systems
             fracture_components: HashMap::new(),
             corrosion_components: HashMap::new(),
             mass_components: HashMap::new(),
             mechanical_components: HashMap::new(),
             strength_components: HashMap::new(),
-            
             electrical_components: HashMap::new(),
             degradation_components: HashMap::new(),
             optical_components: HashMap::new(),
             composite_components: HashMap::new(),
 
-
+            // ☀️ Solar-related
             sun_emitter_components: HashMap::new(),
-            sunlight_components: HashMap::new(), // ✅ add this
-            solar_exposure_components: HashMap::new(), // ✅ add this
-            uv_degradation_components: HashMap::new(), // ✅ add this
+            sunlight_components: HashMap::new(),
+            solar_exposure_components: HashMap::new(),
+            uv_degradation_components: HashMap::new(),
             thermal_components: HashMap::new(),
             thermal_exposure: HashMap::new(),
             orbital_components: HashMap::new(),
-
-
         }
     }
 }
+
+
 
 
 impl Default for WorldState {

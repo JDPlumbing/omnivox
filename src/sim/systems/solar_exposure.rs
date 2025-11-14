@@ -3,7 +3,7 @@ use crate::{
     sim::{systems::System, world::WorldState},
     sim::components::{SunlightComponent, SolarExposureData},
     tdt::core::TimeDelta,
-    tdt::sim_time::SimDuration,      // <-- REQUIRED
+    tdt::sim_duration::SimDuration,      // <-- REQUIRED
 };
 use uuid::Uuid;
 use serde_json::json;
@@ -48,7 +48,7 @@ impl System for SolarExposureSystem {
                 id: world.objects[&id.to_string()].uvoxid,
 
                 t: TimeDelta::from_sim_duration(
-                    SimDuration::from_ns(clock.step_ns)
+                    SimDuration::from_ns(clock.step_ns())
                 ),
 
                 kind: EventKind::Custom("SolarExposureUpdate".into()),
@@ -56,7 +56,7 @@ impl System for SolarExposureSystem {
                     "uuid": id.to_string(),
                     "energy_j_m2": exposure.energy_j_m2,
                     "uv_j_m2": exposure.uv_j_m2,
-                    "timestamp": clock.current_datetime().to_rfc3339(),
+                    "timestamp": clock.current_wall_time().to_rfc3339(),
                 })),
             });
         }

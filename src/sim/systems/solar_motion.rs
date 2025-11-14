@@ -6,7 +6,7 @@ use crate::{
 };
 use serde_json::json;
 use uuid::Uuid;
-use crate::tdt::sim_time::SimDuration;
+use crate::tdt::sim_duration::SimDuration;
 
 pub struct SolarMotionSystem;
 
@@ -87,7 +87,7 @@ impl System for SolarMotionSystem {
         events.push(ChronoEvent {
             id: obj.uvoxid,
             t: TimeDelta::from_sim_duration(
-                SimDuration::from_ns(clock.step_ns)
+                SimDuration::from_ns(clock.step_ns())
             ),
             kind: EventKind::Custom("SolarPositionUpdate".into()),
             payload: Some(json!({

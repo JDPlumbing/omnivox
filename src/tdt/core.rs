@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
-use crate::tdt::sim_time::SimDuration;
+use crate::tdt::sim_duration::SimDuration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimeDelta {

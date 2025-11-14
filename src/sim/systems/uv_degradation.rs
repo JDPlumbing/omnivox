@@ -6,7 +6,7 @@ use crate::{
 };
 use serde_json::json;
 use uuid::Uuid;
-use crate::tdt::sim_time::SimDuration;
+use crate::tdt::sim_duration::SimDuration;
 
 /// Tracks UV degradation accumulation per object
 #[derive(Debug, Clone)]
@@ -83,11 +83,12 @@ impl System for UVDegradationSystem {
             events.push(ChronoEvent {
                 id: obj.uvoxid,
                 t: TimeDelta::from_sim_duration(
-                    SimDuration::from_ns(clock.step_ns)
+                    SimDuration::from_ns(clock.step_ns())
                 ),
                 kind: EventKind::Custom(event_name.into()),
                 payload: Some(json!({
-                    "date": clock.current_datetime().to_rfc3339(),
+                    "date": clock.current_wall_time().to_rfc3339(),
+
                     "uv_total_j_m2": cumulative_uv,
                     "severity": severity,
                     "resistance": resistance

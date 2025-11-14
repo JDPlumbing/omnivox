@@ -94,7 +94,7 @@ fn main() {
     let mut all_events = Vec::new();
 
     // 🔁 Sim loop
-    while clock.current_ns < clock.end_ns {
+    while clock.current_ns() < clock.end.0 {
         // Make the world aware of the current clock state
         world.clock = Some(clock.clone());
 
@@ -110,7 +110,7 @@ fn main() {
 
         if !tick_events.is_empty() {
             all_events.push(json!({
-                "tick_time_ns": clock.current_ns,
+                "tick_time_ns": clock.current_ns(),
                 "events": tick_events
             }));
         }

@@ -7,7 +7,7 @@ use crate::{
 use uuid::Uuid;
 use serde_json::json;
 use std::f64::consts::PI;
-use crate::tdt::sim_time::SimDuration;
+use crate::tdt::sim_duration::SimDuration;
 
 pub struct SolarRaycastSystem;
 
@@ -92,7 +92,7 @@ impl System for SolarRaycastSystem {
                 id: obj.uvoxid,
 
                 t: TimeDelta::from_sim_duration(
-                    SimDuration::from_ns(clock.step_ns)
+                    SimDuration::from_ns(clock.step_ns())
                 ),
 
                 kind: EventKind::Custom("SolarRaycastUpdate".into()),
@@ -100,7 +100,8 @@ impl System for SolarRaycastSystem {
                     "uuid": id_str,
                     "lit": lit,
                     "zenith_angle_deg": zenith,
-                    "timestamp": clock.current_datetime().to_rfc3339(),
+                    "timestamp": clock.current_wall_time().to_rfc3339()
+
                 })),
             });
 

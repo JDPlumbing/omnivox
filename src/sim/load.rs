@@ -120,7 +120,7 @@ impl Simulation {
         let clock = SimClock::from_wall_dates(start, now, step);
 
         // 5. Build Simulation
-        let current_ns = clock.current_ns;
+        let sim_time = clock.current;
 
         Ok(Simulation {
             simulation_id: row.simulation_id,
@@ -128,9 +128,10 @@ impl Simulation {
             world: world_state,
             timeline,
             systems,
-            clock,
-            sim_time: SimTime::from_ns(current_ns),
+            sim_time,
+            clock,   // moved here AFTER we read sim_time
         })
+
 
 
     }

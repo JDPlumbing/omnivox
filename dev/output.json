@@ -72,10 +72,10 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6370999835473
+          "r_um": 6371000739737
         },
         "kind": "Spawn",
-        "payload": "Fragment of c4a53570-024b-40cf-849c-eb92fc9197e4 (scattered with 28239797.36 energy)",
+        "payload": "Fragment of bbfe3602-934c-4f5a-af7f-6d72260b7704 (scattered with 28239797.36 energy)",
         "t": {
           "end": "1970-01-01T00:00:00.000000001Z",
           "start": "1970-01-01T00:00:00Z"
@@ -86,10 +86,10 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6370998635265
+          "r_um": 6370999284973
         },
         "kind": "Spawn",
-        "payload": "Fragment of c4a53570-024b-40cf-849c-eb92fc9197e4 (scattered with 28239797.36 energy)",
+        "payload": "Fragment of bbfe3602-934c-4f5a-af7f-6d72260b7704 (scattered with 28239797.36 energy)",
         "t": {
           "end": "1970-01-01T00:00:00.000000001Z",
           "start": "1970-01-01T00:00:00Z"
@@ -100,10 +100,24 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6371000183395
+          "r_um": 6371000507583
         },
         "kind": "Spawn",
-        "payload": "Fragment of c4a53570-024b-40cf-849c-eb92fc9197e4 (scattered with 28239797.36 energy)",
+        "payload": "Fragment of bbfe3602-934c-4f5a-af7f-6d72260b7704 (scattered with 28239797.36 energy)",
+        "t": {
+          "end": "1970-01-01T00:00:00.000000001Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6370998860842
+        },
+        "kind": "Spawn",
+        "payload": "Fragment of bbfe3602-934c-4f5a-af7f-6d72260b7704 (scattered with 28239797.36 energy)",
         "t": {
           "end": "1970-01-01T00:00:00.000000001Z",
           "start": "1970-01-01T00:00:00Z"
@@ -117,7 +131,7 @@
           "r_um": 6371000000000
         },
         "kind": "Despawn",
-        "payload": "Fractured into 3 scattered fragments (energy 28239797.36)",
+        "payload": "Fractured into 4 scattered fragments (energy 28239797.36)",
         "t": {
           "end": "1970-01-01T00:00:00.000000001Z",
           "start": "1970-01-01T00:00:00Z"
@@ -128,7 +142,7 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6371000183395
+          "r_um": 6371000507583
         },
         "kind": {
           "Custom": "CorrosionProgress"
@@ -140,7 +154,79 @@
             "thickness_loss_mm": 0.00019052487530120434
           },
           "env_factor": 1.0,
-          "surface_area_m2": 4.188790204786392
+          "surface_area_m2": 3.141592653589793
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6370998860842
+        },
+        "kind": {
+          "Custom": "CorrosionProgress"
+        },
+        "payload": {
+          "details": {
+            "severity": 0.000019052487530120434,
+            "thickness_loss_m": 1.9052487530120435e-7,
+            "thickness_loss_mm": 0.00019052487530120434
+          },
+          "env_factor": 1.0,
+          "surface_area_m2": 3.141592653589793
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6371000739737
+        },
+        "kind": {
+          "Custom": "CorrosionProgress"
+        },
+        "payload": {
+          "details": {
+            "severity": 0.000019052487530120434,
+            "thickness_loss_m": 1.9052487530120435e-7,
+            "thickness_loss_mm": 0.00019052487530120434
+          },
+          "env_factor": 1.0,
+          "surface_area_m2": 3.141592653589793
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6370999284973
+        },
+        "kind": {
+          "Custom": "CorrosionProgress"
+        },
+        "payload": {
+          "details": {
+            "severity": 0.000019052487530120434,
+            "thickness_loss_m": 1.9052487530120435e-7,
+            "thickness_loss_mm": 0.00019052487530120434
+          },
+          "env_factor": 1.0,
+          "surface_area_m2": 3.141592653589793
         },
         "t": {
           "end": "1970-01-02T00:00:00Z",
@@ -176,55 +262,7 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6370998635265
-        },
-        "kind": {
-          "Custom": "CorrosionProgress"
-        },
-        "payload": {
-          "details": {
-            "severity": 0.000019052487530120434,
-            "thickness_loss_m": 1.9052487530120435e-7,
-            "thickness_loss_mm": 0.00019052487530120434
-          },
-          "env_factor": 1.0,
-          "surface_area_m2": 4.188790204786392
-        },
-        "t": {
-          "end": "1970-01-02T00:00:00Z",
-          "start": "1970-01-01T00:00:00Z"
-        }
-      },
-      {
-        "id": {
-          "frame_id": 0,
-          "lat_code": 0,
-          "lon_code": 0,
-          "r_um": 6370999835473
-        },
-        "kind": {
-          "Custom": "CorrosionProgress"
-        },
-        "payload": {
-          "details": {
-            "severity": 0.000019052487530120434,
-            "thickness_loss_m": 1.9052487530120435e-7,
-            "thickness_loss_mm": 0.00019052487530120434
-          },
-          "env_factor": 1.0,
-          "surface_area_m2": 4.188790204786392
-        },
-        "t": {
-          "end": "1970-01-02T00:00:00Z",
-          "start": "1970-01-01T00:00:00Z"
-        }
-      },
-      {
-        "id": {
-          "frame_id": 0,
-          "lat_code": 0,
-          "lon_code": 0,
-          "r_um": 6371000183395
+          "r_um": 6371000507583
         },
         "kind": {
           "Custom": "ThermalUpdate"
@@ -232,9 +270,9 @@
         "payload": {
           "absorptivity": 0.7,
           "heat_capacity_j_per_kg_k": 690.2413330078125,
-          "mass_kg": 4553.006800322017,
-          "net_energy_j": -27165442.95658648,
-          "temperature_c": 11.3559448338743
+          "mass_kg": 2957.264664511626,
+          "net_energy_j": -20374082.217439853,
+          "temperature_c": 10.018704845894705
         },
         "t": {
           "end": "1970-01-02T00:00:00Z",
@@ -246,13 +284,139 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6371000183395
+          "r_um": 6371000507583
         },
         "kind": {
           "Custom": "ThermalExposureUpdate"
         },
         "payload": {
-          "average_temperature_c": 11.3559448338743,
+          "average_temperature_c": 10.018704845894705,
+          "cycles": 1,
+          "total_energy_j": 0.0
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6370998860842
+        },
+        "kind": {
+          "Custom": "ThermalUpdate"
+        },
+        "payload": {
+          "absorptivity": 0.7,
+          "heat_capacity_j_per_kg_k": 690.2413330078125,
+          "mass_kg": 2957.264664511626,
+          "net_energy_j": -20374082.217439853,
+          "temperature_c": 10.018704845894705
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6370998860842
+        },
+        "kind": {
+          "Custom": "ThermalExposureUpdate"
+        },
+        "payload": {
+          "average_temperature_c": 10.018704845894705,
+          "cycles": 1,
+          "total_energy_j": 0.0
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6371000739737
+        },
+        "kind": {
+          "Custom": "ThermalUpdate"
+        },
+        "payload": {
+          "absorptivity": 0.7,
+          "heat_capacity_j_per_kg_k": 690.2413330078125,
+          "mass_kg": 2957.264664511626,
+          "net_energy_j": -20374082.217439853,
+          "temperature_c": 10.018704845894705
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6371000739737
+        },
+        "kind": {
+          "Custom": "ThermalExposureUpdate"
+        },
+        "payload": {
+          "average_temperature_c": 10.018704845894705,
+          "cycles": 1,
+          "total_energy_j": 0.0
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6370999284973
+        },
+        "kind": {
+          "Custom": "ThermalUpdate"
+        },
+        "payload": {
+          "absorptivity": 0.7,
+          "heat_capacity_j_per_kg_k": 690.2413330078125,
+          "mass_kg": 2957.264664511626,
+          "net_energy_j": -20374082.217439853,
+          "temperature_c": 10.018704845894705
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6370999284973
+        },
+        "kind": {
+          "Custom": "ThermalExposureUpdate"
+        },
+        "payload": {
+          "average_temperature_c": 10.018704845894705,
           "cycles": 1,
           "total_energy_j": 0.0
         },
@@ -306,90 +470,6 @@
       {
         "id": {
           "frame_id": 0,
-          "lat_code": 0,
-          "lon_code": 0,
-          "r_um": 6370998635265
-        },
-        "kind": {
-          "Custom": "ThermalUpdate"
-        },
-        "payload": {
-          "absorptivity": 0.7,
-          "heat_capacity_j_per_kg_k": 690.2413330078125,
-          "mass_kg": 4553.006800322017,
-          "net_energy_j": -27165442.95658648,
-          "temperature_c": 11.3559448338743
-        },
-        "t": {
-          "end": "1970-01-02T00:00:00Z",
-          "start": "1970-01-01T00:00:00Z"
-        }
-      },
-      {
-        "id": {
-          "frame_id": 0,
-          "lat_code": 0,
-          "lon_code": 0,
-          "r_um": 6370998635265
-        },
-        "kind": {
-          "Custom": "ThermalExposureUpdate"
-        },
-        "payload": {
-          "average_temperature_c": 11.3559448338743,
-          "cycles": 1,
-          "total_energy_j": 0.0
-        },
-        "t": {
-          "end": "1970-01-02T00:00:00Z",
-          "start": "1970-01-01T00:00:00Z"
-        }
-      },
-      {
-        "id": {
-          "frame_id": 0,
-          "lat_code": 0,
-          "lon_code": 0,
-          "r_um": 6370999835473
-        },
-        "kind": {
-          "Custom": "ThermalUpdate"
-        },
-        "payload": {
-          "absorptivity": 0.7,
-          "heat_capacity_j_per_kg_k": 690.2413330078125,
-          "mass_kg": 4553.006800322017,
-          "net_energy_j": -27165442.95658648,
-          "temperature_c": 11.3559448338743
-        },
-        "t": {
-          "end": "1970-01-02T00:00:00Z",
-          "start": "1970-01-01T00:00:00Z"
-        }
-      },
-      {
-        "id": {
-          "frame_id": 0,
-          "lat_code": 0,
-          "lon_code": 0,
-          "r_um": 6370999835473
-        },
-        "kind": {
-          "Custom": "ThermalExposureUpdate"
-        },
-        "payload": {
-          "average_temperature_c": 11.3559448338743,
-          "cycles": 1,
-          "total_energy_j": 0.0
-        },
-        "t": {
-          "end": "1970-01-02T00:00:00Z",
-          "start": "1970-01-01T00:00:00Z"
-        }
-      },
-      {
-        "id": {
-          "frame_id": 0,
           "lat_code": 256700880000,
           "lon_code": 950400,
           "r_um": 149598144485011200
@@ -412,15 +492,15 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6371000183395
+          "r_um": 6371000507583
         },
         "kind": {
           "Custom": "SolarRaycastUpdate"
         },
         "payload": {
           "lit": true,
-          "timestamp": "2025-11-13T05:09:46.388764907+00:00",
-          "uuid": "3a959839-73c6-467e-a5cc-d99f0819aff7",
+          "timestamp": "2025-11-13T06:24:02.020243028+00:00",
+          "uuid": "73cef67c-8167-4343-8b78-9ec39f7349d5",
           "zenith_angle_deg": 2.5670088000175464
         },
         "t": {
@@ -433,15 +513,15 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6370998635265
+          "r_um": 6370998860842
         },
         "kind": {
           "Custom": "SolarRaycastUpdate"
         },
         "payload": {
           "lit": true,
-          "timestamp": "2025-11-13T05:09:46.388764907+00:00",
-          "uuid": "84631e8f-3141-4583-9140-5b47b7e12ab5",
+          "timestamp": "2025-11-13T06:24:02.020243028+00:00",
+          "uuid": "dda3013e-1c5e-4f7f-82d4-ef581b3c463c",
           "zenith_angle_deg": 2.5670088000175464
         },
         "t": {
@@ -454,15 +534,15 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6370999835473
+          "r_um": 6371000739737
         },
         "kind": {
           "Custom": "SolarRaycastUpdate"
         },
         "payload": {
           "lit": true,
-          "timestamp": "2025-11-13T05:09:46.388764907+00:00",
-          "uuid": "5ed5ff5d-664a-4b0a-8c91-430e6ee93050",
+          "timestamp": "2025-11-13T06:24:02.020243028+00:00",
+          "uuid": "3c5c438b-91c4-4da3-9f65-4f8fa5d049df",
           "zenith_angle_deg": 2.5670088000175464
         },
         "t": {
@@ -475,15 +555,36 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6371000183395
+          "r_um": 6370999284973
+        },
+        "kind": {
+          "Custom": "SolarRaycastUpdate"
+        },
+        "payload": {
+          "lit": true,
+          "timestamp": "2025-11-13T06:24:02.020243028+00:00",
+          "uuid": "2c17a6cc-53f0-46aa-86ab-6d1f1e03cdf7",
+          "zenith_angle_deg": 2.5670088000175464
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6371000507583
         },
         "kind": {
           "Custom": "SolarExposureUpdate"
         },
         "payload": {
           "energy_j_m2": 117604352.14610536,
-          "timestamp": "2025-11-13T05:09:46.388764907+00:00",
-          "uuid": "3a959839-73c6-467e-a5cc-d99f0819aff7",
+          "timestamp": "2025-11-13T06:24:02.020243028+00:00",
+          "uuid": "73cef67c-8167-4343-8b78-9ec39f7349d5",
           "uv_j_m2": 4351361.029405898
         },
         "t": {
@@ -496,15 +597,15 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6370998635265
+          "r_um": 6370998860842
         },
         "kind": {
           "Custom": "SolarExposureUpdate"
         },
         "payload": {
           "energy_j_m2": 117604352.14610536,
-          "timestamp": "2025-11-13T05:09:46.388764907+00:00",
-          "uuid": "84631e8f-3141-4583-9140-5b47b7e12ab5",
+          "timestamp": "2025-11-13T06:24:02.020243028+00:00",
+          "uuid": "dda3013e-1c5e-4f7f-82d4-ef581b3c463c",
           "uv_j_m2": 4351361.029405898
         },
         "t": {
@@ -517,15 +618,15 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6370999835473
+          "r_um": 6371000739737
         },
         "kind": {
           "Custom": "SolarExposureUpdate"
         },
         "payload": {
           "energy_j_m2": 117604352.14610536,
-          "timestamp": "2025-11-13T05:09:46.388764907+00:00",
-          "uuid": "5ed5ff5d-664a-4b0a-8c91-430e6ee93050",
+          "timestamp": "2025-11-13T06:24:02.020243028+00:00",
+          "uuid": "3c5c438b-91c4-4da3-9f65-4f8fa5d049df",
           "uv_j_m2": 4351361.029405898
         },
         "t": {
@@ -538,13 +639,34 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6371000183395
+          "r_um": 6370999284973
+        },
+        "kind": {
+          "Custom": "SolarExposureUpdate"
+        },
+        "payload": {
+          "energy_j_m2": 117604352.14610536,
+          "timestamp": "2025-11-13T06:24:02.020243028+00:00",
+          "uuid": "2c17a6cc-53f0-46aa-86ab-6d1f1e03cdf7",
+          "uv_j_m2": 4351361.029405898
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6371000507583
         },
         "kind": {
           "Custom": "UVDegradationProgress"
         },
         "payload": {
-          "date": "2025-11-13T05:09:46.388764907+00:00",
+          "date": "2025-11-13T06:24:02.020243028+00:00",
           "resistance": 0.2125316858291626,
           "severity": 0.0020473940214748086,
           "uv_total_j_m2": 4351361.029405898
@@ -559,13 +681,13 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6370998635265
+          "r_um": 6370998860842
         },
         "kind": {
           "Custom": "UVDegradationProgress"
         },
         "payload": {
-          "date": "2025-11-13T05:09:46.388764907+00:00",
+          "date": "2025-11-13T06:24:02.020243028+00:00",
           "resistance": 0.2125316858291626,
           "severity": 0.0020473940214748086,
           "uv_total_j_m2": 4351361.029405898
@@ -580,13 +702,34 @@
           "frame_id": 0,
           "lat_code": 0,
           "lon_code": 0,
-          "r_um": 6370999835473
+          "r_um": 6371000739737
         },
         "kind": {
           "Custom": "UVDegradationProgress"
         },
         "payload": {
-          "date": "2025-11-13T05:09:46.388764907+00:00",
+          "date": "2025-11-13T06:24:02.020243028+00:00",
+          "resistance": 0.2125316858291626,
+          "severity": 0.0020473940214748086,
+          "uv_total_j_m2": 4351361.029405898
+        },
+        "t": {
+          "end": "1970-01-02T00:00:00Z",
+          "start": "1970-01-01T00:00:00Z"
+        }
+      },
+      {
+        "id": {
+          "frame_id": 0,
+          "lat_code": 0,
+          "lon_code": 0,
+          "r_um": 6370999284973
+        },
+        "kind": {
+          "Custom": "UVDegradationProgress"
+        },
+        "payload": {
+          "date": "2025-11-13T06:24:02.020243028+00:00",
           "resistance": 0.2125316858291626,
           "severity": 0.0020473940214748086,
           "uv_total_j_m2": 4351361.029405898
@@ -597,6 +740,6 @@
         }
       }
     ],
-    "tick_time_ns": 1763010586388764907
+    "tick_time_ns": 1763015042020243028
   }
 ]

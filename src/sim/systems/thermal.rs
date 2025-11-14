@@ -2,7 +2,7 @@ use crate::{
     chronovox::{ChronoEvent, EventKind},
     sim::{systems::System, world::WorldState},
     tdt::core::TimeDelta,
-    tdt::sim_time::SimDuration,
+    tdt::sim_duration::SimDuration,
     matcat::materials::{props_for, default_props},
     geospec::traits::{SurfaceArea, Volume},
     sim::components::thermal::{ThermalData, ThermalExposure},
@@ -99,7 +99,7 @@ impl System for ThermalSystem {
             // Emit thermal update event
             events.push(ChronoEvent {
                 id: obj.uvoxid,
-                t: TimeDelta::from_sim_duration(SimDuration::from_ns(clock.step_ns)),
+                t: TimeDelta::from_sim_duration(SimDuration::from_ns(clock.step_ns())),
                 kind: EventKind::Custom("ThermalUpdate".into()),
                 payload: Some(json!({
                     "temperature_c": entry.temperature_c,
@@ -113,7 +113,7 @@ impl System for ThermalSystem {
             // Emit exposure event
             events.push(ChronoEvent {
                 id: obj.uvoxid,
-                t: TimeDelta::from_sim_duration(SimDuration::from_ns(clock.step_ns)),
+                t: TimeDelta::from_sim_duration(SimDuration::from_ns(clock.step_ns())),
                 kind: EventKind::Custom("ThermalExposureUpdate".into()),
                 payload: Some(json!({
                     "total_energy_j": exposure.total_energy_j,

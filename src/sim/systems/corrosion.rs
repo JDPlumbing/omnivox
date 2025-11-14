@@ -6,7 +6,7 @@ use crate::{
         components::corrosion::CorrosionData,
     },
     tdt::core::TimeDelta,
-    tdt::sim_time::{SimDuration},
+    tdt::sim_duration::{SimDuration},
     matcat::materials::props_for,
     objex::systems::mass::derive_mass_from_objex,
 };
@@ -105,7 +105,7 @@ impl System for CorrosionSystem {
             // Emit event using real simtime
             events.push(ChronoEvent {
                 id: obj.uvoxid,
-                t: TimeDelta::from_sim_duration(SimDuration::from_ns(clock.step_ns)),
+                t: TimeDelta::from_sim_duration(SimDuration::from_ns(clock.step_ns())),
                 kind: EventKind::Custom(event_type.into()),
                 payload: Some(json!({
                     "surface_area_m2": entry.surface_area,
