@@ -100,33 +100,33 @@ impl Simulation {
         }
     }
 
-
-
     pub fn tick(&mut self) -> Vec<ChronoEvent> {
 
-        // Advance clock; if we hit the end, stop
-        let new_time = self.clock.advance();
-            if new_time.is_none() {
-                tracing::info!("⏹ Simulation reached end date");
-                return vec![];
-            }
+        // Advance clock; if false, we reached the end
+        let advanced = self.clock.advance();
+        if !advanced {
+            tracing::info!("⏹ Simulation reached end date");
+            return vec![];
+        }
 
-            self.sim_time = new_time.unwrap();
+        // Update authoritative sim_time
+        self.sim_time = self.clock.current;
+
         // Push time into world
         self.world.sim_time = self.sim_time;
         self.world.sim_delta = self.clock.step;
-
         self.world.clock = Some(self.clock.clone());
 
         let mut all_events = Vec::new();
         let now = self.sim_time;
+
         // Execute all systems
         for system in &mut self.systems {
             let mut events = system.tick(&mut self.world);
             all_events.append(&mut events);
         }
 
-        // Keep the original “empty tick” fallback
+        // Fallback event (empty tick)
         if all_events.is_empty() {
             all_events.push(ChronoEvent {
                 id: UvoxId::new(0, 0, 0, 0),
@@ -136,8 +136,9 @@ impl Simulation {
             });
         }
 
-        // Add to timeline
+        // Save into timeline
         self.timeline.extend(all_events.clone());
         all_events
     }
+
 }

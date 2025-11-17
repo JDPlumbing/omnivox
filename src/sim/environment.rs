@@ -8,7 +8,7 @@ pub fn default_material_for_r_um(r_um: i64) -> MaterialLink {
     if r_um < EARTH_RADIUS - 30_000_000_000 {
         MaterialLink::new(MaterialName::Steel)
     } else if r_um < EARTH_RADIUS {
-        MaterialLink::new(MaterialName::Concrete)
+        MaterialLink::new(MaterialName::Soil)
     } else if r_um < EARTH_RADIUS + 10_000_000_000 {
         MaterialLink::new(MaterialName::Air)
     } else {

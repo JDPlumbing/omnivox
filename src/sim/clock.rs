@@ -4,48 +4,97 @@ use crate::tdt::sim_duration::SimDuration;
 
 #[derive(Debug, Clone)]
 pub struct SimClock {
+    /// Absolute simulation start time
     pub start: SimTime,
+
+    /// Absolute simulation end time
     pub end: SimTime,
+
+    /// Current simulation time
     pub current: SimTime,
+
+    /// Fixed step size per tick
     pub step: SimDuration,
 }
 
 impl SimClock {
+
+    // ------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------
+
+    /// Create a clock from real-world datetimes + chrono::Duration step
+    /// (useful for scratch files + quick simulation setups)
     pub fn from_wall_dates(start: DateTime<Utc>, end: DateTime<Utc>, step: Duration) -> Self {
-        let start_ns = start.timestamp_nanos_opt().unwrap() as i128;
-        let end_ns = end.timestamp_nanos_opt().unwrap() as i128;
-        let step_ns = step.num_nanoseconds().unwrap() as i128;
+        let step_ns = step.num_nanoseconds()
+            .expect("step duration out of range")
+            as i128;
 
-        SimClock {
-            start: SimTime(start_ns),
-            end: SimTime(end_ns),
-            current: SimTime(start_ns),
-            step: SimDuration(step_ns),
+        Self {
+            start: SimTime::from_datetime(start),
+            current: SimTime::from_datetime(start),
+            end:   SimTime::from_datetime(end),
+            step:  SimDuration(step_ns),
         }
     }
 
-    pub fn advance(&mut self) -> Option<SimTime> {
-        if self.current.0 >= self.end.0 {
-            return None;
+    /// Create a clock directly from nanosecond values
+    /// (useful if simulation steps are precomputed)
+    pub fn from_utc_range(start: DateTime<Utc>, end: DateTime<Utc>, step_ns: i128) -> Self {
+        Self {
+            start:   SimTime::from_datetime(start),
+            current: SimTime::from_datetime(start),
+            end:     SimTime::from_datetime(end),
+            step:    SimDuration(step_ns),
         }
-
-        self.current = self.current.add(self.step);
-        Some(self.current)
     }
 
+    // ------------------------------------------------------------
+    // Time accessors
+    // ------------------------------------------------------------
+
+    /// Get current absolute simulation time as ns since Unix epoch
+    #[inline]
     pub fn current_ns(&self) -> i128 {
-        self.current.0
+        self.current.as_ns()
     }
 
+    /// Get step size in ns
+    #[inline]
     pub fn step_ns(&self) -> i128 {
-        self.step.0
+        self.step.as_ns()
     }
 
+    /// Retrieve current wall-clock datetime representation
+    #[inline]
     pub fn current_wall_time(&self) -> DateTime<Utc> {
         self.current.to_datetime()
     }
 
+    /// Step size in seconds (float), useful for physics integration
+    #[inline]
     pub fn step_seconds(&self) -> f64 {
-        (self.step.0 as f64) / 1_000_000_000.0
+        self.step.as_ns() as f64 / 1e9
+    }
+
+    // ------------------------------------------------------------
+    // Time progression
+    // ------------------------------------------------------------
+
+    /// Advance by exactly one simulation step.
+    /// Returns `true` if we advanced, `false` if simulation is finished.
+    pub fn advance(&mut self) -> bool {
+        if self.current.as_ns() >= self.end.as_ns() {
+            return false;
+        }
+
+        self.current = self.current.add(self.step);
+        true
+    }
+
+    /// Check whether simulation time has reached or passed the end.
+    #[inline]
+    pub fn is_finished(&self) -> bool {
+        self.current.as_ns() >= self.end.as_ns()
     }
 }
