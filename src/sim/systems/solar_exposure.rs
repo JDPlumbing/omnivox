@@ -1,13 +1,17 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState},
-    sim::components::{SunlightComponent, SolarExposureData},
+
     tdt::core::TimeDelta,
     tdt::sim_duration::SimDuration,      // <-- REQUIRED
 };
+use crate::sim::{systems::System, world::WorldState};
+use crate::sim::components::{SunlightComponent, SolarExposureData},
 use uuid::Uuid;
 use serde_json::json;
 
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SolarExposureSystem;
 
 impl System for SolarExposureSystem {
@@ -22,9 +26,9 @@ impl System for SolarExposureSystem {
         let dt_s = clock.step_seconds();
 
         // Clone avoids borrow checker problems
-        for (id, sunlight) in world.sunlight_components.clone() {
+        for (id, sunlight) in world.components.sunlight_components.clone() {
 
-            let exposure = world.solar_exposure_components
+            let exposure = world.components.solar_exposure_components
                 .entry(id)
                 .or_insert(SolarExposureData {
                     energy_j_m2: 0.0,

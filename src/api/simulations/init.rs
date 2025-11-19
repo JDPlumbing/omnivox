@@ -10,8 +10,8 @@ use uuid::Uuid;
 use chrono::{Utc, TimeZone};
 
 use crate::shared::app_state::AppState;
-use crate::supabasic::objex::ObjectRecord;
-use crate::tdt::core::TimeDelta;
+use crate::supabasic::objex::ObjexRecord;
+use crate::core::tdt::core::TimeDelta;
 
 #[derive(Debug, Deserialize)]
 pub struct SimulationInitRequest {
@@ -109,7 +109,7 @@ pub async fn init_simulation(
     );
 
     // 3️⃣ Fetch all existing objects for this property
-    let objs: Vec<ObjectRecord> = match app
+    let objs: Vec<ObjexRecord> = match app
         .supa
         .from("objex_entities")
         .select("entity_id, name, shape, material_name, material_kind, frame_id, property_id")

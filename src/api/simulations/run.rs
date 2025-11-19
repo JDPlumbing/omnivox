@@ -10,7 +10,7 @@ use uuid::Uuid;
 use chrono::Utc;
 
 use crate::shared::app_state::AppState;
-use crate::supabasic::objex::ObjectRecord;
+use crate::supabasic::objex::ObjexRecord;
 
 #[derive(Debug, Deserialize)]
 pub struct RunSimulationRequest {
@@ -31,7 +31,7 @@ pub async fn run_simulation(
     Json(req): Json<RunSimulationRequest>,
 ) -> impl IntoResponse {
     // 1️⃣ Fetch all objects for this frame
-    let objs: Vec<ObjectRecord> = match app
+    let objs: Vec<ObjexRecord> = match app
         .supa
         .from("objex_entities")
         .select("entity_id, name, frame_id")

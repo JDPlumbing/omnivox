@@ -1,18 +1,24 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState},
+    
     tdt::{sim_time::SimTime, sim_duration::SimDuration},
     physox::{
         interaction::{restitution, damage}, 
         energy::kinetic_energy
     },
-    matcat::materials::{props_for, MatCatId, MatProps},
+    objex::matcat::materials::{props_for, MatCatId, MatProps},
     uvoxid::units::{um_to_m, um_to_cm, HumanLength},
 };
+use crate::sim::{
+        systems::System,
+        world::WorldState,
+    };
 use uuid::Uuid;
 use serde_json::json;
 use crate::sim::components::fracture::FractureData;
+use serde::{Serialize, Deserialize};
 
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct CollisionSystem;
 
 impl System for CollisionSystem {
@@ -39,10 +45,10 @@ impl System for CollisionSystem {
 
                 if dr <= (ra + rb) {
                     // Stop both
-                    if let Some(v) = world.velocity_components.get_mut(&Uuid::parse_str(id_a).unwrap()) {
+                    if let Some(v) = world.components.velocity_components.get_mut(&Uuid::parse_str(id_a).unwrap()) {
                         v.dr = 0.0; v.dlat = 0.0; v.dlon = 0.0;
                     }
-                    if let Some(v) = world.velocity_components.get_mut(&Uuid::parse_str(id_b).unwrap()) {
+                    if let Some(v) = world.components.velocity_components.get_mut(&Uuid::parse_str(id_b).unwrap()) {
                         v.dr = 0.0; v.dlat = 0.0; v.dlon = 0.0;
                     }
 
@@ -80,20 +86,20 @@ impl System for CollisionSystem {
             if obj.uvoxid.r_um <= EARTH_RADIUS {
                 let entity_uuid = Uuid::parse_str(entity_id).unwrap();
 
-                if let Some(v) = world.velocity_components.get_mut(&entity_uuid) {
+                if let Some(v) = world.components.velocity_components.get_mut(&entity_uuid) {
                     let pre_impact_speed = v.dr.abs();
                     let mut fractured = false;
 
                     if let Some(mat_id) = &obj.material.matcat_id {
                         let props = props_for(mat_id);
-                        let restitution = crate::matcat::materials::restitution_from_props(&props);
+                        let restitution = crate::core::objex::matcat::materials::restitution_from_props(&props);
                         let impact_energy = 0.5 * (props.density as f64) * pre_impact_speed.powi(2);
 
                         if impact_energy > props.fracture_toughness as f64 {
                             fractured = true;
                             let plane = "horizontal".to_string();
 
-                            world.fracture_components.insert(
+                            world.components.fracture_components.insert(
                                 entity_uuid,
                                 FractureData {
                                     object_id: entity_uuid,
@@ -123,7 +129,7 @@ impl System for CollisionSystem {
                     }
 
                     if fractured {
-                        if let Some(a) = world.acceleration_components.get_mut(&entity_uuid) {
+                        if let Some(a) = world.components.acceleration_components.get_mut(&entity_uuid) {
                             a.ar = 0.0;
                             a.alat = 0.0;
                             a.alon = 0.0;

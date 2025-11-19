@@ -1,4 +1,4 @@
-use crate::objex::core::{Objex, MaterialLink, MaterialName};
+use crate::core::objex::core::{Objex, MaterialLink, MaterialName};
 use crate::supabasic::properties::PropertyRecord;
 
 

@@ -1,9 +1,12 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState},
+    
     tdt::{sim_time::SimTime, sim_duration::SimDuration},
 };
+use crate::sim::{systems::System, world::WorldState},
+use serde::{Serialize, Deserialize};
 
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct AccelerationSystem;
 
 impl System for AccelerationSystem {
@@ -18,8 +21,8 @@ impl System for AccelerationSystem {
         let now = world.sim_time;
         let dt = world.sim_delta;
 
-        for (entity_id, accel) in world.acceleration_components.iter() {
-            if let Some(velocity) = world.velocity_components.get_mut(entity_id) {
+        for (entity_id, accel) in world.components.acceleration_components.iter() {
+            if let Some(velocity) = world.components.velocity_components.get_mut(entity_id) {
                 
                 // Apply acceleration
                 velocity.dr   += accel.ar;

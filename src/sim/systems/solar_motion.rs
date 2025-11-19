@@ -1,13 +1,16 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState},
-    sim::components::OrbitalMotion,
+    tdt::sim_duration::SimDuration;
     tdt::core::TimeDelta,
 };
+use crate::sim::{systems::System, world::WorldState},
+use crate::sim::components::OrbitalMotion,
 use serde_json::json;
 use uuid::Uuid;
-use crate::tdt::sim_duration::SimDuration;
 
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SolarMotionSystem;
 
 impl System for SolarMotionSystem {
@@ -30,7 +33,7 @@ impl System for SolarMotionSystem {
             Err(_) => return events,
         };
 
-        let Some(orbit) = world.orbital_components.get_mut(&uuid) else {
+        let Some(orbit) = world.components.orbital_components.get_mut(&uuid) else {
             return events;
         };
 

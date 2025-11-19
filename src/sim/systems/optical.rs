@@ -1,12 +1,17 @@
-use crate::{
+use crate::core::{
     objex::core::{Objex, Object},
     objex::systems::optical::{derive_optical, OpticalProps},
-    sim::{systems::System, world::WorldState},
-    objex::Shape,
-    matcat::materials::{props_for, default_props},
+    
+    objex::geospec::Shape,
+    objex::matcat::materials::{props_for, default_props},
     chronovox::ChronoEvent,
 };
+use crate::sim::{systems::System, world::WorldState},
 use uuid::Uuid;
+
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct OpticalSystem;
 
 impl System for OpticalSystem {
@@ -30,7 +35,7 @@ impl System for OpticalSystem {
             };
 
             let props = derive_optical(&object);
-            world.optical_components.insert(Uuid::parse_str(id).unwrap_or_default(), props);
+            world.components.optical_components.insert(Uuid::parse_str(id).unwrap_or_default(), props);
 
         }
 

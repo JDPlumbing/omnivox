@@ -1,12 +1,14 @@
-use crate::{
-    objex::core::{Objex, Object},
+use crate::core::{
+    objex::core::{Objex},
     objex::systems::degradation::{derive_degradation, DegradationProps},
-    sim::{systems::System, world::WorldState},
+    
     chronovox::ChronoEvent,
-    matcat::props_for,
-    matcat::materials::default_props,
+    objex::matcat::materials::{props_for, default_props},
 };
+use crate::sim::{systems::System, world::WorldState},
+use serde::{Serialize, Deserialize};
 
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DegradationSystem;
 
 impl System for DegradationSystem {
@@ -33,7 +35,7 @@ impl System for DegradationSystem {
             let props = derive_degradation(&object);
 
             // FIXED: use objex.entity_id directly
-            world
+            world.components
                 .degradation_components
                 .insert(objex.entity_id, props);
         }

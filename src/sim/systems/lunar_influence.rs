@@ -7,7 +7,9 @@ use crate::{
 use serde_json::json;
 use chrono::Datelike;
 
-#[derive(Default)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct LunarInfluence {
     pub total_illumination_j_m2: f64,
     pub total_tidal_energy_j: f64,

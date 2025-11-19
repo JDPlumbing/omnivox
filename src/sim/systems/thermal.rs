@@ -1,15 +1,21 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState},
+    
     tdt::core::TimeDelta,
     tdt::sim_duration::SimDuration,
-    matcat::materials::{props_for, default_props},
-    geospec::traits::{SurfaceArea, Volume},
-    sim::components::thermal::{ThermalData, ThermalExposure},
+    objex::matcat::materials::{props_for, default_props},
+    objex::geospec::traits::{SurfaceArea, Volume},
+    
 };
+use crate::sim::{systems::System, world::WorldState},
+use crate::sim::components::thermal::{ThermalData, ThermalExposure},
+
 use uuid::Uuid;
     use serde_json::json;
 
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ThermalSystem;
 
 impl System for ThermalSystem {
@@ -42,21 +48,21 @@ impl System for ThermalSystem {
             let volume = obj.shape.volume();
 
             // Init components if missing
-            let entry = world.thermal_components.entry(uuid).or_insert_with(|| ThermalData {
+            let entry = world.components.thermal_components.entry(uuid).or_insert_with(|| ThermalData {
                 temperature_c: 20.0,
                 heat_capacity_j_per_kg_k: mat.specific_heat as f64,
                 absorptivity: 0.7,
                 mass_kg: (mat.density as f64) * volume,
             });
 
-            let exposure = world.thermal_exposure.entry(uuid).or_insert_with(|| ThermalExposure {
+            let exposure = world.components.thermal_exposure.entry(uuid).or_insert_with(|| ThermalExposure {
                 total_energy_j: 0.0,
                 average_temperature_c: 20.0,
                 cycles: 0,
             });
 
             // --- Real sunlight input ---
-            let sunlight = world.sunlight_components.get(&uuid);
+            let sunlight = world.components.sunlight_components.get(&uuid);
             let ambient_c = 15.0;
 
             let mut net_energy: f64 = 0.0;

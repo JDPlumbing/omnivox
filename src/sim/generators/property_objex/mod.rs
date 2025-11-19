@@ -5,7 +5,7 @@ pub mod plumbing;
 pub mod electrical;
 
 use crate::supabasic::properties::PropertyRecord;
-use crate::objex::Objex;
+use crate::core::objex::Objex;
 
 /// Generate all Objex entities associated with a given property.
 /// Currently generates: foundation

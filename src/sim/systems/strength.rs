@@ -1,12 +1,17 @@
-use crate::{
-    objex::core::{Objex, Object},
+use crate::core::{
+    objex::core::Objex,
     objex::systems::strength::{derive_strength, will_fail, StrengthProps},
-    sim::{systems::System, world::WorldState},
-    objex::Shape,
-    matcat::materials::{props_for, default_props},
+    
+    objex::geospec::Shape,
+    objex::matcat::materials::{props_for, default_props},
     chronovox::ChronoEvent,
 };
+use crate::sim::{systems::System, world::WorldState},
 use uuid::Uuid;
+
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct StrengthSystem;
 
 impl System for StrengthSystem {
@@ -24,7 +29,7 @@ impl System for StrengthSystem {
                 default_props()
             };
 
-            let object = Object {
+            let object = Objex {
                 shape: objex.shape.clone(),
                 material: mat,
             };
@@ -36,10 +41,10 @@ impl System for StrengthSystem {
                 events.push(ChronoEvent::new(
                     objex.uvoxid.clone(),
                     world.clock.as_ref().unwrap().current,
-                    crate::chronovox::EventKind::Custom("StrengthFailure".to_string()),
+                    crate::core::chronovox::EventKind::Custom("StrengthFailure".to_string()),
                 ));
             }
-            world.strength_components.insert(Uuid::parse_str(id).unwrap_or_default(), props);
+            world.components.strength_components.insert(Uuid::parse_str(id).unwrap_or_default(), props);
 
 
         }

@@ -6,7 +6,7 @@ use axum::{
 };
 use serde_json::json;
 
-use crate::supabasic::worlds::{WorldRow, NewWorld};
+use crate::supabasic::worlds::{WorldRecord, NewWorld};
 use crate::supabasic::events::EventRow;
 use crate::shared::app_state::AppState;
 
@@ -28,8 +28,8 @@ pub struct WorldUpdate {
     pub description: Option<String>,
 }
 
-impl From<WorldRow> for WorldDto {
-    fn from(w: WorldRow) -> Self {
+impl From<WorldRecord> for WorldDto {
+    fn from(w: WorldRecord) -> Self {
         Self {
             frame_id: w.frame_id,
             name: w.name,
@@ -46,7 +46,7 @@ impl From<WorldRow> for WorldDto {
 // GET /worlds
 // ------------------------------------------------------------
 pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoResponse {
-    match WorldRow::list(&app.supa).await {
+    match WorldRecord::list(&app.supa).await {
         Ok(rows) => {
             let mut result = Vec::new();
             for row in rows {
@@ -74,7 +74,7 @@ pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoRespon
 // GET /worlds/{frame_id}
 // ------------------------------------------------------------
 pub async fn get_world_handler(State(app): State<AppState>, Path(frame_id): Path<i64>) -> impl IntoResponse {
-    match WorldRow::get(&app.supa, frame_id).await {
+    match WorldRecord::get(&app.supa, frame_id).await {
         Ok(row) => {
             let events = EventRow::list_for_frame(&app.supa, row.frame_id)
                 .await
@@ -98,7 +98,7 @@ pub async fn get_world_handler(State(app): State<AppState>, Path(frame_id): Path
 // POST /worlds
 // ------------------------------------------------------------
 pub async fn create_world_handler(State(app): State<AppState>, Json(payload): Json<NewWorld>) -> impl IntoResponse {
-    match WorldRow::create(&app.supa, &payload).await {
+    match WorldRecord::create(&app.supa, &payload).await {
         Ok(row) => {
             let dto = WorldDto::from(row);
             (StatusCode::CREATED, Json(dto)).into_response()
@@ -131,7 +131,7 @@ pub async fn update_world_handler(
         .eq("frame_id", &frame_id.to_string())
         .update(payload)
         .select("*")
-        .execute_typed::<WorldRow>()
+        .execute_typed::<WorldRecord>()
         .await;
 
     match result {
@@ -166,7 +166,7 @@ pub async fn patch_world_handler(
         .eq("frame_id", &frame_id.to_string())
         .update(changes)
         .select("*")
-        .execute_typed::<WorldRow>()
+        .execute_typed::<WorldRecord>()
         .await;
 
     match result {

@@ -1,7 +1,7 @@
 use axum::{extract::{State, Path}, response::IntoResponse, Json};
 use serde_json::{json, Value};
 use crate::shared::app_state::AppState;
-use crate::sim::world::World;
+use crate::sim::World;
 use crate::sim::systems::System;
 use uuid::Uuid;
 

@@ -1,15 +1,16 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState},
-    tdt::core::TimeDelta,
-    matcat::materials::props_for,
+    
+    objex::matcat::materials::props_for,
 };
+use crate::sim::{systems::System, world::WorldState},
 use serde_json::json;
 use uuid::Uuid;
-use crate::tdt::sim_duration::SimDuration;
+
+use serde::{Serialize, Deserialize};
 
 /// Tracks UV degradation accumulation per object
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UVDegradationData {
     pub cumulative_uv_j_m2: f64,
     pub severity: f64,
@@ -34,14 +35,14 @@ impl System for UVDegradationSystem {
         let mut events = Vec::new();
         let Some(clock) = &world.clock else { return events };
         let now = clock.current;
-        for (entity_id_str, obj) in &world.objects {
+        for (entity_id_str, obj) in &world.entities {
             let uuid = match Uuid::parse_str(entity_id_str) {
                 Ok(id) => id,
                 Err(_) => continue,
             };
 
             // Require solar exposure data
-            let Some(exposure) = world.solar_exposure_components.get(&uuid) else {
+            let Some(exposure) = world.components.solar_exposure_components.get(&uuid) else {
                 continue;
             };
 
@@ -62,7 +63,7 @@ impl System for UVDegradationSystem {
             let severity = Self::severity_from_dose(cumulative_uv, resistance);
 
             // Update entry
-            let entry = world.uv_degradation_components
+            let entry = world.components.uv_degradation_components
                 .entry(uuid)
                 .or_insert(UVDegradationData {
                     cumulative_uv_j_m2: 0.0,

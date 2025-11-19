@@ -1,13 +1,20 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState, components::Velocity},
-    sim::components::fracture::FractureData,
+
     tdt::core::TimeDelta,
 };
+use crate::sim::{
+        systems::System,
+        world::WorldState,
+        components::velocity::Velocity,
+    };
 use uuid::Uuid;
 use rand::Rng;
 use serde_json::Value;
 
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct FractureSystem;
 
 impl System for FractureSystem {
@@ -22,14 +29,14 @@ impl System for FractureSystem {
         let Some(clock) = &world.clock else { return events };
         let dt = TimeDelta::from_sim_duration(clock.step);
 
-        for (_id_str, obj) in world.objects.iter() {
+        for (_id_str, obj) in world.entities.iter() {
             let parent_id = obj.entity_id;
 
             if obj.name.contains("_fracture") {
                 continue;
             }
 
-            if let Some(fract) = world.fracture_components.get(&parent_id) {
+            if let Some(fract) = world.components.fracture_components.get(&parent_id) {
                 removed.push(parent_id);
 
                 let child_count = rng.random_range(2..=4);
@@ -43,9 +50,9 @@ impl System for FractureSystem {
                     frag.name = format!("{}_frag{}", obj.name, i + 1);
 
                     // geometry scaling
-                    if let crate::objex::core::Shape::Sphere(s) = frag.shape {
-                        frag.shape = crate::objex::core::Shape::Sphere(
-                            crate::geospec::shapes::Sphere {
+                    if let crate::core::objex::geospec::Shape::Sphere(s) = frag.shape {
+                        frag.shape = crate::core::objex::geospec::Shape::Sphere(
+                            crate::core::objex::geospec::shapes::Sphere {
                                 radius: s.radius / (child_count as f64).sqrt(),
                             }
                         );
@@ -61,7 +68,7 @@ impl System for FractureSystem {
                     let scatter = base_scatter * rng.random_range(0.5..1.5);
                     let sign = if rng.random_bool(0.5) { 1.0 } else { -1.0 };
 
-                    world.velocity_components.insert(
+                    world.components.velocity_components.insert(
                         new_id,
                         Velocity {
                             dr: sign * scatter * 1e-6,
@@ -99,12 +106,12 @@ impl System for FractureSystem {
 
         // apply changes
         for id in removed {
-            world.objects.remove(&id.to_string());
-            world.fracture_components.remove(&id);
+            world.entities.remove(&id.to_string());
+            world.components.fracture_components.remove(&id);
         }
 
         for (id, frag) in spawned {
-            world.objects.insert(id.to_string(), frag);
+            world.entities.insert(id.to_string(), frag);
         }
 
         events

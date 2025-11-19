@@ -1,6 +1,8 @@
 use crate::supabasic::properties::PropertyRecord;
-use crate::objex::core::{Objex, MaterialLink, MaterialName, Shape};
-use crate::geospec::shapes::BoxShape;
+use crate::core::objex::core::{Objex, MaterialLink, MaterialName};
+use crate::core::objex::Shape;
+use crate::core::objex::matcat::materials::MaterialName;
+use crate::core::objex::geospec::shapes::BoxShape;
 use uuid::Uuid;
 
 pub fn generate_walls(property: &PropertyRecord) -> Vec<Objex> {

@@ -1,7 +1,8 @@
 use uuid::Uuid;
-use crate::objex::core::{Objex, Shape, MaterialLink, MaterialName};
+use crate::core::objex::core::{Objex, MaterialLink, MaterialName};
+use crate::core::objex::Shape;
 use crate::supabasic::properties::{PropertyRecord, ElectricalType};
-use crate::geospec::shapes::{Line, BoxShape};
+use crate::core::objex::geospec::shapes::{Line, BoxShape};
 
 pub fn generate_electrical_objex(property: &PropertyRecord) -> Vec<Objex> {
     let mut objs = Vec::new();

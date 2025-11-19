@@ -1,6 +1,7 @@
 use crate::supabasic::properties::PropertyRecord;
-use crate::objex::core::{Objex, MaterialLink, MaterialName, MaterialKind, Shape};
-use crate::geospec::shapes::BoxShape;
+use crate::core::objex::core::{Objex, MaterialLink, MaterialName, MaterialKind};
+use crate::core::objex::Shape;
+use crate::core::objex::geospec::shapes::BoxShape;
 use uuid::Uuid;
 
 pub fn generate_roof(property: &PropertyRecord) -> Vec<Objex> {

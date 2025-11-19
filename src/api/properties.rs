@@ -176,7 +176,7 @@ pub async fn delete_property(State(app): State<AppState>, Path(id): Path<Uuid>) 
 }
 
 use crate::sim::generators::property_objex::generate_property_objexes;
-use crate::supabasic::objex::ObjectRecord;
+use crate::supabasic::objex::ObjexRecord;
 
 pub async fn generate_property_objects(
     State(app): State<AppState>,
@@ -218,9 +218,9 @@ pub async fn generate_property_objects(
     }
 
     // 4️⃣ Convert and insert
-    let records: Vec<ObjectRecord> = objs.into_iter().map(ObjectRecord::from).collect();
+    let records: Vec<ObjexRecord> = objs.into_iter().map(ObjexRecord::from).collect();
 
-    match ObjectRecord::create_many(&app.supa, &records).await {
+    match ObjexRecord::create_many(&app.supa, &records).await {
         Ok(created) => Json(json!({
             "status": "ok",
             "generated_count": created.len(),

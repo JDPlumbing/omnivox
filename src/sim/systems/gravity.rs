@@ -1,9 +1,16 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState, components::Acceleration},
+    
     tdt::core::TimeDelta,
 };
+use crate::sim::{
+        systems::System,
+        world::WorldState,
+        components::acceleration::Acceleration,
+    };
+use serde::{Serialize, Deserialize};
 
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct GravitySystem;
 
 impl System for GravitySystem {
@@ -22,7 +29,7 @@ impl System for GravitySystem {
         for (_key, obj) in world.objects.iter() {
             let entity_uuid = obj.entity_id;
 
-            let accel = world.acceleration_components
+            let accel = world.components.acceleration_components
                 .entry(entity_uuid)
                 .and_modify(|a| a.ar += EARTH_GRAVITY)
                 .or_insert(Acceleration::new(EARTH_GRAVITY, 0.0, 0.0));

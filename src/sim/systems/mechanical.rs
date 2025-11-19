@@ -1,12 +1,16 @@
-use crate::{
+use crate::core::{
     objex::core::{Objex, Object},
     objex::systems::mechanical::{derive_mechanical, MechanicalProps},
-    sim::{systems::System, world::WorldState},
-    objex::Shape,
-    matcat::materials::{props_for, default_props},
+    
+    objex::geospec::Shape,
+    objex::matcat::materials::{props_for, default_props},
     chronovox::ChronoEvent,
 };
-use uuid::Uuid;
+use crate::sim::{systems::System, world::WorldState},
+
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct MechanicalSystem;
 
 impl System for MechanicalSystem {
@@ -31,7 +35,7 @@ impl System for MechanicalSystem {
 
             let props = derive_mechanical(&object);
             let uuid = objex.entity_id;
-            world.mechanical_components.insert(uuid, props);
+            world.components.mechanical_components.insert(uuid, props);
 
 
 

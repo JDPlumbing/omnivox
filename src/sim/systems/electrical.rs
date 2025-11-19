@@ -1,12 +1,14 @@
-use crate::{
+use crate::core::{
     objex::core::{Objex, Object},
     objex::systems::electrical::{derive_electrical, ElectricalProps},
-    sim::{systems::System, world::WorldState},
+
     chronovox::ChronoEvent,
-
-    matcat::materials::{props_for, default_props},
+    objex::matcat::materials::{props_for, default_props},
 };
+use crate::sim::{systems::System, world::WorldState},
+use serde::{Serialize, Deserialize};
 
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ElectricalSystem;
 
 impl System for ElectricalSystem {
@@ -33,7 +35,7 @@ impl System for ElectricalSystem {
             let props = derive_electrical(&object);
 
             // FIX: use the object’s actual UUID
-            world.electrical_components.insert(objex.entity_id, props);
+            world.components.electrical_components.insert(objex.entity_id, props);
         }
 
         events

@@ -1,6 +1,8 @@
 use uuid::Uuid;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+
 pub struct CorrosionData {
     pub object_id: Uuid,
     pub surface_area: f64,     // m², to localize corrosion loss

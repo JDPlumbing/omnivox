@@ -1,19 +1,21 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{
+
+    tdt::core::TimeDelta,
+    tdt::sim_duration::{SimDuration},
+    objex::matcat::materials::props_for,
+    objex::systems::mass::derive_mass_from_objex,
+};
+use crate::sim::{
         systems::System,
         world::WorldState,
         components::corrosion::CorrosionData,
     },
-    tdt::core::TimeDelta,
-    tdt::sim_duration::{SimDuration},
-    matcat::materials::props_for,
-    objex::systems::mass::derive_mass_from_objex,
-};
-
 use uuid::Uuid;
 use serde_json::json;
+use serde::{Serialize, Deserialize};
 
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct CorrosionSystem;
 
 impl CorrosionSystem {
@@ -62,7 +64,7 @@ impl System for CorrosionSystem {
             let area = mass.surface_area_m2;
 
             // Component entry
-            let entry = world.corrosion_components
+            let entry = world.components.corrosion_components
                 .entry(uuid)
                 .or_insert(CorrosionData {
                     object_id: uuid,

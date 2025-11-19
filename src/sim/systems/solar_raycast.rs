@@ -1,14 +1,19 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState},
-    sim::components::{SunEmitter, SunlightComponent},
+    tdt::sim_duration::SimDuration;
     tdt::core::TimeDelta,
 };
+use crate::sim::{
+    {systems::System, world::WorldState},
+    components::{SunEmitter, SunlightComponent},};
 use uuid::Uuid;
 use serde_json::json;
 use std::f64::consts::PI;
-use crate::tdt::sim_duration::SimDuration;
 
+
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SolarRaycastSystem;
 
 impl System for SolarRaycastSystem {
@@ -38,7 +43,7 @@ impl System for SolarRaycastSystem {
         // ---------------------------------------------------------
         // 🔥 FIXED: read SunEmitter (source of luminosity/UV/etc)
         // ---------------------------------------------------------
-        let Some(emitter) = world.sun_emitter_components.get(&sun_uuid) else {
+        let Some(emitter) = world.components.sun_emitter_components.get(&sun_uuid) else {
             return events;
         };
 
@@ -79,13 +84,13 @@ impl System for SolarRaycastSystem {
                 // ---------------------------------------------------------
                 // 🔥 FIXED: write per-object sunlight component
                 // ---------------------------------------------------------
-                world.sunlight_components.insert(uuid, SunlightComponent {
+                world.components.sunlight_components.insert(uuid, SunlightComponent {
                     irradiance_w_m2: irradiance,
                     uv_index: emitter.uv_fraction * 100.0,
                 });
 
             } else {
-                world.sunlight_components.remove(&uuid);
+                world.components.sunlight_components.remove(&uuid);
             }
 
             events.push(ChronoEvent {

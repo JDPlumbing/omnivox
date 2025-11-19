@@ -1,13 +1,14 @@
-use crate::{
+use crate::core::{
     objex::core::{Objex, Object},
     objex::systems::mass::{derive_mass, MassProps},
-    sim::{systems::System, world::WorldState},
-    geospec::traits::{Dimensions, Volume, SurfaceArea},
-};
-use crate::objex::Shape;
-use crate::matcat::materials::props_for;
-use crate::chronovox::ChronoEvent;
-use uuid::Uuid;
+    objex::geospec::traits::{Dimensions, Volume, SurfaceArea},
+    objex::geospec::Shape;
+    objex::matcat::materials::props_for;
+    chronovox::ChronoEvent,};
+use crate::sim::{systems::System, world::WorldState},
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct MassSystem;
 
 impl System for MassSystem {
@@ -23,7 +24,7 @@ impl System for MassSystem {
             let mat = if let Some(mat_id) = &objex.material.matcat_id {
                 props_for(mat_id)
             } else {
-                crate::matcat::materials::default_props()
+                crate::core::objex::matcat::materials::default_props()
             };
 
             let object = Object {
@@ -34,7 +35,7 @@ impl System for MassSystem {
             let props = derive_mass(&object);
 
             let uuid = objex.entity_id;
-            world.mass_components.insert(uuid, props);
+            world.components.mass_components.insert(uuid, props);
 
 
         }

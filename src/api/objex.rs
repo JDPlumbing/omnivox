@@ -8,8 +8,8 @@ use axum::{
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::objex::Objex;
-use crate::supabasic::objex::ObjectRecord;
+use crate::core::objex::Objex;
+use crate::supabasic::objex::ObjexRecord;
 use crate::shared::app_state::AppState;
 
 // ------------------------------------------------------------
@@ -19,7 +19,7 @@ use crate::shared::app_state::AppState;
 pub async fn create_objex(State(app): State<AppState>, Json(obj): Json<Objex>) -> impl IntoResponse {
     let obj_clone = obj.clone(); // for logging
 
-    match ObjectRecord::create(&app.supa, &ObjectRecord::from(obj)).await {
+    match ObjexRecord::create(&app.supa, &ObjexRecord::from(obj)).await {
         Ok(rec) => Json(json!({ "entity_id": rec.entity_id, "status": "spawned" })).into_response(),
         Err(e) => {
             eprintln!("Error inserting Objex {:?}: {:?}", obj_clone.name, e);
@@ -37,8 +37,8 @@ pub async fn create_objex(State(app): State<AppState>, Json(obj): Json<Objex>) -
 // Fetch an Objex entity and its material/shape info.
 // ------------------------------------------------------------
 pub async fn get_objex(State(app): State<AppState>, Path(entity_id): Path<Uuid>) -> impl IntoResponse {
-    match ObjectRecord::get(&app.supa, entity_id).await {
-        Ok(obj) => Json::<ObjectRecord>(obj).into_response(),
+    match ObjexRecord::get(&app.supa, entity_id).await {
+        Ok(obj) => Json::<ObjexRecord>(obj).into_response(),
 
         Err(e) => {
             eprintln!("Error fetching Objex {}: {:?}", entity_id, e);
@@ -56,13 +56,13 @@ pub async fn get_objex(State(app): State<AppState>, Path(entity_id): Path<Uuid>)
 // List all Objex entities
 // ------------------------------------------------------------
 pub async fn list_objex(State(app): State<AppState>) -> impl IntoResponse {
-    match ObjectRecord::list(&app.supa).await {
+    match ObjexRecord::list(&app.supa).await {
         Ok(objs) => {
             // Enrich each record with its material description
             let enriched: Vec<_> = objs
                 .into_iter()
                 .map(|r| {
-                    // Convert ObjectRecord → Objex → MaterialLink
+                    // Convert ObjexRecord → Objex → MaterialLink
                     let objex = Objex::try_from(r.clone()).ok();
                     let material_json = objex
                         .as_ref()
@@ -157,7 +157,7 @@ pub async fn list_objex_for_property(State(app): State<AppState>, Path(property_
 pub async fn update_objex(
     State(app): State<AppState>,
     Path(entity_id): Path<Uuid>,
-    Json(updated): Json<ObjectRecord>,
+    Json(updated): Json<ObjexRecord>,
 ) -> impl IntoResponse {
     let result = app
         .supa

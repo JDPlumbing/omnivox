@@ -1,11 +1,16 @@
-use crate::{
+use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    sim::{systems::System, world::WorldState, components::Velocity},
-    tdt::core::TimeDelta,
     uvoxid::units::{um_to_m, HumanLength},
 };
+use crate::sim::{
+        systems::System,
+        world::WorldState,
+    };
 use serde_json::json;
 
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct MovementSystem;
 
 impl System for MovementSystem {
@@ -16,7 +21,7 @@ impl System for MovementSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut triggered_events = Vec::new();
 
-        for (entity_id, velocity) in world.velocity_components.iter() {
+        for (entity_id, velocity) in world.components.velocity_components.iter() {
             if let Some(obj) = world.objects.get_mut(&entity_id.to_string()) {
                 // Compute displacement in µm (still your internal integer grid)
                 let dr_total = velocity.dr as i64;

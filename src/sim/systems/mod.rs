@@ -1,4 +1,4 @@
-use crate::chronovox::ChronoEvent;
+use crate::core::chronovox::ChronoEvent;
 use crate::sim::world::WorldState;
 use crate::sim::simulation::Simulation;
 

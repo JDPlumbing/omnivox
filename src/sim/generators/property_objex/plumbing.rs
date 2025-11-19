@@ -1,7 +1,8 @@
 use uuid::Uuid;
-use crate::objex::core::{Objex, Shape, MaterialLink, MaterialName};
+use crate::core::objex::core::{Objex, MaterialLink, MaterialName};
+use crate::core::objex::Shape;
 use crate::supabasic::properties::{PropertyRecord, PlumbingType};
-use crate::geospec::shapes::{Line, Cylinder, BoxShape};
+use crate::core::objex::geospec::shapes::{Line, Cylinder, BoxShape};
 
 pub fn generate_plumbing_objex(property: &PropertyRecord) -> Vec<Objex> {
     let mut objs = Vec::new();

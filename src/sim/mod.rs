@@ -8,9 +8,10 @@ pub mod generators;
 pub mod runtime;
 pub mod components;
 pub mod environment;
-pub mod clock;
+pub mod entities;
+pub mod time;
 
-pub use world::World;
+pub use world::state::*;
 pub use error::{OmnivoxError, Result};
 pub use simulation::Simulation;
 pub use address::Address;
@@ -18,4 +19,7 @@ pub use generators::*;
 pub use runtime::*;
 pub use components::*;
 pub use environment::*;
-pub use clock::SimClock;
+
+
+pub use entities::*;
+pub use time::*;

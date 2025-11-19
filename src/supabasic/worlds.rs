@@ -1,25 +1,30 @@
 // src/supabasic/worlds.rs
+
 use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::orm::DbModel;
+
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 
-/// Mirrors the `worlds` table in Supabase
-#[derive(Debug, Serialize, Deserialize)]
-pub struct WorldRow {
+/// Mirrors the `worlds` table in Supabase.
+/// This contains ONLY persistent metadata.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WorldRecord {
     pub frame_id: i64,
     pub name: Option<String>,
     pub description: Option<String>,
+
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
-impl DbModel for WorldRow {
+impl DbModel for WorldRecord {
     fn table() -> &'static str { "worlds" }
 }
 
-impl WorldRow {
+impl WorldRecord {
+    /// Get a list of all worlds.
     pub async fn list(supa: &Supabase) -> Result<Vec<Self>, SupabasicError> {
         supa.from(Self::table())
             .select("frame_id,name,description,created_at,updated_at,deleted_at")
@@ -27,7 +32,8 @@ impl WorldRow {
             .await
     }
 
-    pub async fn get(supa: &Supabase, frame_id: i64) -> Result<Self, SupabasicError> {
+    /// Fetch a single world by its frame_id.
+    pub async fn fetch(supa: &Supabase, frame_id: i64) -> Result<Self, SupabasicError> {
         supa.from(Self::table())
             .select("frame_id,name,description,created_at,updated_at,deleted_at")
             .eq("frame_id", &frame_id.to_string())
@@ -35,6 +41,12 @@ impl WorldRow {
             .await
     }
 
+    /// Same as `fetch()` but preserves your old name.
+    pub async fn get(supa: &Supabase, frame_id: i64) -> Result<Self, SupabasicError> {
+        Self::fetch(supa, frame_id).await
+    }
+
+    /// Create a new world.
     pub async fn create(supa: &Supabase, payload: &NewWorld) -> Result<Self, SupabasicError> {
         let inserted: Vec<Self> = supa
             .from(Self::table())
@@ -48,23 +60,10 @@ impl WorldRow {
     }
 }
 
-/// Payload used when creating a new world
+/// Payload for inserting a new world into Supabase.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewWorld {
     pub frame_id: i64,
     pub name: Option<String>,
     pub description: Option<String>,
-}
-
-impl Default for WorldRow {
-    fn default() -> Self {
-        Self {
-            frame_id: 0,
-            name: Some("Default World".into()),
-            description: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-            deleted_at: None,
-        }
-    }
 }
