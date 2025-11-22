@@ -49,3 +49,33 @@ impl MaterialLink {
     }
     
 }
+impl MaterialLink {
+    pub fn new(name: MaterialName) -> Self {
+        let matcat_id = MatCatId::from_name(&name)
+            .unwrap_or_else(|| MatCatId { category: 0, variant: 0, grade: 0 });
+
+        // Infer kind automatically
+        let kind = match name {
+            MaterialName::Steel => MaterialKind::Metal,
+            MaterialName::Copper => MaterialKind::Metal,
+            MaterialName::Aluminum => MaterialKind::Metal,
+            MaterialName::Concrete => MaterialKind::Masonry,
+            MaterialName::Wood => MaterialKind::Organic,
+            MaterialName::Plastic => MaterialKind::Polymer,
+            MaterialName::Glass => MaterialKind::Glass,
+            MaterialName::Air => MaterialKind::Gas,
+            MaterialName::Water => MaterialKind::Liquid,
+            MaterialName::Soil => MaterialKind::Geologic,
+            MaterialName::Vacuum => MaterialKind::Gas,
+            MaterialName::Rubber => MaterialKind::Polymer,
+            MaterialName::Plasma => MaterialKind::Plasma,
+            MaterialName::Custom(_) => MaterialKind::Other,
+        };
+
+        Self { name, kind, matcat_id }
+    }
+
+    pub fn vacuum() -> Self {
+        Self::new(MaterialName::Vacuum)
+    }
+}

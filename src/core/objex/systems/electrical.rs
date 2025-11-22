@@ -1,26 +1,58 @@
-use crate::core::objex::core::Object;
-use crate::core::objex::geospec::{Dimensions, Volume, SurfaceArea};
-use crate::core::objex::matcat::materials::default_props;
+use crate::core::objex::core::Objex;
+use crate::core::objex::geospec::traits::{SurfaceArea, Volume};
+use crate::core::objex::matcat::materials::props_for;
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ElectricalProps {
-    pub conductivity: f32,
-    pub resistivity: f32,
-    pub resistance: f32,
-    pub capacitance: f32,
+    pub conductivity: f32,   // normalized 0–1
+    pub resistivity: f32,    // 1 / conductivity
+    pub resistance_ohm: f64, // R = ρ L / A
+    pub capacitance_f: f64,  // C = ε A / d
 }
 
-pub fn derive_electrical<T: Dimensions + Volume + SurfaceArea>(obj: &Object<T>) -> ElectricalProps {
-    let mat_props = &obj.material;
-    let vol = obj.shape.volume() as f32;
-    let length = vol.cbrt();
-    let area = obj.shape.surface_area() as f32 / 6.0;
+/// Derive electrical behavior from Objex blueprint.
+pub fn derive_electrical(obj: &Objex) -> ElectricalProps {
 
-    let conductivity = mat_props.electrical_conductivity;
-    let resistivity = if conductivity > 0.0 { 1.0 / conductivity } else { f32::INFINITY };
-    let resistance = resistivity * length / area.max(1e-6);
-    let capacitance = (area / length.max(1e-6)) * 8.85e-12;
+    // --------------------------
+    // Material electrical props
+    // --------------------------
+    let mat_props = props_for(&obj.material.matcat_id);
 
-    ElectricalProps { conductivity, resistivity, resistance, capacitance }
+    let conductivity = mat_props.electrical_conductivity; 
+    let resistivity = if conductivity > 0.0 {
+        1.0 / conductivity
+    } else {
+        f32::INFINITY
+    };
+
+    // --------------------------
+    // Geometry
+    // --------------------------
+    let volume_m3 = obj.shape.volume();
+    let area_m2   = obj.shape.surface_area();
+
+    // Characteristic length
+    let length_m = volume_m3.cbrt();
+
+    // Effective cross-sectional area
+    let area_eff = (area_m2 / 6.0).max(1e-12);
+
+    // --------------------------
+    // Electrical behaviors
+    // --------------------------
+    // R = ρ L / A
+    let resistance_ohm = (resistivity as f64) * length_m / area_eff;
+
+    // C = ε A / d
+    const EPSILON_0: f64 = 8.854e-12;
+    let capacitance_f = EPSILON_0 * area_eff / length_m.max(1e-12);
+
+    ElectricalProps {
+        conductivity,
+        resistivity,
+        resistance_ohm,
+        capacitance_f,
+    }
 }

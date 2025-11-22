@@ -2,9 +2,9 @@
 
 use crate::core::tdt::sim_calendar::*;
 use std::ops::{Add, Sub, Mul, Div};
-
+use serde::{Serialize, Deserialize};
 /// Duration in simulation time: nanoseconds as i128.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct SimDuration(pub i128);
 
 impl SimDuration {

@@ -21,18 +21,18 @@ pub use solar_exposure::SolarExposureData;
 
 pub mod orbital_motion;
 pub use orbital_motion::OrbitalMotion;
+
 pub mod uv_degradation;
 pub use uv_degradation::UVDegradationData;
 
 
-use crate::core::objex::systems::{
-    MechanicalProps,
-    StrengthProps,
-    ElectricalProps,
-    DegradationProps,
-    OpticalProps,
-    CompositeProps,
-};
+use crate::core::objex::systems::mass::MassProps;
+use crate::core::objex::systems::mechanical::MechanicalProps;
+use crate::core::objex::systems::strength::StrengthProps;
+use crate::core::objex::systems::electrical::ElectricalProps;
+use crate::core::objex::systems::degradation::DegradationProps;
+use crate::core::objex::systems::optical::OpticalProps;
+use crate::core::objex::systems::composite::CompositeProps;
 use std::collections::HashMap;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};

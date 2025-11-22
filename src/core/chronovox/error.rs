@@ -14,6 +14,13 @@ pub enum ChronovoxError {
 
     #[error("Missing field: {0}")]
     MissingField(String),
+
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Invalid event kind: {0}")]
+    InvalidEventKind(String),
+
 }
 
 // unify everything under Chronovox

@@ -1,13 +1,13 @@
 use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    tdt::sim_duration::SimDuration;
-    tdt::core::TimeDelta,
 };
-use crate::sim::{systems::System, world::WorldState},
-use crate::sim::components::OrbitalMotion,
-use serde_json::json;
-use uuid::Uuid;
+use crate::sim::{
+    systems::System,
+    world::WorldState,
+    components::OrbitalMotion,
+};
 
+use serde_json::json;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -22,81 +22,98 @@ impl System for SolarMotionSystem {
         let now = clock.current;
         let mut events = vec![];
 
-        // --- locate the Sun ---
-        let (id_str, obj) = match world.objects.iter_mut().find(|(_, o)| o.name == "Sun") {
-            Some(p) => p,
-            None => return events,
+        //---------------------------------------------------------------
+        // STEP 1 — Locate the Sun entity
+        // Rule: entity.metadata["name"] == "Sun"
+        //---------------------------------------------------------------
+        let maybe_sun = world.entities
+            .iter_mut()
+            .find(|(_, ent)| {
+                ent.metadata
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    == Some("Sun")
+            });
+
+        let (sun_id, sun) = match maybe_sun {
+            Some(pair) => pair,
+            None => return events, // No sun in this world
         };
 
-        let uuid = match Uuid::parse_str(id_str) {
-            Ok(v) => v,
-            Err(_) => return events,
-        };
-
-        let Some(orbit) = world.components.orbital_components.get_mut(&uuid) else {
+        //---------------------------------------------------------------
+        // STEP 2 — Get its orbital motion component
+        //---------------------------------------------------------------
+        let Some(orbit) = world.components.orbital_components.get_mut(sun_id) else {
             return events;
         };
 
-        // -------------------------------
-        // Convert integer fields to f64
-        // -------------------------------
+        //---------------------------------------------------------------
+        // STEP 3 — Convert integer fields to f64 for math
+        //---------------------------------------------------------------
         let lon_rate = orbit.lon_rate_per_s as f64;
         let lat_rate = orbit.lat_rate_per_s as f64;
         let r_rate   = orbit.r_rate_per_s as f64;
 
-        // -------------------------------
-        // LONGITUDE UPDATE
-        // uvox uses 1e11 units per degree
-        // -------------------------------
-        const DEG_SCALE: f64 = 1e11;
+        //---------------------------------------------------------------
+        // Step 4 — Longitude motion (360° wrap)
+        //---------------------------------------------------------------
+        const DEG_SCALE: f64 = 1e11;       // uvox degrees scaling
         const FULL_ROT: f64 = 360.0 * DEG_SCALE;
 
-        let new_lon = (obj.uvoxid.lon_code as f64 + lon_rate * dt_s)
+        let new_lon = (sun.uvoxid.lon_code as f64 + lon_rate * dt_s)
             .rem_euclid(FULL_ROT);
+        sun.uvoxid.lon_code = new_lon as i64;
 
-        obj.uvoxid.lon_code = new_lon as i64;
+        //---------------------------------------------------------------
+        // Step 5 — Latitude oscillation (seasonal tilt)
+        //---------------------------------------------------------------
+        let mut new_lat =
+            sun.uvoxid.lat_code as f64 + lat_rate * dt_s * orbit.tilt_dir as f64;
 
-        // -------------------------------
-        // LATITUDE OSCILLATION (tilt)
-        // -------------------------------
-        let new_lat =
-            obj.uvoxid.lat_code as f64 + lat_rate * dt_s * orbit.tilt_dir as f64;
-
-        // flip direction at amplitude bounds
         if new_lat.abs() > orbit.lat_amp as f64 {
             orbit.tilt_dir *= -1;
+            // Reapply using reversed direction so we stay within bounds
+            new_lat =
+                sun.uvoxid.lat_code as f64 + lat_rate * dt_s * orbit.tilt_dir as f64;
         }
 
-        obj.uvoxid.lat_code = new_lat as i64;
+        sun.uvoxid.lat_code = new_lat as i64;
 
-        // -------------------------------
-        // RADIUS UPDATE (eccentric orbit)
-        // r_um is stored in micrometers
-        // -------------------------------
-        let new_r =
-            obj.uvoxid.r_um as f64 + r_rate * dt_s * orbit.r_dir as f64;
+        //---------------------------------------------------------------
+        // Step 6 — Radius oscillation (eccentric orbit)
+        //---------------------------------------------------------------
+        let mut new_r =
+            sun.uvoxid.r_um as f64 + r_rate * dt_s * orbit.r_dir as f64;
 
-        if new_r >= (orbit.mean_r_um + orbit.delta_r_um) as f64 ||
-           new_r <= (orbit.mean_r_um - orbit.delta_r_um) as f64
-        {
+        let max_r = (orbit.mean_r_um + orbit.delta_r_um) as f64;
+        let min_r = (orbit.mean_r_um - orbit.delta_r_um) as f64;
+
+        if new_r >= max_r || new_r <= min_r {
             orbit.r_dir *= -1;
+            // recompute with flipped direction
+            new_r =
+                sun.uvoxid.r_um as f64 + r_rate * dt_s * orbit.r_dir as f64;
         }
 
-        obj.uvoxid.r_um = new_r as i64;
+        sun.uvoxid.r_um = new_r as i64;
 
-        // -------------------------------
-        // Emit event
-        // -------------------------------
-        events.push(ChronoEvent {
-            id: obj.uvoxid,
-            t: now,
-            kind: EventKind::Custom("SolarPositionUpdate".into()),
-            payload: Some(json!({
-                "lat_code": obj.uvoxid.lat_code,
-                "lon_code": obj.uvoxid.lon_code,
-                "r_um": obj.uvoxid.r_um,
-            })),
-        });
+        //---------------------------------------------------------------
+        // Step 7 — Emit ChronoEvent in modern format
+        //---------------------------------------------------------------
+        events.push(
+            ChronoEvent::new(
+                sun.entity_id,
+                sun.world_id,
+                now,
+                EventKind::Custom("SolarPositionUpdate".into()),
+            )
+            .with_payload(json!({
+                "entity_id": sun.entity_id,
+                "lat_code": sun.uvoxid.lat_code,
+                "lon_code": sun.uvoxid.lon_code,
+                "r_um": sun.uvoxid.r_um
+            }))
+        );
 
         events
     }

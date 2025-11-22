@@ -1,16 +1,14 @@
 use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    tdt::sim_duration::SimDuration;
-    tdt::core::TimeDelta,
 };
 use crate::sim::{
-    {systems::System, world::WorldState},
-    components::{SunEmitter, SunlightComponent},};
-use uuid::Uuid;
+    systems::System,
+    world::WorldState,
+    components::{SunEmitter, SunlightComponent},
+};
+
 use serde_json::json;
 use std::f64::consts::PI;
-
-
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -23,93 +21,92 @@ impl System for SolarRaycastSystem {
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
+
         let Some(clock) = &world.clock else {
             return events;
         };
-        let dt_s = world.clock.as_ref().unwrap().step_seconds();
         let now = clock.current;
 
-        // --- FIND SUN OBJECT ---
-        let (sun_id_str, sun_obj) = match world.objects.iter().find(|(_, o)| o.name == "Sun") {
-            Some(pair) => pair,
-            None => return events,
-        };
-
-        let sun_uuid = match Uuid::parse_str(sun_id_str) {
-            Ok(id) => id,
-            Err(_) => return events,
-        };
-
-        // ---------------------------------------------------------
-        // 🔥 FIXED: read SunEmitter (source of luminosity/UV/etc)
-        // ---------------------------------------------------------
-        let Some(emitter) = world.components.sun_emitter_components.get(&sun_uuid) else {
+        // -------------------------------------------------------------
+        // STEP 1 — Find the entity that acts as the Sun
+        // -------------------------------------------------------------
+        let Some((&sun_id, sun_emitter)) =
+            world.components.sun_emitter_components.iter().next()
+        else {
+            // No sun in the world
             return events;
         };
 
-        // Convert position
+        let Some(sun_obj) = world.entities.get(&sun_id) else {
+            return events;
+        };
+
+        // -------------------------------------------------------------
+        // STEP 2 — Compute sun position in spherical coords
+        // -------------------------------------------------------------
         let sun_lat = (sun_obj.uvoxid.lat_code as f64 / 1e11).to_radians();
         let sun_lon = (sun_obj.uvoxid.lon_code as f64 / 1e11).to_radians();
 
+        // Distance from Earth center (meters)
         let r_m = sun_obj.uvoxid.r_um as f64 / 1e6;
 
-        // ---------------------------------------------------------
-        // 🔥 FIXED: irradiance comes from SunEmitter.luminosity_w
-        // ---------------------------------------------------------
-        let irradiance = emitter.luminosity_w / (4.0 * PI * r_m.powi(2));
+        // Irradiance at distance r
+        let irradiance = sun_emitter.luminosity_w / (4.0 * PI * r_m.powi(2));
 
-        // --- RAYCAST TO ALL OBJECTS ---
-        for (id_str, obj) in &world.objects {
-            if obj.name == "Sun" {
+        // -------------------------------------------------------------
+        // STEP 3 — For each entity, compute light exposure
+        // -------------------------------------------------------------
+        for (id, obj) in world.entities.iter() {
+            // Skip the sun itself
+            if *id == sun_id {
                 continue;
             }
-
-            let uuid = match Uuid::parse_str(id_str) {
-                Ok(id) => id,
-                Err(_) => continue,
-            };
 
             let lat = (obj.uvoxid.lat_code as f64 / 1e11).to_radians();
             let lon = (obj.uvoxid.lon_code as f64 / 1e11).to_radians();
 
-            // Solar zenith geometry
+            // Solar zenith angle
             let cos_z =
                 sun_lat.sin() * lat.sin() +
                 sun_lat.cos() * lat.cos() * (sun_lon - lon).cos();
 
-            let zenith = cos_z.acos().to_degrees();
-            let lit = zenith < 90.0;
+            let zenith_deg = cos_z.acos().to_degrees();
+            let is_lit = zenith_deg < 90.0;
 
-            if lit {
-                // ---------------------------------------------------------
-                // 🔥 FIXED: write per-object sunlight component
-                // ---------------------------------------------------------
-                world.components.sunlight_components.insert(uuid, SunlightComponent {
-                    irradiance_w_m2: irradiance,
-                    uv_index: emitter.uv_fraction * 100.0,
-                });
-
+            // ---------------------------------------------------------
+            // STEP 4 — Set or clear sunlight component
+            // ---------------------------------------------------------
+            if is_lit {
+                world.components.sunlight_components.insert(
+                    *id,
+                    SunlightComponent {
+                        irradiance_w_m2: irradiance,
+                        uv_index: sun_emitter.uv_fraction * 100.0,
+                    }
+                );
             } else {
-                world.components.sunlight_components.remove(&uuid);
+                world.components.sunlight_components.remove(id);
             }
 
-            events.push(ChronoEvent {
-                id: obj.uvoxid,
-
-              t: now,
-
-                kind: EventKind::Custom("SolarRaycastUpdate".into()),
-                payload: Some(json!({
-                    "uuid": id_str,
-                    "lit": lit,
-                    "zenith_angle_deg": zenith,
-                    "timestamp": clock.current_wall_time().to_rfc3339()
-
-                })),
-            });
-
+            // ---------------------------------------------------------
+            // STEP 5 — Emit solar update event
+            // ---------------------------------------------------------
+            events.push(
+                ChronoEvent::new(
+                    obj.entity_id,
+                    obj.world_id,
+                    now,
+                    EventKind::Custom("SolarRaycastUpdate".into())
+                )
+                .with_payload(json!({
+                    "entity_id": id,
+                    "lit": is_lit,
+                    "zenith_angle_deg": zenith_deg,
+                    "timestamp": clock.current_wall_time().to_rfc3339(),
+                }))
+            );
         }
 
-        events
+        return events;
     }
 }

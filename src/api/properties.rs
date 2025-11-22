@@ -1,5 +1,5 @@
 use axum::{
-    debug_handler,
+    //debug_handler,
     extract::{Path, State},
     response::IntoResponse,
     http::StatusCode,
@@ -34,7 +34,7 @@ pub struct PropertyInput {
     pub address_id: Option<Uuid>,
     pub user_owner_id: Option<Uuid>,
     pub name: Option<String>,
-    pub frame_id: Option<i64>,
+    pub world_id: Option<i64>,
     pub property_type: Option<PropertyType>,
     pub square_feet: Option<i64>,
     pub sqft_under_air: Option<i64>,
@@ -66,7 +66,7 @@ impl From<PropertyInput> for PropertyRecord {
             address_id: input.address_id,
             user_owner_id: input.user_owner_id,
             name: input.name,
-            frame_id: input.frame_id,
+            world_id: input.world_id,
             property_type: input.property_type,
             square_feet: input.square_feet,
             sqft_under_air: input.sqft_under_air,
@@ -111,11 +111,11 @@ pub async fn list_properties(State(app): State<AppState>) -> impl IntoResponse {
     }
 }
 
-pub async fn list_properties_for_world(State(app): State<AppState>, Path(frame_id): Path<i64>) -> impl IntoResponse {
+pub async fn list_properties_for_world(State(app): State<AppState>, Path(world_id): Path<i64>) -> impl IntoResponse {
     match app.supa
         .from("properties")
         .select("*")
-        .eq("frame_id", &frame_id.to_string())
+        .eq("world_id", &world_id.to_string())
         .execute_typed::<PropertyRecord>()
         .await {
             Ok(rows) => Json(rows).into_response(),
@@ -175,6 +175,8 @@ pub async fn delete_property(State(app): State<AppState>, Path(id): Path<Uuid>) 
     }
 }
 
+//TODO make this for entities instead of objex
+/*
 use crate::sim::generators::property_objex::generate_property_objexes;
 use crate::supabasic::objex::ObjexRecord;
 
@@ -240,3 +242,4 @@ pub async fn generate_property_objects(
         }
     }
 }
+*/

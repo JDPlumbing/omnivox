@@ -1,40 +1,45 @@
-use crate::core::chronovox::UvoxId;
-use crate::core::tdt::sim_time::SimTime;
 use serde::{Serialize, Deserialize};
+use serde_json::Value;
 use uuid::Uuid;
-use crate::supabasic::events::EventRow;
-use chrono::SecondsFormat;
 
-/// A Chronovox event: something happening at a place + time.
+use crate::core::tdt::sim_time::SimTime;
+use crate::supabasic::events::EventRow;
+
+/// ---------------------------------------------------------------------------
+/// ChronoEvent — a *command/event* describing what happened to an entity.
+/// ---------------------------------------------------------------------------
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChronoEvent {
-    /// Where it occurred (spatial ID)
-    pub id: UvoxId,
+    /// Which entity this event refers to
+    pub entity_id: Uuid,
 
-    /// Absolute simulation timestamp (ns since Unix epoch)
-    #[serde(serialize_with = "crate::core::tdt::sim_time::serialize_simtime")]
+    /// World where the event occurred
+    pub world_id: i64,
 
+    /// Absolute simulation timestamp
     pub t: SimTime,
 
     /// What happened
     pub kind: EventKind,
-    
-    /// Optional extra data
+
+    /// Optional extra info
     #[serde(default)]
-    pub payload: Option<serde_json::Value>,
+    pub payload: Option<Value>,
 }
 
-/// Types of events Chronovox can represent.
+/// ---------------------------------------------------------------------------
+/// Event categories
+/// ---------------------------------------------------------------------------
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EventKind {
     // --- Lifecycle ---
     Spawn,
     Despawn,
 
-    // --- Movement ---
+    // --- Motion ---
     Move { dr: i64, dlat: i64, dlon: i64 },
     Accelerate { ar: f64, alat: f64, alon: f64 },
-    Teleport { r_um: u64, lat_code: i64, lon_code: i64 },
+    Teleport { r_um: i64, lat_code: i64, lon_code: i64 },
 
     // --- Environment ---
     TemperatureChange { delta_c: f64 },
@@ -42,7 +47,7 @@ pub enum EventKind {
     Radiation { dose: f64 },
     Shock { g: f64 },
 
-    // --- Materials ---
+    // --- Material ---
     Degrade { rate: f64 },
     Leak { severity: f64 },
     Fracture { plane: String },
@@ -61,41 +66,42 @@ pub enum EventKind {
 }
 
 impl ChronoEvent {
-    /// Create a bare event with no payload
-    pub fn new(id: UvoxId, t: SimTime, kind: EventKind) -> Self {
-        Self { id, t, kind, payload: None }
-    }
-
-    /// Create an event at the world’s current SimTime
-    pub fn at_now(id: UvoxId, world: &crate::sim::world::WorldState, kind: EventKind) -> Self {
-        let t = world.clock
-            .as_ref()
-            .expect("world.clock missing")
-            .current;
-
-        Self { id, t, kind, payload: None }
+    /// Create a new event with no payload.
+    #[inline]
+    pub fn new(entity_id: Uuid, world_id: i64, t: SimTime, kind: EventKind) -> Self {
+        Self {
+            entity_id,
+            world_id,
+            t,
+            kind,
+            payload: None,
+        }
     }
 
     /// Add payload fluently
-    pub fn with_payload(mut self, payload: serde_json::Value) -> Self {
+    #[inline]
+    pub fn with_payload(mut self, payload: Value) -> Self {
         self.payload = Some(payload);
         self
     }
 
-    /// Custom event with a freeform string kind
-    pub fn custom(id: UvoxId, t: SimTime, label: impl Into<String>) -> Self {
-        ChronoEvent::new(id, t, EventKind::Custom(label.into()))
+    /// Create a simple custom event
+    #[inline]
+    pub fn custom(entity_id: Uuid, world_id: i64, t: SimTime, label: impl Into<String>) -> Self {
+        ChronoEvent::new(entity_id, world_id, t, EventKind::Custom(label.into()))
     }
 }
 
+/// ---------------------------------------------------------------------------
 /// Convert DB row → ChronoEvent
-/// Assumes DB stores absolute nanoseconds since Unix epoch.
+/// (DB stores absolute ns timestamps + serialized kind + payload)
+/// ---------------------------------------------------------------------------
 impl From<EventRow> for ChronoEvent {
     fn from(r: EventRow) -> Self {
         ChronoEvent {
-            id: UvoxId::new(r.frame_id, r.r_um, r.lat_code, r.lon_code),
+            entity_id: r.entity_id,
+            world_id: r.world_id,
 
-            // DB column already contains whole ns
             t: SimTime::from_ns(r.ticks as i128),
 
             kind: serde_json::from_str(&r.kind)

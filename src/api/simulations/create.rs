@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::{Serialize, Deserialize};
+//use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use serde_json::json;
 use super::{SimulationDto, NewSimulation};
@@ -22,7 +22,7 @@ pub async fn create_simulation(
 
     let insert_payload = json!([{
         "simulation_id": new_id,
-        "frame_id": payload.frame_id,
+        "world_id": payload.world_id,
         "tick_rate": payload.tick_rate,
         "last_saved": payload.last_saved,
         "metadata": payload.metadata.clone().unwrap_or_else(|| json!({})),

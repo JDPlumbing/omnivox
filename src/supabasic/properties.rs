@@ -119,7 +119,7 @@ pub struct PropertyRecord {
     pub property_id: Option<Uuid>,
     pub address_id: Option<Uuid>,
     pub user_owner_id: Option<Uuid>,
-    pub frame_id: Option<i64>, // 👈 NEW: link to world
+    pub world_id: Option<i64>, // 👈 NEW: link to world
     pub name: Option<String>,
     pub property_type: Option<PropertyType>,
 

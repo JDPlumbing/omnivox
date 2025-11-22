@@ -1,12 +1,10 @@
 use serde::{Serialize, Deserialize};
-use crate::core::objex::matcat::MaterialLink;
+
+use crate::core::objex::core::MaterialLink;
 use crate::core::objex::geospec::shapes::{Shape, Sphere, BoxShape, Cylinder};
 
-/// A static blueprint for a physical object: geometry + material.
-/// Contains *no* world identity, *no* position, *no* time.
-///
-/// If two Objex instances have the same Shape and the same MaterialLink
-/// (i.e., same MatCatId), they represent the exact same object blueprint.
+/// Canonical blueprint for a physical object.
+/// Identified by a stable UUID.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Objex {
     pub shape: Shape,
@@ -14,12 +12,12 @@ pub struct Objex {
 }
 
 impl Objex {
-    /// Construct directly from shape + material.
     pub fn new(shape: Shape, material: MaterialLink) -> Self {
-        Self { shape, material }
+        Self {
+            shape,
+            material,
+        }
     }
-
-    /// Convenience constructors (no names, no UUIDs, pure blueprint)
 
     pub fn sphere(material: MaterialLink, radius: f64) -> Self {
         Self::new(

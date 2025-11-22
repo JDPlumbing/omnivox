@@ -1,12 +1,14 @@
 use crate::core::{
-    objex::core::{Objex, Object},
-    objex::systems::mechanical::{derive_mechanical, MechanicalProps},
-    
-    objex::geospec::Shape,
-    objex::matcat::materials::{props_for, default_props},
     chronovox::ChronoEvent,
+    objex::core::Objex,
+    objex::systems::mechanical::{derive_mechanical, MechanicalProps},
+    objex::matcat::materials::props_for,
 };
-use crate::sim::{systems::System, world::WorldState},
+
+use crate::sim::{
+    systems::System,
+    world::WorldState,
+};
 
 use serde::{Serialize, Deserialize};
 
@@ -15,30 +17,39 @@ pub struct MechanicalSystem;
 
 impl System for MechanicalSystem {
     fn name(&self) -> &'static str {
-        "mechanical"
+        "MechanicalSystem"
     }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        for (id, objex) in &world.objects {
-            let mat = if let Some(mat_id) = &objex.material.matcat_id {
-                props_for(mat_id)
-            } else {
-                default_props()
+        for (entity_id, entity) in world.entities.iter() {
+
+            //---------------------------------------------------------
+            // Fetch MatProps (physics material properties)
+            //---------------------------------------------------------
+            let mat_id = &entity.material().matcat_id;
+            let mat_props = props_for(mat_id);
+
+            //---------------------------------------------------------
+            // Build Objex blueprint (Shape + MaterialLink)
+            //---------------------------------------------------------
+            let object = Objex {
+                shape: entity.shape().clone(),
+                material: entity.material().clone(),
             };
 
-            let object = Object {
-                shape: objex.shape.clone(),
-                material: mat,
-            };
+            //---------------------------------------------------------
+            // Derive mechanical properties
+            //---------------------------------------------------------
+            let props: MechanicalProps = derive_mechanical(&object);
 
-            let props = derive_mechanical(&object);
-            let uuid = objex.entity_id;
-            world.components.mechanical_components.insert(uuid, props);
-
-
-
+            //---------------------------------------------------------
+            // Store mechanical component
+            //---------------------------------------------------------
+            world.components
+                .mechanical_components
+                .insert(*entity_id, props);
         }
 
         events

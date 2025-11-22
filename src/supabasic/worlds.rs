@@ -7,16 +7,18 @@ use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 
 /// Mirrors the `worlds` table in Supabase.
-/// This contains ONLY persistent metadata.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Contains ONLY persistent metadata.
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct WorldRecord {
-    pub frame_id: i64,
+    pub world_id: i64,
     pub name: Option<String>,
     pub description: Option<String>,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub deleted_at: Option<DateTime<Utc>>,
+
+    pub world_epoch: Option<i128>,  // raw i128 ns
 }
 
 impl DbModel for WorldRecord {
@@ -24,46 +26,48 @@ impl DbModel for WorldRecord {
 }
 
 impl WorldRecord {
-    /// Get a list of all worlds.
+    /// List all worlds
     pub async fn list(supa: &Supabase) -> Result<Vec<Self>, SupabasicError> {
         supa.from(Self::table())
-            .select("frame_id,name,description,created_at,updated_at,deleted_at")
+            .select("world_id,name,description,world_epoch,created_at,updated_at,deleted_at")
             .execute_typed::<Self>()
             .await
     }
 
-    /// Fetch a single world by its frame_id.
-    pub async fn fetch(supa: &Supabase, frame_id: i64) -> Result<Self, SupabasicError> {
+    /// Fetch world by world_id
+    pub async fn fetch(supa: &Supabase, world_id: i64) -> Result<Self, SupabasicError> {
         supa.from(Self::table())
-            .select("frame_id,name,description,created_at,updated_at,deleted_at")
-            .eq("frame_id", &frame_id.to_string())
+            .select("world_id,name,description,world_epoch,created_at,updated_at,deleted_at")
+            .eq("world_id", &world_id.to_string())
+
             .single_typed::<Self>()
             .await
     }
 
-    /// Same as `fetch()` but preserves your old name.
-    pub async fn get(supa: &Supabase, frame_id: i64) -> Result<Self, SupabasicError> {
-        Self::fetch(supa, frame_id).await
+    /// Alias for fetch()
+    pub async fn get(supa: &Supabase, world_id: i64) -> Result<Self, SupabasicError> {
+        Self::fetch(supa, world_id).await
     }
 
-    /// Create a new world.
+    /// Insert a new world
     pub async fn create(supa: &Supabase, payload: &NewWorld) -> Result<Self, SupabasicError> {
-        let inserted: Vec<Self> = supa
+        let rows: Vec<Self> = supa
             .from(Self::table())
             .insert(payload)
-            .select("frame_id,name,description,created_at,updated_at,deleted_at")
+            .select("world_id,name,description,world_epoch,created_at,updated_at,deleted_at")
             .execute_typed()
             .await?;
 
-        inserted.into_iter().next()
+        rows.into_iter()
+            .next()
             .ok_or_else(|| SupabasicError::Other("empty insert response".into()))
     }
 }
 
-/// Payload for inserting a new world into Supabase.
+/// Payload for creating new worlds
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewWorld {
-    pub frame_id: i64,
+    pub world_id: i64,
     pub name: Option<String>,
     pub description: Option<String>,
 }

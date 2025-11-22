@@ -28,7 +28,7 @@ impl Moon {
         entity.name = "Moon".to_string();
 
         // initial orbit: mean Earth–Moon distance
-        entity.uvoxid = UvoxId::new(0, 384_400_000_000, 0, 0);
+        entity.uvoxid = UvoxId::new(384_400_000_000, 0, 0);
 
         // orbital period: 27.3217 days = 2,360,590 s
         let lon_step = (360.0 / 2_360_590.0 * 1e6) as i64; // µdeg per s

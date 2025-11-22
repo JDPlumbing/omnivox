@@ -1,17 +1,16 @@
 use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-
-    tdt::core::TimeDelta,
-    tdt::sim_duration::{SimDuration},
     objex::matcat::materials::props_for,
-    objex::systems::mass::derive_mass_from_objex,
+    objex::systems::mass::derive_mass,
+    objex::core::Objex,
 };
+
 use crate::sim::{
-        systems::System,
-        world::WorldState,
-        components::corrosion::CorrosionData,
-    },
-use uuid::Uuid;
+    systems::System,
+    world::WorldState,
+    components::corrosion::CorrosionData,
+};
+
 use serde_json::json;
 use serde::{Serialize, Deserialize};
 
@@ -24,10 +23,8 @@ impl CorrosionSystem {
         m * 1000.0
     }
 
-    /// Compute corrosion rate (m/year) based on material + environment
+    /// Compute corrosion rate (m/year)
     fn rate_m_per_year(resistance: f64, env_factor: f64) -> f64 {
-        // 0 resistance → 0.1mm/year
-        // 1 resistance → ~0 corrosion
         (1.0 - resistance) * 1e-4 * env_factor
     }
 }
@@ -36,38 +33,53 @@ impl System for CorrosionSystem {
     fn name(&self) -> &'static str { "CorrosionSystem" }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
-        let mut events = Vec::new();
-        let Some(clock) = &world.clock else { return events };
+        let mut events = vec![];
+
+        let Some(clock) = &world.clock else {
+            return events;
+        };
+
         let now = clock.current;
-        // Convert sim step to fractional years
         let dt_years = clock.step_seconds() / (365.0 * 86400.0);
 
-        for (id_str, obj) in &world.objects {
-            let uuid = match Uuid::parse_str(id_str) {
-                Ok(id) => id,
-                Err(_) => continue,
+        for (entity_id, entity) in world.entities.iter() {
+
+            //---------------------------------------------------------
+            // Material properties — NO Option!
+            //---------------------------------------------------------
+            let mat_id = &entity.material().matcat_id;
+            let mat_props = props_for(mat_id);
+
+            //---------------------------------------------------------
+            // Build Objex blueprint
+            //---------------------------------------------------------
+            let objex = Objex {
+                shape: entity.shape().clone(),
+                material: entity.material().clone(),
             };
 
-            // Requires material
-            let Some(mat_id) = &obj.material.matcat_id else {
-                continue;
-            };
+            //---------------------------------------------------------
+            // Mass model → we only need surface area
+            //---------------------------------------------------------
+            let mass_info = derive_mass(&objex);
+            let area = mass_info.surface_area_m2;
 
-            let props = props_for(mat_id);
-            let resistance = props.corrosion_resistance as f64;
-            let env_factor = 1.0;     // Placeholder for future humidity / salinity / pH modeling
+            //---------------------------------------------------------
+            // Compute corrosion rate
+            //---------------------------------------------------------
+            let env_factor = 1.0;
+            let rate = Self::rate_m_per_year(
+                mat_props.corrosion_resistance as f64,
+                env_factor,
+            );
 
-            let rate = Self::rate_m_per_year(resistance, env_factor);
-
-            // Geometry
-            let mass = derive_mass_from_objex(obj);
-            let area = mass.surface_area_m2;
-
-            // Component entry
+            //---------------------------------------------------------
+            // Initialize/update component
+            //---------------------------------------------------------
             let entry = world.components.corrosion_components
-                .entry(uuid)
+                .entry(*entity_id)
                 .or_insert(CorrosionData {
-                    object_id: uuid,
+                    object_id: *entity_id,
                     surface_area: area,
                     thickness_loss: 0.0,
                     rate,
@@ -75,23 +87,27 @@ impl System for CorrosionSystem {
                     severity: 0.0,
                 });
 
-            // Accumulate corrosion
+            //---------------------------------------------------------
+            // Update corrosion state
+            //---------------------------------------------------------
             entry.thickness_loss += rate * dt_years;
 
-            let reference_thickness = 0.01;  // 1 cm
+            let reference_thickness = 0.01; // 1 cm steel
             entry.severity = (entry.thickness_loss / reference_thickness).min(1.0);
 
-            // Human-readable mm
             let loss_mm = Self::m_to_mm(entry.thickness_loss);
 
-            let (event_type, details) = if entry.severity >= 1.0 {
+            //---------------------------------------------------------
+            // Choose event type
+            //---------------------------------------------------------
+            let (event_name, details) = if entry.severity >= 1.0 {
                 (
                     "CorrosionFailure",
                     json!({
                         "rate_m_per_year": entry.rate,
                         "severity": entry.severity,
-                        "reference_thickness_m": reference_thickness,
-                    }),
+                        "reference_thickness_m": reference_thickness
+                    })
                 )
             } else {
                 (
@@ -99,24 +115,29 @@ impl System for CorrosionSystem {
                     json!({
                         "thickness_loss_m": entry.thickness_loss,
                         "thickness_loss_mm": loss_mm,
-                        "severity": entry.severity,
-                    }),
+                        "severity": entry.severity
+                    })
                 )
             };
 
-            // Emit event using real simtime
-            events.push(ChronoEvent {
-                id: obj.uvoxid.clone(),  // ← FIXED
-                t: now,
-                kind: EventKind::Custom(event_type.into()),
-                payload: Some(json!({
+            //---------------------------------------------------------
+            // Emit event
+            //---------------------------------------------------------
+            events.push(
+                ChronoEvent::new(
+                    entity.entity_id,
+                    entity.world_id,
+                    now,
+                    EventKind::Custom(event_name.into())
+                )
+                .with_payload(json!({
                     "surface_area_m2": entry.surface_area,
                     "env_factor": entry.environment_factor,
                     "details": details
-                })),
-            });
-
+                }))
+            );
         }
+
         events
     }
 }

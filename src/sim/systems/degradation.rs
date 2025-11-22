@@ -1,11 +1,15 @@
 use crate::core::{
-    objex::core::{Objex},
-    objex::systems::degradation::{derive_degradation, DegradationProps},
-    
     chronovox::ChronoEvent,
+    objex::core::Objex,
+    objex::systems::degradation::{derive_degradation, DegradationProps},
     objex::matcat::materials::{props_for, default_props},
 };
-use crate::sim::{systems::System, world::WorldState},
+
+use crate::sim::{
+    systems::System,
+    world::WorldState,
+};
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -13,31 +17,39 @@ pub struct DegradationSystem;
 
 impl System for DegradationSystem {
     fn name(&self) -> &'static str {
-        "degradation"
+        "DegradationSystem"
     }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        for (_id_str, objex) in &world.objects {
-            let mat = objex
-                .material
-                .matcat_id
-                .map(|id| props_for(&id))
+        for (entity_id, entity) in world.entities.iter() {
 
-                .unwrap_or_else(default_props);
+            //---------------------------------------------------------
+            // Material properties (MatProps)
+            //---------------------------------------------------------
+            let mat_id = &entity.material().matcat_id;
+            let mat_props = props_for(mat_id);
 
-            let object = Object {
-                shape: objex.shape.clone(),
-                material: mat,
+            //---------------------------------------------------------
+            // Construct Objex blueprint
+            //---------------------------------------------------------
+            let object = Objex {
+                shape: entity.shape().clone(),
+                material: entity.material().clone(),
             };
 
-            let props = derive_degradation(&object);
+            //---------------------------------------------------------
+            // Compute degradation
+            //---------------------------------------------------------
+            let props: DegradationProps = derive_degradation(&object);
 
-            // FIXED: use objex.entity_id directly
+            //---------------------------------------------------------
+            // Store degradation component
+            //---------------------------------------------------------
             world.components
                 .degradation_components
-                .insert(objex.entity_id, props);
+                .insert(*entity_id, props);
         }
 
         events

@@ -1,6 +1,6 @@
 use crate::core::chronovox::ChronoEvent;
 use crate::sim::world::WorldState;
-use crate::sim::simulation::Simulation;
+use crate::sim::simulations::simulation::Simulation;
 
 pub trait System: Send + Sync {
     fn name(&self) -> &'static str;
@@ -29,8 +29,7 @@ pub mod mechanical;
 pub use mechanical::*;
 pub mod optical;
 pub use optical::*;
-pub mod composite;
-pub use composite::*;
+
 pub mod strength;
 pub use strength::*;
 pub mod thermal;

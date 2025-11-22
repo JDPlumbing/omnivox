@@ -2,8 +2,11 @@ use serde::{Serialize, Deserialize};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use crate::matcat::category_ranges::generate_props_from_category;
+use crate::core::objex::matcat::category_ranges::generate_props_from_category;
 use rand::{SeedableRng, rngs::StdRng};
+use crate::core::categories;
+use crate::core::variants;
+use crate::core::grades;
 
 /// 5-byte compact material identifier
 
@@ -27,19 +30,19 @@ impl MatCatId {
     
      /// Serialize to 5-byte array
     pub fn name(&self) -> String {
-        let cat = crate::matcat::categories::CATEGORY_MAP.get(&self.category).unwrap_or(&"Unknown");
-        let variant = crate::matcat::variants::VARIANT_MAP
+        let cat = categories::CATEGORY_MAP.get(&self.category).unwrap_or(&"Unknown");
+        let variant = variants::VARIANT_MAP
             .get(&(self.category, self.variant))
             .unwrap_or(&"Generic");
-        let grade = crate::matcat::grades::GRADE_MAP
+        let grade = grades::GRADE_MAP
             .get(&(self.category, self.variant, self.grade))
             .unwrap_or(&"Standard");
         format!("{cat} - {variant} - {grade}")
     }
 
-    pub fn props(&self) -> Option<crate::matcat::materials::MatProps> {
+    pub fn props(&self) -> Option<crate::core::objex::matcat::materials::MatProps> {
         let mut rng = rand::rng();
-        crate::matcat::category_ranges::generate_props_from_category(self.category, &mut rng)
+        crate::core::objex::matcat::category_ranges::generate_props_from_category(self.category, &mut rng)
     }
 
     pub fn from_str(name: &str) -> Option<Self> {
@@ -299,4 +302,3 @@ pub fn default_props() -> MatProps {
         uv_resistance: 0.5,
     }
 }
-/

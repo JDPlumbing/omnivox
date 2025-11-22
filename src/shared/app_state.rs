@@ -2,7 +2,7 @@ use std::sync::Arc; // ✅ needed for RwLock
 use tokio::sync::RwLock; // ✅ use this one!
 use uuid::Uuid;
 use crate::supabasic::Supabase;
-use crate::sim::runtime::SimulationManager;
+use crate::sim::simulations::runtime::SimulationManager;
 
 #[derive(Clone)]
 pub struct AppState {

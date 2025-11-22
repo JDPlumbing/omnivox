@@ -1,30 +1,26 @@
 use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    
     objex::matcat::materials::props_for,
 };
-use crate::sim::{systems::System, world::WorldState},
-use serde_json::json;
-use uuid::Uuid;
 
+use crate::sim::{
+    systems::System,
+    world::WorldState,
+    components::uv_degradation::UVDegradationData,
+};
+
+use serde_json::json;
 use serde::{Serialize, Deserialize};
 
-/// Tracks UV degradation accumulation per object
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UVDegradationData {
-    pub cumulative_uv_j_m2: f64,
-    pub severity: f64,
-    pub rate_m_per_year: f64,
-}
-
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct UVDegradationSystem;
 
 impl UVDegradationSystem {
     /// Convert cumulative UV dose into degradation severity (0–1)
     fn severity_from_dose(dose: f64, resistance: f64) -> f64 {
-        // Materials with higher UV resistance tolerate more dose
-        let effective_dose = dose / (resistance.clamp(0.01, 1.0) * 1e10);
-        effective_dose.min(1.0)
+        // Avoid divide-by-zero and nonlinear scaling
+        let effective = dose / (resistance.clamp(0.01, 1.0) * 1e10);
+        effective.min(1.0)
     }
 }
 
@@ -32,39 +28,33 @@ impl System for UVDegradationSystem {
     fn name(&self) -> &'static str { "UVDegradationSystem" }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
-        let mut events = Vec::new();
-        let Some(clock) = &world.clock else { return events };
+        let mut events = vec![];
+
+        let Some(clock) = &world.clock else { return events; };
         let now = clock.current;
-        for (entity_id_str, obj) in &world.entities {
-            let uuid = match Uuid::parse_str(entity_id_str) {
-                Ok(id) => id,
-                Err(_) => continue,
-            };
 
-            // Require solar exposure data
-            let Some(exposure) = world.components.solar_exposure_components.get(&uuid) else {
+        for (entity_id, entity) in world.entities.iter() {
+
+            // ---- solar exposure required ----
+            let Some(exposure) = world.components.solar_exposure_components.get(entity_id)
+            else {
                 continue;
             };
 
-            // Material must have a MatCatId
-            let props = if let Some(mat_id) = &obj.material.matcat_id {
-                props_for(mat_id)
-            } else {
-                continue;
-            };
+            // ---- material: ALWAYS present ----
+            let mat_id = &entity.material().matcat_id;
+            let mat_props = props_for(mat_id);
 
-            let resistance = props.uv_resistance as f64;
-
-            // -----------------------------
-            // FIXED: correct field name
-            // -----------------------------
+            let resistance = mat_props.uv_resistance as f64;
             let cumulative_uv = exposure.uv_j_m2;
 
+            // Compute new severity
             let severity = Self::severity_from_dose(cumulative_uv, resistance);
 
-            // Update entry
-            let entry = world.components.uv_degradation_components
-                .entry(uuid)
+            // ---- Update component ----
+            let entry = world.components
+                .uv_degradation_components
+                .entry(*entity_id)
                 .or_insert(UVDegradationData {
                     cumulative_uv_j_m2: 0.0,
                     severity: 0.0,
@@ -74,26 +64,28 @@ impl System for UVDegradationSystem {
             entry.cumulative_uv_j_m2 = cumulative_uv;
             entry.severity = severity;
 
-            // Emit event
+            // ---- Event type ----
             let event_name = if severity >= 1.0 {
                 "UVDegradationFailure"
             } else {
                 "UVDegradationProgress"
             };
 
-            events.push(ChronoEvent {
-                id: obj.uvoxid,
-                t: now,
-                kind: EventKind::Custom(event_name.into()),
-                payload: Some(json!({
-                    "date": clock.current_wall_time().to_rfc3339(),
-
+            // ---- Emit event ----
+            events.push(
+                ChronoEvent::new(
+                    entity.entity_id,
+                    entity.world_id,
+                    now,
+                    EventKind::Custom(event_name.into())
+                )
+                .with_payload(json!({
                     "uv_total_j_m2": cumulative_uv,
                     "severity": severity,
-                    "resistance": resistance
-                })),
-            });
-
+                    "resistance": resistance,
+                    "timestamp": clock.current_wall_time().to_rfc3339(),
+                }))
+            );
         }
 
         events

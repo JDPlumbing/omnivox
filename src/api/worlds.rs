@@ -13,7 +13,7 @@ use crate::shared::app_state::AppState;
 /// DTO returned to clients
 #[derive(serde::Serialize)]
 pub struct WorldDto {
-    pub frame_id: i64,
+    pub world_id: i64,
     pub name: Option<String>,
     pub description: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -31,7 +31,7 @@ pub struct WorldUpdate {
 impl From<WorldRecord> for WorldDto {
     fn from(w: WorldRecord) -> Self {
         Self {
-            frame_id: w.frame_id,
+            world_id: w.world_id,
             name: w.name,
             description: w.description,
             created_at: w.created_at,
@@ -50,7 +50,7 @@ pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoRespon
         Ok(rows) => {
             let mut result = Vec::new();
             for row in rows {
-                let events = EventRow::list_for_frame(&app.supa, row.frame_id)
+                let events = EventRow::list_for_world(&app.supa, row.world_id)
                     .await
                     .unwrap_or_default();
                 let mut dto = WorldDto::from(row);
@@ -71,12 +71,12 @@ pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoRespon
 }
 
 // ------------------------------------------------------------
-// GET /worlds/{frame_id}
+// GET /worlds/{world_id}
 // ------------------------------------------------------------
-pub async fn get_world_handler(State(app): State<AppState>, Path(frame_id): Path<i64>) -> impl IntoResponse {
-    match WorldRecord::get(&app.supa, frame_id).await {
+pub async fn get_world_handler(State(app): State<AppState>, Path(world_id): Path<i64>) -> impl IntoResponse {
+    match WorldRecord::get(&app.supa, world_id).await {
         Ok(row) => {
-            let events = EventRow::list_for_frame(&app.supa, row.frame_id)
+            let events = EventRow::list_for_world(&app.supa, row.world_id)
                 .await
                 .unwrap_or_default();
             let mut dto = WorldDto::from(row);
@@ -84,7 +84,7 @@ pub async fn get_world_handler(State(app): State<AppState>, Path(frame_id): Path
             Json(dto).into_response()
         }
         Err(e) => {
-            eprintln!("Error fetching world {}: {:?}", frame_id, e);
+            eprintln!("Error fetching world {}: {:?}", world_id, e);
             (
                 StatusCode::NOT_FOUND,
                 Json(json!({ "error": "world not found", "details": format!("{e:?}") })),
@@ -115,20 +115,20 @@ pub async fn create_world_handler(State(app): State<AppState>, Json(payload): Js
 }
 
 // ------------------------------------------------------------
-// PUT /worlds/{frame_id}
+// PUT /worlds/{world_id}
 // ------------------------------------------------------------
 pub async fn update_world_handler(
     State(app): State<AppState>,
-    Path(frame_id): Path<i64>,
+    Path(world_id): Path<i64>,
     Json(updated): Json<WorldUpdate>,
 ) -> impl IntoResponse {
     let payload = serde_json::to_value(&updated).unwrap();
-    eprintln!("📦 PUT /worlds/{frame_id} payload: {}", payload);
+    eprintln!("📦 PUT /worlds/{world_id} payload: {}", payload);
 
     let result = app
         .supa
         .from("worlds")
-        .eq("frame_id", &frame_id.to_string())
+        .eq("world_id", &world_id.to_string())
         .update(payload)
         .select("*")
         .execute_typed::<WorldRecord>()
@@ -142,7 +142,7 @@ pub async fn update_world_handler(
             Json(json!({ "updated": rows.remove(0) })).into_response()
         }
         Err(e) => {
-            eprintln!("❌ Error updating world {}: {:?}", frame_id, e);
+            eprintln!("❌ Error updating world {}: {:?}", world_id, e);
             (
                 StatusCode::BAD_REQUEST,
                 Json(json!({ "error": "Update failed", "details": format!("{e:?}") })),
@@ -153,17 +153,17 @@ pub async fn update_world_handler(
 }
 
 // ------------------------------------------------------------
-// PATCH /worlds/{frame_id}
+// PATCH /worlds/{world_id}
 // ------------------------------------------------------------
 pub async fn patch_world_handler(
     State(app): State<AppState>,
-    Path(frame_id): Path<i64>,
+    Path(world_id): Path<i64>,
     Json(changes): Json<serde_json::Value>,
 ) -> impl IntoResponse {
     let result = app
         .supa
         .from("worlds")
-        .eq("frame_id", &frame_id.to_string())
+        .eq("world_id", &world_id.to_string())
         .update(changes)
         .select("*")
         .execute_typed::<WorldRecord>()
@@ -172,7 +172,7 @@ pub async fn patch_world_handler(
     match result {
         Ok(rows) => Json(json!({ "patched": rows })).into_response(),
         Err(e) => {
-            eprintln!("Error patching world {}: {:?}", frame_id, e);
+            eprintln!("Error patching world {}: {:?}", world_id, e);
             (
                 StatusCode::BAD_REQUEST,
                 Json(json!({ "error": "Patch failed", "details": format!("{e:?}") })),
@@ -183,21 +183,21 @@ pub async fn patch_world_handler(
 }
 
 // ------------------------------------------------------------
-// DELETE /worlds/{frame_id}
+// DELETE /worlds/{world_id}
 // ------------------------------------------------------------
-pub async fn delete_world_handler(State(app): State<AppState>, Path(frame_id): Path<i64>) -> impl IntoResponse {
+pub async fn delete_world_handler(State(app): State<AppState>, Path(world_id): Path<i64>) -> impl IntoResponse {
     let result = app
         .supa
         .from("worlds")
-        .eq("frame_id", &frame_id.to_string())
+        .eq("world_id", &world_id.to_string())
         .delete()
         .execute()
         .await;
 
     match result {
-        Ok(_) => Json(json!({ "status": "deleted", "frame_id": frame_id })).into_response(),
+        Ok(_) => Json(json!({ "status": "deleted", "world_id": world_id })).into_response(),
         Err(e) => {
-            eprintln!("Error deleting world {}: {:?}", frame_id, e);
+            eprintln!("Error deleting world {}: {:?}", world_id, e);
             (
                 StatusCode::BAD_REQUEST,
                 Json(json!({ "error": "Delete failed", "details": format!("{e:?}") })),

@@ -1,22 +1,22 @@
 use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    
-    tdt::{sim_time::SimTime, sim_duration::SimDuration},
     physox::{
-        interaction::{restitution, damage}, 
-        energy::kinetic_energy
+        interaction::{restitution as compute_restitution, damage},
+        energy::kinetic_energy,
     },
-    objex::matcat::materials::{props_for, MatCatId, MatProps},
+    objex::matcat::materials::{props_for, restitution_from_props},
     uvoxid::units::{um_to_m, um_to_cm, HumanLength},
 };
+
 use crate::sim::{
-        systems::System,
-        world::WorldState,
-    };
-use uuid::Uuid;
-use serde_json::json;
-use crate::sim::components::fracture::FractureData;
+    components::fracture::FractureData,
+    systems::System,
+    world::WorldState,
+};
+
 use serde::{Serialize, Deserialize};
+use serde_json::json;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct CollisionSystem;
@@ -28,108 +28,128 @@ impl System for CollisionSystem {
         let mut events = Vec::new();
         const EARTH_RADIUS: i64 = 6_371_000_000_000; // µm
 
-        // Pull sim time
-        let start = world.sim_time;
+        // Time window for this tick
         let end = world.sim_time.add(world.sim_delta);
 
-        // === Object–Object collisions ===
-        let object_ids: Vec<_> = world.objects.keys().cloned().collect();
-        for (i, id_a) in object_ids.iter().enumerate() {
-            for id_b in object_ids.iter().skip(i + 1) {
-                let obj_a = &world.objects[id_a];
-                let obj_b = &world.objects[id_b];
-                let dr = (obj_a.uvoxid.r_um - obj_b.uvoxid.r_um).abs();
+        //
+        // === ENTITY–ENTITY COLLISIONS ===
+        //
+        let entity_ids: Vec<Uuid> = world.entities.keys().cloned().collect();
 
-                let ra = obj_a.shape.approx_radius_um();
-                let rb = obj_b.shape.approx_radius_um();
+        for (i, id_a) in entity_ids.iter().enumerate() {
+            for id_b in entity_ids.iter().skip(i + 1) {
+                let a = &world.entities[id_a];
+                let b = &world.entities[id_b];
+
+                //
+                // Shape API changed — YOU MUST DEFINE radius extraction
+                //
+                let ra = a.shape().radius_um();
+                let rb = b.shape().radius_um();
+
+                let dr = (a.uvoxid.r_um - b.uvoxid.r_um).abs();
 
                 if dr <= (ra + rb) {
-                    // Stop both
-                    if let Some(v) = world.components.velocity_components.get_mut(&Uuid::parse_str(id_a).unwrap()) {
+                    // Stop velocities
+                    if let Some(v) = world.components.velocity_components.get_mut(id_a) {
                         v.dr = 0.0; v.dlat = 0.0; v.dlon = 0.0;
                     }
-                    if let Some(v) = world.components.velocity_components.get_mut(&Uuid::parse_str(id_b).unwrap()) {
+                    if let Some(v) = world.components.velocity_components.get_mut(id_b) {
                         v.dr = 0.0; v.dlat = 0.0; v.dlon = 0.0;
                     }
 
                     let dr_human = dr.to_human();
 
-                    events.push(ChronoEvent {
-                        id: obj_a.uvoxid.clone(),
-                        t: end,
+                    //
+                    // Event: A hits B
+                    //
+                    events.push(ChronoEvent::new(
+                        a.entity_id,
+                        a.world_id,
+                        end,
+                        EventKind::Custom(format!("Collision with {}", id_b)),
+                    ).with_payload(json!({
+                        "entity_a": id_a,
+                        "entity_b": id_b,
+                        "impact_distance_um": dr,
+                        "impact_distance_m": um_to_m(dr),
+                        "impact_distance_cm": um_to_cm(dr),
+                        "impact_distance_human": dr_human,
+                    })));
 
-                        kind: EventKind::Custom(format!("Collision with {}", id_b)),
-                        payload: Some(json!({
-                            "object_a": id_a,
-                            "object_b": id_b,
-                            "r_um": obj_a.uvoxid.r_um,
-                            "impact_distance_um": dr,
-                            "impact_distance_m": um_to_m(dr),
-                            "impact_distance_cm": um_to_cm(dr),
-                            "impact_distance_human": dr_human
-                        })),
-                    });
-
-                    events.push(ChronoEvent {
-                        id: obj_b.uvoxid.clone(),
-                        t: end,
-
-                        kind: EventKind::Custom(format!("Collision with {}", id_a)),
-                        payload: None,
-                    });
+                    //
+                    // Event: B hits A
+                    //
+                    events.push(ChronoEvent::new(
+                        b.entity_id,
+                        b.world_id,
+                        end,
+                        EventKind::Custom(format!("Collision with {}", id_a)),
+                    ));
                 }
             }
         }
 
-        // === Object–Ground collisions ===
-        for (entity_id, obj) in world.objects.iter_mut() {
-            if obj.uvoxid.r_um <= EARTH_RADIUS {
-                let entity_uuid = Uuid::parse_str(entity_id).unwrap();
-
-                if let Some(v) = world.components.velocity_components.get_mut(&entity_uuid) {
-                    let pre_impact_speed = v.dr.abs();
+        //
+        // === ENTITY–GROUND COLLISIONS ===
+        //
+        for (entity_id, entity) in world.entities.iter_mut() {
+            if entity.uvoxid.r_um <= EARTH_RADIUS {
+                //
+                // Process velocity → bounce or fracture
+                //
+                if let Some(v) = world.components.velocity_components.get_mut(entity_id) {
+                    let pre_speed = v.dr.abs();
                     let mut fractured = false;
 
-                    if let Some(mat_id) = &obj.material.matcat_id {
-                        let props = props_for(mat_id);
-                        let restitution = crate::core::objex::matcat::materials::restitution_from_props(&props);
-                        let impact_energy = 0.5 * (props.density as f64) * pre_impact_speed.powi(2);
+                    let mat_id = entity.material().matcat_id;
+                    let props = props_for(&mat_id);
+                    let restitution = restitution_from_props(&props);
 
-                        if impact_energy > props.fracture_toughness as f64 {
-                            fractured = true;
-                            let plane = "horizontal".to_string();
+                    let impact_energy =
+                        0.5 * (props.density as f64) * pre_speed.powi(2);
 
-                            world.components.fracture_components.insert(
-                                entity_uuid,
-                                FractureData {
-                                    object_id: entity_uuid,
-                                    plane: plane.clone(),
-                                    energy: impact_energy,
-                                    threshold: props.fracture_toughness,
-                                },
-                            );
+                    if impact_energy > props.fracture_toughness as f64 {
+                        fractured = true;
 
-                            events.push(ChronoEvent {
-                                id: obj.uvoxid.clone(),
-                                t: end,
+                        world.components.fracture_components.insert(
+                            *entity_id,
+                            FractureData {
+                                object_id: *entity_id,
+                                plane: "horizontal".to_string(),
+                                energy: impact_energy,
+                                threshold: props.fracture_toughness,
+                            },
+                        );
 
-                                kind: EventKind::Fracture { plane },
-                                payload: Some(json!({
-                                    "impact_energy": impact_energy,
-                                    "threshold": props.fracture_toughness,
-                                    "impact_energy_human": format!("{:.2} J", impact_energy),
-                                })),
-                            });
-                        } else {
-                            // bounce
-                            v.dr = -v.dr * restitution;
-                            v.dlat *= restitution * 0.8;
-                            v.dlon *= restitution * 0.8;
-                        }
+                        // Emit fracture event
+                        events.push(
+                            ChronoEvent::new(
+                                entity.entity_id,
+                                entity.world_id,
+                                end,
+                                EventKind::Fracture { plane: "horizontal".to_string() },
+                            )
+                            .with_payload(json!({
+                                "impact_energy": impact_energy,
+                                "threshold": props.fracture_toughness,
+                                "impact_energy_human": format!("{:.2} J", impact_energy),
+                            }))
+                        );
+
+                    } else {
+                        //
+                        // Simple bounce
+                        //
+                        v.dr   = -v.dr * restitution;
+                        v.dlat =  v.dlat * restitution * 0.8;
+                        v.dlon =  v.dlon * restitution * 0.8;
                     }
 
                     if fractured {
-                        if let Some(a) = world.components.acceleration_components.get_mut(&entity_uuid) {
+                        if let Some(a) =
+                            world.components.acceleration_components.get_mut(entity_id)
+                        {
                             a.ar = 0.0;
                             a.alat = 0.0;
                             a.alon = 0.0;
@@ -137,20 +157,27 @@ impl System for CollisionSystem {
                     }
                 }
 
+                //
                 // Snap to ground
-                obj.uvoxid.r_um = EARTH_RADIUS;
+                //
+                entity.uvoxid.r_um = EARTH_RADIUS;
 
-                events.push(ChronoEvent {
-                    id: obj.uvoxid.clone(),
-                    t: end,
-
-                    kind: EventKind::Custom("GroundCollision".into()),
-                    payload: Some(json!({
-                        "altitude_um": obj.uvoxid.r_um - EARTH_RADIUS,
-                        "altitude_m": um_to_m(obj.uvoxid.r_um - EARTH_RADIUS),
-                        "altitude_human": (obj.uvoxid.r_um - EARTH_RADIUS).to_human(),
-                    })),
-                });
+                //
+                // Emit ground collision event
+                //
+                events.push(
+                    ChronoEvent::new(
+                        entity.entity_id,
+                        entity.world_id,
+                        end,
+                        EventKind::Custom("GroundCollision".into()),
+                    )
+                    .with_payload(json!({
+                        "altitude_um": entity.uvoxid.r_um - EARTH_RADIUS,
+                        "altitude_m": um_to_m(entity.uvoxid.r_um - EARTH_RADIUS),
+                        "altitude_human": (entity.uvoxid.r_um - EARTH_RADIUS).to_human(),
+                    }))
+                );
             }
         }
 

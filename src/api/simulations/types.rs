@@ -10,7 +10,7 @@ pub struct SimulationDto {
     pub user_owner_id: Option<Uuid>,
     pub anon_owner_id: Option<Uuid>,
     pub tick_rate: i64,
-    pub frame_id: i64,
+    pub world_id: i64,
     pub last_saved: Option<String>,
     #[serde(default)]
     pub events: Vec<EventRow>,
@@ -20,7 +20,7 @@ pub struct SimulationDto {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewSimulation {
     pub simulation_id: Option<Uuid>, // optional; generated if missing
-    pub frame_id: i64,
+    pub world_id: i64,
     pub tick_rate: i64,
     pub last_saved: Option<chrono::DateTime<chrono::Utc>>,
     pub metadata: Option<serde_json::Value>,
@@ -36,7 +36,7 @@ impl From<SimulationRow> for SimulationDto {
             user_owner_id: row.user_owner_id,
             anon_owner_id: row.anon_owner_id,
             tick_rate: row.tick_rate,
-            frame_id: row.frame_id,
+            world_id: row.world_id,
             last_saved: row.last_saved.map(|dt| dt.to_rfc3339()),
             events: vec![],
         }

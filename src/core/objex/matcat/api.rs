@@ -1,5 +1,5 @@
 use crate::core::objex::matcat::{categories::CATEGORY_MAP, variants::VARIANT_MAP, grades::GRADE_MAP, category_ranges::generate_props_from_category};
-use rand::thread_rng;
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

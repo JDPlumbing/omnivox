@@ -17,7 +17,7 @@ pub async fn update_simulation(
     Json(payload): Json<UpdateSimulation>,
 ) -> impl IntoResponse {
     let update_json = json!({
-        "frame_id": payload.frame_id,
+        "world_id": payload.world_id,
         "tick_rate": payload.tick_rate,
         "last_saved": payload.last_saved,
         "metadata": payload.metadata,

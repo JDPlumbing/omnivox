@@ -1,11 +1,15 @@
 use crate::core::{
-    objex::core::{Objex, Object},
-    objex::systems::electrical::{derive_electrical, ElectricalProps},
-
     chronovox::ChronoEvent,
-    objex::matcat::materials::{props_for, default_props},
+    objex::core::Objex,
+    objex::systems::electrical::{derive_electrical, ElectricalProps},
+    objex::matcat::materials::props_for,
 };
-use crate::sim::{systems::System, world::WorldState},
+
+use crate::sim::{
+    systems::System,
+    world::WorldState,
+};
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -13,29 +17,39 @@ pub struct ElectricalSystem;
 
 impl System for ElectricalSystem {
     fn name(&self) -> &'static str {
-        "electrical"
+        "ElectricalSystem"
     }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        for (_id_str, objex) in &world.objects {
-            let mat = objex
-                .material
-                .matcat_id
-                .map(|id| props_for(&id))
+        for (entity_id, entity) in world.entities.iter() {
 
-                .unwrap_or_else(default_props);
+            //---------------------------------------------------------
+            // Material properties (MatProps)
+            //---------------------------------------------------------
+            let mat_id = &entity.material().matcat_id;
+            let mat_props = props_for(mat_id);
 
-            let object = Object {
-                shape: objex.shape.clone(),
-                material: mat,
+            //---------------------------------------------------------
+            // Construct Objex blueprint
+            //---------------------------------------------------------
+            let object = Objex {
+                shape: entity.shape().clone(),
+                material: entity.material().clone(),
             };
 
-            let props = derive_electrical(&object);
+            //---------------------------------------------------------
+            // Compute electrical properties
+            //---------------------------------------------------------
+            let props: ElectricalProps = derive_electrical(&object);
 
-            // FIX: use the object’s actual UUID
-            world.components.electrical_components.insert(objex.entity_id, props);
+            //---------------------------------------------------------
+            // Store component
+            //---------------------------------------------------------
+            world.components
+                .electrical_components
+                .insert(*entity_id, props);
         }
 
         events

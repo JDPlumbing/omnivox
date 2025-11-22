@@ -4,7 +4,7 @@ use crate::core::{
     
     uvoxid::UvoxId,
 };
-use crate::sim::components::{OrbitalMotion, SunEmitter},
+use crate::sim::components::{OrbitalMotion, SunEmitter};
 pub struct Sun;
 
 impl Sun {

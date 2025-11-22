@@ -1,34 +1,40 @@
-use crate::supabasic::{Supabase};
+// src/sim/world/loader.rs
+
+use crate::supabasic::Supabase;
+use crate::supabasic::worlds::WorldRecord;
 use crate::supabasic::entity::EntityRecord;
-use crate::supabasic::objex::ObjexRecord as BlueprintRecord;
+use crate::core::SimTime;
 use crate::sim::entity::SimEntity;
-use crate::sim::world::WorldState;
+use crate::sim::world::state::{World, WorldState};
 
-pub async fn load_world(supa: &Supabase, frame_id: i64) -> anyhow::Result<WorldState> {
-    // 0. Load world metadata
-    let meta = crate::supabasic::worlds::WorldRecord::fetch(supa, frame_id).await?;
+use anyhow::Result;
 
-    // 1. Load entity rows
-    let records = EntityRecord::list_for_frame(supa, frame_id).await?;
+pub async fn load_world(
+    supa: &Supabase,
+    world_id: i64,
+) -> Result<WorldState> {
 
-    // 2. Load blueprint rows ONCE
-    let mut cache = std::collections::HashMap::new();
-    for rec in &records {
-        if !cache.contains_key(&rec.blueprint_id) {
-            let bp = BlueprintRecord::fetch(supa, rec.blueprint_id).await?;
-            cache.insert(rec.blueprint_id, bp.into_blueprint());
-        }
+    // 1. Load world metadata
+    let meta_rec = WorldRecord::fetch(supa, world_id).await?;
+
+    let meta = World {
+        world_id: meta_rec.world_id,    
+        name: meta_rec.name.clone(),
+        description: meta_rec.description.clone(),
+        world_epoch: meta_rec.world_epoch.map(SimTime::from_ns),
+    };
+
+    // 2. Fetch all entity rows for this world
+    let rows: Vec<EntityRecord> =
+        EntityRecord::list_for_world(supa, world_id).await?;
+
+    // 3. Convert DB rows → SimEntity
+    let mut entities = Vec::<SimEntity>::new();
+    for row in rows {
+        let sim = row.try_into()?;  // uses TryFrom<EntityRecord> for SimEntity
+        entities.push(sim);
     }
 
-    // 3. Convert to SimEntity
-    let entities: Vec<SimEntity> = records
-        .into_iter()
-        .map(|r| {
-            let bp = cache.get(&r.blueprint_id).unwrap().clone();
-            r.into_sim_entity(bp)
-        })
-        .collect();
-
-    // 4. WorldState
+    // 4. Return world state
     Ok(WorldState::from_entities(meta, entities))
 }

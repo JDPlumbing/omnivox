@@ -1,52 +1,76 @@
 use crate::core::{
+    chronovox::{ChronoEvent, EventKind},
     objex::core::Objex,
     objex::systems::strength::{derive_strength, will_fail, StrengthProps},
-    
-    objex::geospec::Shape,
-    objex::matcat::materials::{props_for, default_props},
-    chronovox::ChronoEvent,
+    objex::matcat::materials::props_for,
 };
-use crate::sim::{systems::System, world::WorldState},
-use uuid::Uuid;
+
+use crate::sim::{
+    systems::System,
+    world::WorldState,
+};
 
 use serde::{Serialize, Deserialize};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct StrengthSystem;
 
 impl System for StrengthSystem {
     fn name(&self) -> &'static str {
-        "strength"
+        "StrengthSystem"
     }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        for (id, objex) in &world.objects {
-            let mat = if let Some(mat_id) = &objex.material.matcat_id {
-                props_for(mat_id)
-            } else {
-                default_props()
-            };
+        // Need sim time for events
+        let Some(clock) = &world.clock else { return events };
+        let now = clock.current;
 
+        for (entity_id, entity) in world.entities.iter() {
+
+            //---------------------------------------------------------
+            // Material properties (direct — NOT Option)
+            //---------------------------------------------------------
+            let mat_id = &entity.material().matcat_id;
+            let mat_props = props_for(mat_id);
+
+            //---------------------------------------------------------
+            // Build Objex blueprint
+            //---------------------------------------------------------
             let object = Objex {
-                shape: objex.shape.clone(),
-                material: mat,
+                shape: entity.shape().clone(),
+                material: entity.material().clone(),
             };
 
-            let props = derive_strength(&object);
+            //---------------------------------------------------------
+            // Compute strength model
+            //---------------------------------------------------------
+            let props: StrengthProps = derive_strength(&object);
+
+            //---------------------------------------------------------
+            // Store strength component
+            //---------------------------------------------------------
+            world.components
+                .strength_components
+                .insert(*entity_id, props);
+
+            //---------------------------------------------------------
+            // Check failure condition
+            //---------------------------------------------------------
             let failed = will_fail(&object, 100.0);
 
             if failed {
-                events.push(ChronoEvent::new(
-                    objex.uvoxid.clone(),
-                    world.clock.as_ref().unwrap().current,
-                    crate::core::chronovox::EventKind::Custom("StrengthFailure".to_string()),
-                ));
+                events.push(
+                    ChronoEvent::new(
+                        entity.entity_id,
+                        entity.world_id,
+                        now,
+                        EventKind::Custom("StrengthFailure".into())
+                    )
+                );
             }
-            world.components.strength_components.insert(Uuid::parse_str(id).unwrap_or_default(), props);
-
-
         }
 
         events

@@ -1,6 +1,6 @@
 use serde_json::Value;
 use crate::core::objex::geospec::shapes::{
-    Shape, Sphere, BoxShape, Cylinder, Cone, Plane, Line, Point,
+    Sphere, BoxShape, Cylinder, Cone, Plane, Line, Point,
 };
 use crate::core::objex::geospec::Dimensions;
 

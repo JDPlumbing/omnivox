@@ -4,131 +4,128 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use uuid::Uuid;
 use chrono::Utc;
 
 use crate::shared::app_state::AppState;
-use crate::supabasic::objex::ObjexRecord;
+use crate::sim::entities::SimEntity;
+use crate::supabasic::entity::EntityRecord;
+use crate::sim::simulations::simulation_config::SimulationConfig;
+
+use crate::core::tdt::sim_time::SimTime;
+
 
 #[derive(Debug, Deserialize)]
 pub struct RunSimulationRequest {
     pub simulation_id: Uuid,
-    pub frame_id: i64,
 }
 
-#[derive(Debug, Serialize)]
-pub struct RunSimulationResponse {
-    pub status: String,
-    pub total_objects: usize,
-    pub new_events: usize,
-    pub sample: Vec<Value>,
-}
 
 pub async fn run_simulation(
     State(app): State<AppState>,
     Json(req): Json<RunSimulationRequest>,
 ) -> impl IntoResponse {
-    // 1️⃣ Fetch all objects for this frame
-    let objs: Vec<ObjexRecord> = match app
-        .supa
-        .from("objex_entities")
-        .select("entity_id, name, frame_id")
-        .eq("frame_id", &req.frame_id.to_string())
-        .execute_typed()
+
+    // ---------------------------
+    // Load simulation config
+    // ---------------------------
+    let config: SimulationConfig = match app.supa
+        .from("simulations")
+        .select("*")
+        .eq("simulation_id", &req.simulation_id.to_string())
+        .single_typed()
         .await
     {
-        Ok(list) => list,
+        Ok(c) => c,
         Err(e) => {
-            eprintln!("❌ Failed to load objects for frame {}: {:?}", req.frame_id, e);
             return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": format!("Failed to load objects: {e:?}") })),
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": format!("Simulation not found: {e:?}") }))
             )
-                .into_response();
         }
     };
 
-    if objs.is_empty() {
-        eprintln!("⚠️ No objects found for frame {}", req.frame_id);
-    }
 
-    // 2️⃣ Generate new events
+    // ---------------------------
+    // Fetch entities in world
+    // ---------------------------
+    let rows: Vec<EntityRecord> = match app.supa
+        .from("sim_entities")
+        .select("*")
+        .eq("world_id", &config.world_id.to_string())
+        .execute_typed()
+        .await
+    {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": format!("Failed to load entities: {e:?}") }))
+            )
+        }
+    };
+
+    let entities: Vec<SimEntity> =
+        rows.into_iter().filter_map(|r| SimEntity::try_from(r).ok()).collect();
+
+
+    // ---------------------------
+    // Compute next timestep
+    // ---------------------------
     let now = Utc::now();
-    let mut events: Vec<Value> = Vec::new();
+    let ticks = now.timestamp_nanos_opt().unwrap_or(0);
+    let next_t = SimTime::from_ns(ticks.into()); //figure out why ticks.into() was i64 at all
 
-    for o in &objs {
-        // Randomly generate degradation/failure
-        if rand::random::<f32>() < 0.1 {
-            events.push(json!({
-                "id": Value::Null,
-                "simulation_id": req.simulation_id,
-                "entity_id": o.entity_id,
-                "frame_id": req.frame_id,
-                "r_um": 0,
-                "lat_code": 0,
-                "lon_code": 0,
-                "ticks": 0,
-                "timestamp": now,
-                "kind": "DegradationStart",
-                "payload": {
-                    "source": "simulation_run",
-                    "severity": "minor"
-                },
-                "created_at": Value::Null
-            }));
-        }
 
-        if rand::random::<f32>() < 0.01 {
-            events.push(json!({
-                "id": Value::Null,
-                "simulation_id": req.simulation_id,
-                "entity_id": o.entity_id,
-                "frame_id": req.frame_id,
-                "r_um": 0,
-                "lat_code": 0,
-                "lon_code": 0,
-                "ticks": 0,
-                "timestamp": now,
-                "kind": "Failure",
-                "payload": {
-                    "source": "simulation_run",
-                    "severity": "major"
-                },
-                "created_at": Value::Null
-            }));
-        }
-    }
+    // ---------------------------
+    // Generate "Tick" events
+    // ---------------------------
+    let dt_seconds = config.dt.seconds_f64();
 
-    println!(
-        "🧮 Generated {} events for simulation {}",
-        events.len(),
-        req.simulation_id
-    );
+    
 
-    // 3️⃣ Insert events into Supabase
-    let inserted = match app
-        .supa
+    let events: Vec<Value> = entities.iter().map(|ent| {
+        json!({
+            "simulation_id": config.simulation_id,
+            "entity_id": ent.entity_id,
+            "world_id": ent.world_id,
+            "ticks": next_t.as_ns(),
+            "kind": "Tick",
+            "payload": {
+                "dt_seconds": dt_seconds,
+                "source": "run_simulation"
+            },
+            "created_at": now
+        })
+    }).collect();
+
+
+    // Insert into DB
+    let inserted = match app.supa
         .from("events")
-        .insert(events.clone())
+        .insert_raw(json!(events))
         .select("id")
         .execute()
         .await
     {
         Ok(v) => v.as_array().map(|a| a.len()).unwrap_or(0),
-        Err(e) => {
-            eprintln!("⚠️ Failed to insert events: {:?}", e);
-            0
-        }
+        Err(_) => 0,
     };
 
-    // ✅ Done
-    Json(RunSimulationResponse {
-        status: "ok".to_string(),
-        total_objects: objs.len(),
-        new_events: inserted,
-        sample: events.iter().take(5).cloned().collect(),
-    })
-    .into_response()
+
+    // ---------------------------
+    // SUCCESS RESPONSE
+    // MUST return (StatusCode, Json<Value>)
+    // ---------------------------
+    (
+        StatusCode::OK,
+        Json(json!({
+            "status": "ok",
+            "new_events": inserted,
+            "next_time": next_t.as_ns()
+        }))
+    )
 }

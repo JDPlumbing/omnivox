@@ -12,14 +12,14 @@ pub struct SimulationRow {
     pub user_owner_id: Option<Uuid>,
     pub anon_owner_id: Option<Uuid>,
     pub tick_rate: i64,
-    pub frame_id: i64,
+    pub world_id: i64,
     pub last_saved: Option<DateTime<Utc>>,
     pub metadata: Option<serde_json::Value>, // ✅ Add this so reads & writes stay aligned
 }
 
 #[derive(Debug, serde::Deserialize)]
 pub struct UpdateSimulation {
-    pub frame_id: Option<i64>,
+    pub world_id: Option<i64>,
     pub tick_rate: Option<i64>,
     pub anon_owner_id: Option<uuid::Uuid>,
     pub user_owner_id: Option<uuid::Uuid>,

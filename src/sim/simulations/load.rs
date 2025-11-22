@@ -1,86 +1,108 @@
-use uuid::Uuid;
-use chrono::{Utc, DateTime};
-use crate::supabasic::Supabase;
-use crate::tdt::core::TimeDelta;
-use crate::chronovox::ChronoEvent;
-use crate::sim::world::WorldState;
-use crate::supabasic::worlds::WorldRow;
-
-use crate::sim::simulation::Simulation;
-use crate::sim::systems::System;
-use crate::sim::error::{OmnivoxError, Result};
-use crate::supabasic::simulations::SimulationRow;
-use crate::supabasic::properties::PropertyRecord;
-use crate::supabasic::objex::ObjectRecord;
-use crate::supabasic::events::EventRow;
-use crate::sim::systems::MovementSystem;
+// Std
 use std::convert::TryFrom;
-use crate::objex::core::types::Objex;
-use crate::tdt::sim_time::SimTime;
+
+// External crates
+use uuid::Uuid;
+use chrono::Utc;
+
+// Supabase / DB row types
+use crate::supabasic::Supabase;
+use crate::supabasic::worlds::WorldRecord;
+use crate::supabasic::entity::EntityRecord;
+use crate::supabasic::simulations::SimulationRow;
+use crate::supabasic::events::EventRow;
+
+// Core library types
+use crate::core::tdt::time_delta::TimeDelta;
+use crate::core::chronovox::ChronoEvent;
+
+// Simulation types / systems / errors
+use crate::sim::world::{WorldState, World};
+use crate::sim::simulations::simulation::Simulation;
+use crate::sim::systems::{System, MovementSystem};
+use crate::sim::error::{OmnivoxError, Result};
+use crate::sim::entities::SimEntity;
 use crate::sim::clock::SimClock;
 
-
-/// Helper: load all data needed to build a runtime `WorldState` from a property.
-async fn load_world_from_property(
+/// ---------------------------------------------------------------------------
+///  LOAD A COMPLETE RUNTIME WORLD FROM SUPABASE BY world_id
+/// ---------------------------------------------------------------------------
+async fn load_world(
     sup: &Supabase,
-    frame_id: i64,
+    world_id: i64,
 ) -> Result<WorldState> {
-    // 1. Fetch the property row
-    let property_row: PropertyRecord = sup
-        .get_property_by_frame(frame_id)
+
+    //
+    // 1. Load world metadata from DB
+    //
+    let rec = WorldRecord::get(sup, world_id)
         .await
-        .map_err(|e| OmnivoxError::LoadError(format!("property fetch failed: {:?}", e)))?;
+        .map_err(|e| OmnivoxError::LoadError(format!("world fetch failed: {:?}", e)))?;
 
-    // 2. Fetch all objex for this property
-    let objexes: Vec<ObjectRecord> = sup
-        .list_objex_for_property(property_row.property_id.expect("property_id missing"))
-        .await
-        .unwrap_or_default();
+    // Convert DB → runtime
+    let meta: World = rec.into();
 
-    // 3. Fetch events for this property
-    let events: Vec<EventRow> = sup
-        .list_events_for_property(property_row.property_id.expect("property_id missing"))
-        .await
-        .unwrap_or_default();
+    //
+    // 2. Load entities belonging to this world
+    //
+    let entity_rows: Vec<EntityRecord> =
+        EntityRecord::list_for_world(sup, world_id)
+            .await
+            .unwrap_or_default();
 
-    // 4. Create the metadata world row
-    let meta = WorldRow {
-        frame_id,
-        name: property_row.name.clone(),
-        description: None,
-        created_at: property_row.created_at.unwrap_or_else(Utc::now),
-        updated_at: Utc::now(),
-        deleted_at: None,
-    };
+    let mut entities = std::collections::HashMap::new();
+    for row in entity_rows {
+        match SimEntity::try_from(row) {
+            Ok(ent) => {
+                entities.insert(ent.entity_id, ent);
+            }
+            Err(e) => {
+                eprintln!("⚠ Failed to convert EntityRecord → SimEntity: {:?}", e);
+            }
+        }
+    }
 
-    // 5. Build runtime world state
-    let mut world_state = WorldState::new(meta);
-    world_state.events = events;
-    world_state.objects = objexes
-        .into_iter()
-        .filter_map(|r| {
-            Objex::try_from(r).ok().map(|o| (o.entity_id.to_string(), o))
-        })
-        .collect();
+    //
+    // 3. Load world events
+    //
+    let events: Vec<EventRow> =
+        EventRow::list_for_world(sup, world_id)
+            .await
+            .unwrap_or_default();
 
-    Ok(world_state)
+    //
+    // 4. Build runtime world state
+    //
+    let mut state = WorldState::new(meta);
+    state.entities = entities;
+    state.events = events;
+
+    Ok(state)
 }
 
-/// Load a complete `Simulation` from Supabase (metadata + timeline + hydrated world)
+/// ---------------------------------------------------------------------------
+///  LOAD A COMPLETE SIMULATION: metadata + timeline + hydrated world
+/// ---------------------------------------------------------------------------
 impl Simulation {
     pub async fn load_from_supabase(
         sup: &Supabase,
         sim_id: Uuid,
     ) -> Result<Self> {
-        // 1. Fetch simulation metadata
+
+        //
+        // 1. Load SimulationRow metadata
+        //
         let row = SimulationRow::get(sup, sim_id)
             .await
             .map_err(|e| OmnivoxError::LoadError(format!("simulation fetch failed: {:?}", e)))?;
 
         let _tick_rate = TimeDelta::from_ticks(row.tick_rate, "nanoseconds");
 
-        // 2. Load events (timeline)
+        //
+        // 2. Load simulation timeline events
+        //
         let mut timeline: Vec<ChronoEvent> = Vec::new();
+
         let raw_events = sup
             .from("events")
             .select("*")
@@ -88,54 +110,50 @@ impl Simulation {
             .execute()
             .await?;
 
-        // Instead of deserializing straight to ChronoEvent
-        if let Some(events) = raw_events.as_array() {
-            // Deserialize into EventRow first
-            let event_rows: Vec<EventRow> = events
-                .iter()
-                .filter_map(|v| serde_json::from_value(v.clone()).ok())
-                .collect();
+        if let Some(arr) = raw_events.as_array() {
+            let rows: Vec<EventRow> =
+                arr.iter()
+                    .filter_map(|v| serde_json::from_value(v.clone()).ok())
+                    .collect();
 
-            // Convert each EventRow → ChronoEvent
-            timeline = event_rows.into_iter().map(ChronoEvent::from).collect();
+            timeline = rows.into_iter().map(ChronoEvent::from).collect();
         }
 
         timeline.sort_by_key(|e| e.t.ticks("nanoseconds"));
 
+        //
+        // 3. Load world state for the referenced world_id
+        //
+        let world_state = load_world(sup, row.world_id).await?;
 
-        // 3. Hydrate world state
-        let world_state = load_world_from_property(sup, row.frame_id).await?;
-
-        // 4. Systems
+        //
+        // 4. Initialize systems
+        //
         let systems: Vec<Box<dyn System + Send + Sync>> = vec![
             Box::new(MovementSystem),
         ];
 
-        use chrono::{Utc, Duration};
-        use crate::sim::clock::SimClock;
-
+        //
+        // 5. Construct clock
+        //
+        use chrono::{Duration};
         let now = Utc::now();
-        let start = now - Duration::days(365 * 10); // or derive this from property metadata
+        let start = now - Duration::days(365 * 10);
         let step = Duration::days(30);
         let clock = SimClock::from_wall_dates(start, now, step);
-
-        // 5. Build Simulation
         let sim_time = clock.current;
 
+        //
+        // 6. Build Simulation object
+        //
         Ok(Simulation {
             simulation_id: row.simulation_id,
-            frame_id: row.frame_id,
+            world_id: row.world_id,
             world: world_state,
             timeline,
             systems,
             sim_time,
-            clock,   // moved here AFTER we read sim_time
+            clock,
         })
-
-
-
     }
 }
-
-
-

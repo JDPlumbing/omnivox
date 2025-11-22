@@ -1,9 +1,13 @@
 use crate::core::{
     chronovox::{ChronoEvent, EventKind},
-    
     tdt::{sim_time::SimTime, sim_duration::SimDuration},
 };
-use crate::sim::{systems::System, world::WorldState},
+
+use crate::sim::{
+    systems::System,
+    world::WorldState,
+};
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -17,36 +21,44 @@ impl System for AccelerationSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        // Pull time inputs from world
+        // Simulation time data
         let now = world.sim_time;
-        let dt = world.sim_delta;
+        let dt  = world.sim_delta;
+        let end = now.add(dt);
 
         for (entity_id, accel) in world.components.acceleration_components.iter() {
+            // Must have velocity component to apply acceleration
             if let Some(velocity) = world.components.velocity_components.get_mut(entity_id) {
-                
-                // Apply acceleration
+
+                //
+                // --- Apply acceleration to velocity ---
+                //
                 velocity.dr   += accel.ar;
                 velocity.dlat += accel.alat;
                 velocity.dlon += accel.alon;
 
-                // Timestamp range
-                let start = now;
-                let end = now.add(dt);
+                //
+                // --- Correct SimEntity lookup ---
+                //
+                let Some(entity) = world.entities.get(entity_id) else {
+                    continue;
+                };
 
-                events.push(ChronoEvent {
-                    id: world.objects
-                        .get(&entity_id.to_string())
-                        .map(|obj| obj.uvoxid.clone())
-                        .unwrap_or_default(),
-                    t: end,
-
-                    kind: EventKind::Accelerate {
-                        ar: accel.ar,
-                        alat: accel.alat,
-                        alon: accel.alon,
-                    },
-                    payload: None,
-                });
+                //
+                // --- Emit valid ChronoEvent ---
+                //
+                events.push(
+                    ChronoEvent::new(
+                        entity.entity_id,   // UUID
+                        entity.world_id,    // world ID
+                        end,                // timestamp
+                        EventKind::Accelerate {
+                            ar: accel.ar,
+                            alat: accel.alat,
+                            alon: accel.alon,
+                        }
+                    )
+                );
             }
         }
 

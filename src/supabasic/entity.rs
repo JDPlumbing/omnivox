@@ -1,62 +1,97 @@
 // src/supabasic/entity.rs
+
 use serde::{Serialize, Deserialize};
-use serde_json::json;
+use serde_json::Value;
 use uuid::Uuid;
 
 use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::orm::DbModel;
 
+//use crate::core::uvoxid::UvoxId;
 use crate::sim::entity::SimEntity;
-use crate::uvoxid::UvoxId;
-use crate::sim::time::SimTime;
-use crate::sim::UvoxQuat;
-use crate::core::MatCatId;
+use crate::core::SimTime;
 
+
+/// ---------------------------------------------------------------------------
+/// Mirrors the `sim_entities` table in Supabase.
+/// Blueprints + uvoxid are stored **inline** as JSON.
+/// ---------------------------------------------------------------------------
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EntityRecord {
     pub entity_id: Uuid,
-    pub blueprint_id: Uuid,
 
-    pub frame_id: i64,
-    pub r_um: i64,
-    pub lat_code: i64,
-    pub lon_code: i64,
+    pub world_id: i64,
 
-    pub orientation: serde_json::Value, // JSON quaternion
+    pub blueprint: Value,   // inline Objex
+    pub uvoxid: Value,      // inline UvoxId
+    pub orientation: Value, // inline UvoxQuat
 
-    pub spawned_at: i64,                // ns
-    pub despawned_at: Option<i64>,      // ns
+    pub spawned_at: i128,
+    pub despawned_at: Option<i128>,
 
-    pub metadata: serde_json::Value,
+    pub metadata: Value,
 }
 
 impl DbModel for EntityRecord {
     fn table() -> &'static str { "sim_entities" }
 }
 
+//---------------------------------------------------------------------------
+// Conversions
+// ---------------------------------------------------------------------------
+
+impl From<&SimEntity> for EntityRecord {
+    fn from(e: &SimEntity) -> Self {
+        EntityRecord {
+            entity_id: e.entity_id,
+
+            world_id: e.world_id,
+
+            blueprint: serde_json::to_value(&e.blueprint).unwrap(),
+            uvoxid: serde_json::to_value(&e.uvoxid).unwrap(),
+            orientation: serde_json::to_value(&e.orientation).unwrap(),
+
+            spawned_at: e.spawned_at.as_ns(),
+            despawned_at: e.despawned_at.map(|t| t.as_ns()),
+
+            metadata: e.metadata.clone(),
+        }
+    }
+}
+
+impl TryFrom<EntityRecord> for SimEntity {
+    type Error = serde_json::Error;
+
+    fn try_from(r: EntityRecord) -> Result<Self, Self::Error> {
+        Ok(SimEntity {
+            entity_id: r.entity_id,
+            world_id: r.world_id,
+
+            blueprint: serde_json::from_value(r.blueprint)?,
+            uvoxid: serde_json::from_value(r.uvoxid)?,
+            orientation: serde_json::from_value(r.orientation)?,
+
+            spawned_at: SimTime::from_ns(r.spawned_at),
+            despawned_at: r.despawned_at.map(SimTime::from_ns),
+
+            metadata: r.metadata,
+        })
+    }
+}
+
+//---------------------------------------------------------------------------
+// CRUD Helpers
+// ---------------------------------------------------------------------------
+
 impl EntityRecord {
+    /// Insert SimEntity → DB
     pub async fn insert(
         supa: &Supabase,
         entity: &SimEntity,
-        blueprint_id: Uuid
-    ) -> Result<Self, SupabasicError>
-    {
-        let payload = json!({
-            "entity_id": entity.entity_id,
-            "blueprint_id": blueprint_id,
+    ) -> Result<Self, SupabasicError> {
 
-            "frame_id": entity.uvoxid.frame_id,
-            "r_um": entity.uvoxid.r_um,
-            "lat_code": entity.uvoxid.lat_code,
-            "lon_code": entity.uvoxid.lon_code,
-
-            "orientation": serde_json::to_value(&entity.orientation).unwrap(),
-
-            "spawned_at": entity.spawned_at.as_ns(),
-            "despawned_at": entity.despawned_at.map(|t| t.as_ns()),
-
-            "metadata": entity.metadata,
-        });
+        // Insert expects a JSON array
+        let payload = serde_json::json!([EntityRecord::from(entity)]);
 
         let raw = supa
             .from(Self::table())
@@ -67,37 +102,34 @@ impl EntityRecord {
 
         let mut rows: Vec<Self> =
             serde_json::from_value(raw.clone())
-                .map_err(|e| SupabasicError::Other(format!("decode error: {e:?}, raw={raw}")))?;
+                .map_err(|e| SupabasicError::Other(format!(
+                    "decode error: {e:?}, raw={raw}"
+                )))?;
 
         Ok(rows.remove(0))
     }
-}
 
-
-    pub async fn fetch(supa: &Supabase, id: Uuid) -> Result<Self, SupabasicError> {
+    /// Fetch 1 entity by UUID
+    pub async fn fetch(supa: &Supabase, id: Uuid)
+        -> Result<Self, SupabasicError>
+    {
         supa.from(Self::table())
             .select("*")
-            .eq("entity_id", id.to_string())
+            .eq("entity_id", &id.to_string())
             .single_typed()
             .await
     }
 
-impl EntityRecord {
-    pub fn into_sim_entity(self, blueprint: Objex) -> SimEntity {
-        SimEntity {
-            entity_id: self.entity_id,
-            blueprint,
+    /// List all entities in a world
+    pub async fn list_for_world(
+        supa: &Supabase,
+        world_id: i64,
+    ) -> Result<Vec<Self>, SupabasicError> {
 
-            uvoxid: UvoxId::new(self.frame_id, self.r_um, self.lat_code, self.lon_code),
-
-            orientation: serde_json::from_value(self.orientation)
-                .unwrap_or_else(|_| UvoxQuat::identity()),
-
-            spawned_at: SimTime::from_ns(self.spawned_at),
-            despawned_at: self.despawned_at.map(SimTime::from_ns),
-
-            metadata: self.metadata,
-        }
+        supa.from(Self::table())
+            .select("*")
+            .eq("world_id", &world_id.to_string())
+            .execute_typed::<Self>()
+            .await
     }
 }
-

@@ -1,40 +1,42 @@
-use crate::core::objex::core::Object;
-use crate::core::objex::geospec::{Dimensions, Volume, SurfaceArea};
-use crate::core::objex::matcat::materials::default_props;
-use crate::core::objex::core::types::Objex;
+use crate::core::objex::core::Objex;
+use crate::core::objex::geospec::traits::{SurfaceArea, Volume};
+use crate::core::objex::matcat::materials::props_for;
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MassProps {
-    pub mass: f64,
-    pub density: f64,
-    pub surface_area_m2: f64, // ✅ new field
+    pub mass_kg: f64,
+    pub density_kg_m3: f64,
+    pub surface_area_m2: f64,
+    pub volume_m3: f64,
 }
 
-// ✅ derive from Objex wrapper
-pub fn derive_mass_from_core::objex(obj: &Objex) -> MassProps {
-    let volume = obj.shape.volume();
-    let surface_area = obj.shape.surface_area();
-    let density = obj.material.props().map(|p| p.density as f64).unwrap_or(0.0);
+/// Compute mass from Objex blueprint.
+/// Uses shape geometry and MatCat-derived density.
+pub fn derive_mass(obj: &Objex) -> MassProps {
+
+    // -------------------------
+    // Material density (kg/m³)
+    // -------------------------
+    let mat_props = props_for(&obj.material.matcat_id);
+    let density   = mat_props.density as f64;
+
+    // -------------------------
+    // Geometry (from shape)
+    // -------------------------
+    let volume = obj.shape.volume();       // m³
+    let area   = obj.shape.surface_area(); // m²
+
+    // -------------------------
+    // Mass (kg)
+    // -------------------------
     let mass = volume * density;
 
     MassProps {
-        mass,
-        density,
-        surface_area_m2: surface_area,
-    }
-}
-
-// ✅ derive directly from Object<T>
-pub fn derive_mass<T: Dimensions + Volume + SurfaceArea>(obj: &Object<T>) -> MassProps {
-    let vol = obj.shape.volume();
-    let density = obj.material.density as f64;
-    let mass = vol * density;
-    let area = obj.shape.surface_area();
-
-    MassProps {
-        mass,
-        density,
+        mass_kg: mass,
+        density_kg_m3: density,
         surface_area_m2: area,
+        volume_m3: volume,
     }
 }

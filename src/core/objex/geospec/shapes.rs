@@ -249,3 +249,67 @@ impl Dimensions for Cone {
         })
     }
 }
+
+impl Shape {
+    pub fn radius_um(&self) -> i64 {
+        let r_meters = match self {
+            Shape::Sphere(s) => s.radius,
+
+            Shape::Box(b) => {
+                ((b.length.powi(2) + b.width.powi(2) + b.height.powi(2)).sqrt()) / 2.0
+            }
+
+            Shape::Cylinder(c) => {
+                // bounding sphere around cylinder
+                let h2 = (c.height / 2.0).powi(2);
+                let r2 = c.radius.powi(2);
+                (h2 + r2).sqrt()
+            }
+
+            Shape::Cone(c) => {
+                // bounding sphere radius for cone: distance from tip to farthest base rim point
+                let slant = (c.radius.powi(2) + c.height.powi(2)).sqrt();
+                slant.max(c.height) / 2.0
+            }
+
+            Shape::Plane(p) => {
+                // treat plane as a thin rectangle at z=0
+                ((p.width.powi(2) + p.height.powi(2)).sqrt()) / 2.0
+            }
+
+            Shape::Line(l) => l.length / 2.0,
+
+            Shape::Point(_) => 0.0,
+        };
+
+        (r_meters * 1_000_000.0) as i64
+    }
+}
+
+impl SurfaceArea for Shape {
+    fn surface_area(&self) -> f64 {
+        match self {
+            Shape::Sphere(s)    => s.surface_area(),
+            Shape::Box(b)       => b.surface_area(),
+            Shape::Cylinder(c)  => c.surface_area(),
+            Shape::Cone(c)      => c.surface_area(),
+            Shape::Plane(p)     => p.surface_area(),
+            Shape::Line(_)      => 0.0,     // 1D object
+            Shape::Point(_)     => 0.0,     // 0D object
+        }
+    }
+}
+
+impl Volume for Shape {
+    fn volume(&self) -> f64 {
+        match self {
+            Shape::Sphere(s)    => s.volume(),
+            Shape::Box(b)       => b.volume(),
+            Shape::Cylinder(c)  => c.volume(),
+            Shape::Cone(c)      => c.volume(),
+            Shape::Plane(_)     => 0.0, // 2D object
+            Shape::Line(_)      => 0.0, // 1D object
+            Shape::Point(_)     => 0.0, // 0D object
+        }
+    }
+}

@@ -29,10 +29,9 @@ pub use simulations::SimulationRow;
 // optionally, if you want to reach into sim layer directly
 
 pub use crate::sim::World;
-pub mod objex;
 pub mod events;
 
-use crate::supabasic::{properties::PropertyRecord, objex::ObjexRecord, events::EventRow};
+use crate::supabasic::{properties::PropertyRecord, events::EventRow};
 use uuid::Uuid;
 
 impl Supabase {
@@ -49,7 +48,7 @@ impl Supabase {
         Ok(serde_json::from_value(res)?)
     }
 
-    pub async fn list_objex_for_property(&self, property_id: Uuid) -> anyhow::Result<Vec<ObjexRecord>> {
+    pub async fn list_entities_for_property(&self, property_id: Uuid) -> anyhow::Result<Vec<EntityRecord>> {
         let res = self
             .from("objex_entities")
             .select("*")

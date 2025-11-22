@@ -2,15 +2,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use crate::supabasic::events::EventRow;
 use chrono::Utc;
-use crate::supabasic::WorldRow;
 
 use crate::{
-    sim::simulation::Simulation,
-    sim::world::WorldState,
-    sim::systems::System,
-    supabasic::Supabase,
+    supabasic::{Supabase},
+    supabasic::events::EventRow,
+    sim::simulations::simulation::Simulation,
+    sim::world::state::{World, WorldState},
 };
 
 pub type SharedManager = Arc<RwLock<SimulationManager>>;
@@ -28,60 +26,77 @@ impl SimulationManager {
         }
     }
 
+    /// Start a brand-new ad-hoc runtime simulation.
+    /// Uses an empty default world record (world_id = 0, name = Test-Earth).
     pub async fn start(&mut self) -> anyhow::Result<Uuid> {
         let sim_id = Uuid::new_v4();
+
         tracing::info!("Starting ad-hoc simulation {sim_id}...");
 
-        // 🧠 Use the constructor that sets up world, systems, and components
-        let simulation = Simulation::new(WorldRow::default());
+        // Simulation::new expects a WorldRecord, not a runtime World.
+        // So we convert runtime World::default() → WorldRecord.
+        let world_record = crate::supabasic::worlds::WorldRecord {
+            world_id: 0,
+            name: Some("Test-Earth".into()),
+            description: None,
+            world_epoch: Some(0),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            deleted_at: None,
+        };
 
-        self.simulations.insert(sim_id, simulation);
+        let sim = Simulation::new(world_record);
+
+        self.simulations.insert(sim_id, sim);
         Ok(sim_id)
     }
 
 
-    pub async fn tick(&mut self, sim_id: Uuid) -> anyhow::Result<Vec<crate::chronovox::ChronoEvent>> {
-        if let Some(sim) = self.simulations.get_mut(&sim_id) {
-            let events = sim.tick();
+    /// Perform one simulation tick.
+    pub async fn tick(
+        &mut self,
+        sim_id: Uuid
+    ) -> anyhow::Result<Vec<crate::core::chronovox::ChronoEvent>> {
 
-            for ev in &events {
-                let event_row = EventRow {
-                    id: None,
-                    simulation_id: sim.simulation_id,
-                    entity_id: ev.payload
-                        .as_ref()
-                        .and_then(|p| p.get("entity_id"))
-                        .and_then(|v| v.as_str())
-                        .and_then(|s| Uuid::parse_str(s).ok())
-                        .unwrap_or_else(|| {
-                            sim.world
-                                .objects
-                                .keys()
-                                .next()
-                                .and_then(|k| Uuid::parse_str(k).ok())
-                                .unwrap_or_default()
-                        }),
+        let sim = self.simulations.get_mut(&sim_id)
+            .ok_or_else(|| anyhow::anyhow!("Simulation {sim_id} not found"))?;
 
-                    frame_id: sim.frame_id,
-                    r_um: ev.id.r_um,
-                    lat_code: ev.id.lat_code,
-                    lon_code: ev.id.lon_code,
-                    ticks: ev.t.as_ns(),
-                    timestamp: Some(Utc::now()),
-                    kind: format!("{:?}", ev.kind),
-                    payload: ev.payload.clone(),
-                    created_at: Some(Utc::now()),
-                };
+        let events = sim.tick();
 
-                let _ = EventRow::create(&self.supa, &event_row).await;
-            }
+        //
+        // For each ChronoEvent → write EventRow to DB
+        //
+        for ev in &events {
 
-            tracing::info!("Ticked sim {sim_id} → {} events", events.len());
-            Ok(events)
-        } else {
-            anyhow::bail!("Simulation {sim_id} not found");
+            // entity_id extraction
+            let entity_id = ev.payload
+                .as_ref()
+                .and_then(|p| p.get("entity_id"))
+                .and_then(|v| v.as_str())
+                .and_then(|s| Uuid::parse_str(s).ok())
+                .or_else(|| sim.world.entities.keys().next().cloned())
+                .unwrap_or_else(|| Uuid::nil());
+
+            let row = EventRow {
+                id: None,
+                simulation_id: sim.simulation_id,
+                entity_id,
+                world_id: sim.world_id,
+                ticks: ev.t.as_ns(),
+                timestamp: Some(Utc::now()),
+                kind: format!("{:?}", ev.kind),
+                payload: ev.payload.clone(),
+                created_at: Some(Utc::now()),
+            };
+
+            let _ = EventRow::create(&self.supa, &row).await;
         }
+
+        tracing::info!("Ticked sim {sim_id} → {} events", events.len());
+
+        Ok(events)
     }
+
 
     pub async fn stop(&mut self, sim_id: Uuid) -> anyhow::Result<bool> {
         Ok(self.simulations.remove(&sim_id).is_some())
@@ -94,7 +109,7 @@ impl SimulationManager {
     pub async fn load_from_supabase(&mut self, sim_id: Uuid) -> anyhow::Result<()> {
         tracing::info!("📡 Loading simulation {} from Supabase", sim_id);
 
-        let sim = crate::sim::simulation::Simulation::load_from_supabase(&self.supa, sim_id).await?;
+        let sim = Simulation::load_from_supabase(&self.supa, sim_id).await?;
         self.simulations.insert(sim_id, sim);
         Ok(())
     }
