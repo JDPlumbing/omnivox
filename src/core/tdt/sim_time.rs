@@ -3,7 +3,7 @@ use crate::core::tdt::sim_date::SimDate;
 use chrono::{DateTime, Utc, TimeZone, SecondsFormat};
 use serde::{Serialize, Deserialize, Serializer};
 use crate::core::tdt::sim_duration::SimDuration;
-
+//use crate::core::tdt::sim_julian::{simtime_to_julian, julian_to_simtime};
 /// Absolute simulation time: nanoseconds since Unix epoch.
 /// Deterministic, monotonic, integer-based.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -127,3 +127,27 @@ where
     let dt = t.to_datetime();
     s.serialize_str(&dt.to_rfc3339_opts(SecondsFormat::Nanos, true))
 }
+// ------------------------------------------------------------
+// Now function
+// ------------------------------------------------------------
+impl SimTime {
+    pub fn now() -> Self {
+        Self::from_datetime(Utc::now())
+    }
+}
+// ------------------------------------------------------------
+// Julian Day conversions
+// ------------------------------------------------------------
+/*
+impl SimTime {
+    pub fn to_julian(&self) -> f64 {
+        simtime_to_julian(*self)
+    }
+}
+
+impl SimTime {
+    pub fn from_julian(jd: f64) -> Self {
+        julian_to_simtime(jd)
+    }
+}
+*/

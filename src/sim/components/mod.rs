@@ -13,17 +13,24 @@ pub use corrosion::CorrosionData;
 
 pub mod sunlight;
 pub use sunlight::SunlightComponent;
-
 pub mod sun_emitter;
 pub use sun_emitter::SunEmitter;
-pub mod solar_exposure;
-pub use solar_exposure::SolarExposureData;
+
 
 pub mod orbital_motion;
 pub use orbital_motion::OrbitalMotion;
 
 pub mod uv_degradation;
 pub use uv_degradation::UVDegradationData;
+
+pub mod solar_radiation;
+pub mod solar_exposure;
+pub mod sun_damage;
+
+pub use solar_radiation::SolarRadiation;
+pub use solar_exposure::SolarExposure;
+pub use sun_damage::SunDamage;
+
 
 
 use crate::core::objex::systems::mass::MassProps;
@@ -33,6 +40,8 @@ use crate::core::objex::systems::electrical::ElectricalProps;
 use crate::core::objex::systems::degradation::DegradationProps;
 use crate::core::objex::systems::optical::OpticalProps;
 use crate::core::objex::systems::composite::CompositeProps;
+
+
 use std::collections::HashMap;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
@@ -58,11 +67,16 @@ pub struct SimComponents {
     pub composite_components: HashMap<Uuid, CompositeProps>,
 
         // ☀️ add this
-    pub sunlight_components: HashMap<Uuid, SunlightComponent>,
-    pub sun_emitter_components: HashMap<Uuid, SunEmitter>,
-    
-    pub solar_exposure_components: HashMap<Uuid, SolarExposureData>,
-    pub uv_degradation_components: HashMap<Uuid, UVDegradationData>,
+    pub solar_radiation: HashMap<Uuid, SolarRadiation>,
+    pub sun_damage: HashMap<Uuid, SunDamage>,
+
+    // sunlight and sun emitter components
+    //pub sunlight_components: HashMap<Uuid, SunlightComponent>,
+    //pub sun_emitter_components: HashMap<Uuid, SunEmitter>,
+
+    pub solar_exposure: HashMap<Uuid, SolarExposure>,
+
+    //pub uv_degradation_components: HashMap<Uuid, UVDegradationData>,
     pub thermal_components: HashMap<Uuid, ThermalData>,
     pub thermal_exposure: HashMap<Uuid, ThermalExposure>,
     pub orbital_components: HashMap<Uuid, OrbitalMotion>,
@@ -87,10 +101,15 @@ impl SimComponents {
             optical_components: HashMap::new(),
             composite_components: HashMap::new(),
 
-            sunlight_components: HashMap::new(),
-            sun_emitter_components: HashMap::new(),
-            solar_exposure_components: HashMap::new(),
-            uv_degradation_components: HashMap::new(),
+            solar_radiation: HashMap::new(),
+            solar_exposure: HashMap::new(),
+            sun_damage: HashMap::new(),
+
+            //sunlight_components: HashMap::new(),
+            //sun_emitter_components: HashMap::new(),
+
+
+            //uv_degradation_components: HashMap::new(),
             thermal_components: HashMap::new(),
             thermal_exposure: HashMap::new(),
 

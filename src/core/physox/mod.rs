@@ -11,6 +11,7 @@ pub mod kinematics;
 pub mod dynamics;
 pub mod energy;
 pub mod interaction;
+pub mod astronomy;
 
 // Convenient re-exports
 pub use constants::*;
@@ -18,3 +19,4 @@ pub use kinematics::*;
 pub use dynamics::*;
 pub use energy::*;
 pub use interaction::*;
+pub use astronomy::*;

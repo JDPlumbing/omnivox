@@ -79,3 +79,9 @@ impl MaterialLink {
         Self::new(MaterialName::Vacuum)
     }
 }
+
+impl MaterialLink {
+    pub fn stellar_plasma() -> Self {
+        MaterialLink::new(MaterialName::Plasma)
+    }
+}

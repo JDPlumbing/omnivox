@@ -29,7 +29,7 @@ impl System for DegradationSystem {
             // Material properties (MatProps)
             //---------------------------------------------------------
             let mat_id = &entity.material().matcat_id;
-            let mat_props = props_for(mat_id);
+            let _mat_props = props_for(mat_id);
 
             //---------------------------------------------------------
             // Construct Objex blueprint

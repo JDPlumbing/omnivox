@@ -32,15 +32,26 @@ pub use optical::*;
 
 pub mod strength;
 pub use strength::*;
-pub mod thermal;
-pub use thermal::*;
+//pub mod thermal;
+//pub use thermal::*;
 pub mod corrosion;
 pub use corrosion::*;
 pub mod solar_motion;
 pub use solar_motion::*;
-pub mod solar_raycast;
-pub use solar_raycast::*;
+//pub mod solar_raycast;
+//pub use solar_raycast::*;
 pub mod solar_exposure;
 pub use solar_exposure::*;
-pub mod uv_degradation;
-pub use uv_degradation::UVDegradationSystem;
+//pub mod uv_degradation;
+//pub use uv_degradation::UVDegradationSystem;
+//pub mod solar_sky;
+//pub use solar_sky::*;
+
+pub mod sun_damage;
+pub use sun_damage::*;
+
+//pub mod orbital_motion;
+//pub use orbital_motion::*;
+
+pub mod solar_radation;
+pub use solar_radation::*;

@@ -34,7 +34,7 @@ impl System for StrengthSystem {
             // Material properties (direct — NOT Option)
             //---------------------------------------------------------
             let mat_id = &entity.material().matcat_id;
-            let mat_props = props_for(mat_id);
+            let _mat_props = props_for(mat_id);
 
             //---------------------------------------------------------
             // Build Objex blueprint

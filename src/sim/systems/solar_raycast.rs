@@ -8,8 +8,8 @@ use crate::sim::{
 };
 
 use serde_json::json;
-use std::f64::consts::PI;
 use serde::{Serialize, Deserialize};
+use std::f64::consts::PI;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SolarRaycastSystem;
@@ -22,18 +22,18 @@ impl System for SolarRaycastSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
+        // Need a clock
         let Some(clock) = &world.clock else {
             return events;
         };
         let now = clock.current;
 
         // -------------------------------------------------------------
-        // STEP 1 — Find the entity that acts as the Sun
+        // STEP 1 — Find the Sun entity & emitter component
         // -------------------------------------------------------------
         let Some((&sun_id, sun_emitter)) =
             world.components.sun_emitter_components.iter().next()
         else {
-            // No sun in the world
             return events;
         };
 
@@ -41,46 +41,72 @@ impl System for SolarRaycastSystem {
             return events;
         };
 
-        // -------------------------------------------------------------
-        // STEP 2 — Compute sun position in spherical coords
-        // -------------------------------------------------------------
-        let sun_lat = (sun_obj.uvoxid.lat_code as f64 / 1e11).to_radians();
-        let sun_lon = (sun_obj.uvoxid.lon_code as f64 / 1e11).to_radians();
+        // Convert sun position to radians
+        let sun_lat_rad = (sun_obj.uvoxid.lat_code as f64 / 1e11).to_radians();
+        let sun_lon_rad = (sun_obj.uvoxid.lon_code as f64 / 1e11).to_radians();
 
-        // Distance from Earth center (meters)
+        // Distance Sun→Earth center (meters)
         let r_m = sun_obj.uvoxid.r_um as f64 / 1e6;
 
-        // Irradiance at distance r
-        let irradiance = sun_emitter.luminosity_w / (4.0 * PI * r_m.powi(2));
+        // Radiant flux at that distance
+        let irradiance_w_m2 =
+            sun_emitter.luminosity_w / (4.0 * PI * r_m.powi(2));
 
         // -------------------------------------------------------------
-        // STEP 3 — For each entity, compute light exposure
+        // STEP 2 — For every entity, compute solar exposure
         // -------------------------------------------------------------
         for (id, obj) in world.entities.iter() {
-            // Skip the sun itself
             if *id == sun_id {
                 continue;
             }
 
-            let lat = (obj.uvoxid.lat_code as f64 / 1e11).to_radians();
-            let lon = (obj.uvoxid.lon_code as f64 / 1e11).to_radians();
+            // Object surface position
+            let lat_rad = (obj.uvoxid.lat_code as f64 / 1e11).to_radians();
+            let lon_rad = (obj.uvoxid.lon_code as f64 / 1e11).to_radians();
 
             // Solar zenith angle
             let cos_z =
-                sun_lat.sin() * lat.sin() +
-                sun_lat.cos() * lat.cos() * (sun_lon - lon).cos();
+                sun_lat_rad.sin() * lat_rad.sin() +
+                sun_lat_rad.cos() * lat_rad.cos() *
+                (sun_lon_rad - lon_rad).cos();
 
-            let zenith_deg = cos_z.acos().to_degrees();
-            let is_lit = zenith_deg < 90.0;
+            let zenith_rad = cos_z.acos();
+            let zenith_deg = zenith_rad.to_degrees();
+
+            let is_daylight = zenith_deg < 90.0;
+
+            // Elevation = 90 - zenith
+            let elevation_deg = 90.0 - zenith_deg;
+            let elevation_rad = elevation_deg.to_radians();
+
+            // Azimuth (simplified horizontal solar azimuth)
+            // Based on spherical trig formula
+            let y = (sun_lon_rad - lon_rad).sin();
+            let x = (sun_lat_rad * lat_rad.tan().cos())
+                  - (lat_rad.sin() * (sun_lon_rad - lon_rad).cos());
+
+            let mut azimuth_deg = y.atan2(x).to_degrees();
+            if azimuth_deg < 0.0 {
+                azimuth_deg += 360.0;
+            }
+
+            // Cosine law for irradiance
+            let irradiance_factor = elevation_rad.sin().max(0.0);
 
             // ---------------------------------------------------------
-            // STEP 4 — Set or clear sunlight component
+            // STEP 3 — Apply sunlight component
             // ---------------------------------------------------------
-            if is_lit {
+            if is_daylight {
                 world.components.sunlight_components.insert(
                     *id,
                     SunlightComponent {
-                        irradiance_w_m2: irradiance,
+                        irradiance_factor,
+                        elevation_deg,
+                        azimuth_deg,
+                        is_daylight,
+
+                        // compatibility fields
+                        irradiance_w_m2,
                         uv_index: sun_emitter.uv_fraction * 100.0,
                     }
                 );
@@ -89,7 +115,7 @@ impl System for SolarRaycastSystem {
             }
 
             // ---------------------------------------------------------
-            // STEP 5 — Emit solar update event
+            // STEP 4 — Emit event for debugging/logging
             // ---------------------------------------------------------
             events.push(
                 ChronoEvent::new(
@@ -100,13 +126,16 @@ impl System for SolarRaycastSystem {
                 )
                 .with_payload(json!({
                     "entity_id": id,
-                    "lit": is_lit,
                     "zenith_angle_deg": zenith_deg,
+                    "elevation_deg": elevation_deg,
+                    "azimuth_deg": azimuth_deg,
+                    "irradiance_factor": irradiance_factor,
+                    "lit": is_daylight,
                     "timestamp": clock.current_wall_time().to_rfc3339(),
                 }))
             );
         }
 
-        return events;
+        events
     }
 }

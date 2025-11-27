@@ -1,17 +1,12 @@
-use crate::core::{
-    chronovox::{ChronoEvent, EventKind},
-};
+use crate::sim::systems::System;
+use crate::sim::world::WorldState;
+use crate::core::chronovox::{ChronoEvent, EventKind};
 
-use crate::sim::{
-    systems::System,
-    world::WorldState,
-    components::{SunlightComponent, SolarExposureData},
-};
+use crate::sim::components::{SolarExposure, SunDamage};
 
-use serde_json::json;
-use serde::{Serialize, Deserialize};
-
-#[derive(Debug, Serialize, Deserialize, Default)]
+/// Integrates instantaneous solar exposure into long-term damage.
+/// This runs AFTER SolarRadiationSystem.
+#[derive(Default, Debug)]
 pub struct SolarExposureSystem;
 
 impl System for SolarExposureSystem {
@@ -20,65 +15,39 @@ impl System for SolarExposureSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        let Some(clock) = &world.clock else {
-            return events;
-        };
+        // Time step in seconds
+        let dt_s = world.sim_delta.as_secs_f64();
 
-        let now   = clock.current;
-        let dt_s  = clock.step_seconds();
+        for (entity_id, exposure) in world.components.solar_exposure.iter() {
+            // Create or fetch long-term accumulator
+            let dmg = world.components.sun_damage
+                .entry(*entity_id)
+                .or_insert_with(|| crate::sim::components::SunDamage::new());
 
-        //
-        // Iterate over (entity_id, sunlight)
-        //
-        for (entity_id, sunlight) in world.components.sunlight_components.clone() {
-            //
-            // Get the actual entity
-            //
-            let Some(entity) = world.entities.get(&entity_id) else {
-                continue; // stale component
-            };
+            // Integrate irradiance (W/m² → J/m²)
+            dmg.total_irradiance_j_m2 += exposure.irradiance_w_m2 * dt_s;
 
-            //
-            // Get or init exposure stats
-            //
-            let exposure = world
-                .components
-                .solar_exposure_components
-                .entry(entity_id)
-                .or_insert(SolarExposureData {
-                    energy_j_m2: 0.0,
-                    uv_j_m2: 0.0,
-                });
+            // Integrate UV
+            dmg.total_uv_j_m2 += exposure.uv_intensity * dt_s;
 
-            //
-            // Energy accumulation
-            //
-            let radiant_energy = sunlight.irradiance_w_m2 * dt_s;
-            exposure.energy_j_m2 += radiant_energy;
+            // Integrate thermal burden
+            dmg.total_temp_delta += exposure.temp_delta_c;
 
-            //
-            // UV accumulation
-            //
-            let uv_factor = sunlight.uv_index / 100.0;
-            let uv_energy = radiant_energy * uv_factor;
-            exposure.uv_j_m2 += uv_energy;
+            // detect thermal cycles (sign-change tracking)
+            let sign = exposure.temp_delta_c.signum() as i8;
+            if dmg.last_temp_sign != 0 && sign != dmg.last_temp_sign {
+                dmg.thermal_cycles += 1.0;
+            }
+            dmg.last_temp_sign = sign;
 
-            //
-            // Emit proper ChronoEvent
-            //
+            // Add event
             events.push(
                 ChronoEvent::new(
-                    entity.entity_id,
-                    entity.world_id,
-                    now,
-                    EventKind::Custom("SolarExposureUpdate".into()),
+                    *entity_id,
+                    world.meta.world_id,
+                    world.sim_time,
+                    EventKind::Custom("SolarExposureIntegrated".into()),
                 )
-                .with_payload(json!({
-                    "entity_id": entity.entity_id.to_string(),
-                    "energy_j_m2": exposure.energy_j_m2,
-                    "uv_j_m2":     exposure.uv_j_m2,
-                    "timestamp":   clock.current_wall_time().to_rfc3339(),
-                }))
             );
         }
 

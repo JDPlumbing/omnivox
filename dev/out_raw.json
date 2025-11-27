@@ -1,0 +1,308 @@
+[
+  {
+    "bucket": 0,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "Install_M0"
+        },
+        "payload": {
+          "info": "EntityA installed month 0"
+        },
+        "t_display": "0",
+        "t_raw": 0,
+        "world_id": 1
+      }
+    ],
+    "time": "0"
+  },
+  {
+    "bucket": 1296000000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "kind": {
+          "Custom": "Thermal_M0"
+        },
+        "payload": {
+          "temp": 20.0
+        },
+        "t_display": "1296000000000000",
+        "t_raw": 1296000000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "1296000000000000"
+  },
+  {
+    "bucket": 2629800000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "Install_M1"
+        },
+        "payload": {
+          "info": "EntityA installed month 1"
+        },
+        "t_display": "2629800000000000",
+        "t_raw": 2629800000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "2629800000000000"
+  },
+  {
+    "bucket": 3925800000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "kind": {
+          "Custom": "Thermal_M1"
+        },
+        "payload": {
+          "temp": 21.0
+        },
+        "t_display": "3925800000000000",
+        "t_raw": 3925800000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "3925800000000000"
+  },
+  {
+    "bucket": 5259600000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "Install_M2"
+        },
+        "payload": {
+          "info": "EntityA installed month 2"
+        },
+        "t_display": "5259600000000000",
+        "t_raw": 5259600000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "5259600000000000"
+  },
+  {
+    "bucket": 6555600000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "kind": {
+          "Custom": "Thermal_M2"
+        },
+        "payload": {
+          "temp": 22.0
+        },
+        "t_display": "6555600000000000",
+        "t_raw": 6555600000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "6555600000000000"
+  },
+  {
+    "bucket": 7889400000000000,
+    "count": 2,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "Install_M3"
+        },
+        "payload": {
+          "info": "EntityA installed month 3"
+        },
+        "t_display": "7889400000000000",
+        "t_raw": 7889400000000000,
+        "world_id": 1
+      },
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "DailyCheck_D0"
+        },
+        "payload": null,
+        "t_display": "7889400000000000",
+        "t_raw": 7889400000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "7889400000000000"
+  },
+  {
+    "bucket": 7975800000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "DailyCheck_D1"
+        },
+        "payload": null,
+        "t_display": "7975800000000000",
+        "t_raw": 7975800000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "7975800000000000"
+  },
+  {
+    "bucket": 8062200000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "DailyCheck_D2"
+        },
+        "payload": null,
+        "t_display": "8062200000000000",
+        "t_raw": 8062200000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "8062200000000000"
+  },
+  {
+    "bucket": 8148600000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "DailyCheck_D3"
+        },
+        "payload": null,
+        "t_display": "8148600000000000",
+        "t_raw": 8148600000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "8148600000000000"
+  },
+  {
+    "bucket": 8235000000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "DailyCheck_D4"
+        },
+        "payload": null,
+        "t_display": "8235000000000000",
+        "t_raw": 8235000000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "8235000000000000"
+  },
+  {
+    "bucket": 9185400000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "kind": {
+          "Custom": "Thermal_M3"
+        },
+        "payload": {
+          "temp": 23.0
+        },
+        "t_display": "9185400000000000",
+        "t_raw": 9185400000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "9185400000000000"
+  },
+  {
+    "bucket": 10519200000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "Install_M4"
+        },
+        "payload": {
+          "info": "EntityA installed month 4"
+        },
+        "t_display": "10519200000000000",
+        "t_raw": 10519200000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "10519200000000000"
+  },
+  {
+    "bucket": 11815200000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "kind": {
+          "Custom": "Thermal_M4"
+        },
+        "payload": {
+          "temp": 24.0
+        },
+        "t_display": "11815200000000000",
+        "t_raw": 11815200000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "11815200000000000"
+  },
+  {
+    "bucket": 13149000000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "kind": {
+          "Custom": "Install_M5"
+        },
+        "payload": {
+          "info": "EntityA installed month 5"
+        },
+        "t_display": "13149000000000000",
+        "t_raw": 13149000000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "13149000000000000"
+  },
+  {
+    "bucket": 14445000000000000,
+    "count": 1,
+    "events": [
+      {
+        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "kind": {
+          "Custom": "Thermal_M5"
+        },
+        "payload": {
+          "temp": 25.0
+        },
+        "t_display": "14445000000000000",
+        "t_raw": 14445000000000000,
+        "world_id": 1
+      }
+    ],
+    "time": "14445000000000000"
+  }
+]

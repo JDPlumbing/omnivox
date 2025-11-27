@@ -3,6 +3,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::core::tdt::sim_time::SimTime;
+use crate::core::tdt::sim_time::serialize_simtime;
 use crate::supabasic::events::EventRow;
 
 /// ---------------------------------------------------------------------------
@@ -17,6 +18,7 @@ pub struct ChronoEvent {
     pub world_id: i64,
 
     /// Absolute simulation timestamp
+    #[serde(serialize_with = "serialize_simtime")]
     pub t: SimTime,
 
     /// What happened

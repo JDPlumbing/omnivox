@@ -57,3 +57,32 @@ impl OrbitalMotion {
         }
     }
 }
+
+impl OrbitalMotion {
+
+    pub fn new_for_moon() -> Self {
+        // Lunar constants based on Earth-frame simplification
+        // 360° per 2,360,592 seconds = ~1.525e-4 deg/s
+        let lon_rate_per_s = (1.525e-4 * 1e6) as i64; // µdeg/s
+
+        let lat_amp = 6_680_000_000_000; // ±6.68° * 1e11 µdeg
+        let lat_rate_per_s =
+            (2 * lat_amp) / (2_360_592 / 2); // half-orbit oscillation
+
+        let mean_r_um = 384_400_000_000; // 384,400 km
+        let delta_r_um = 20_000_000_000;  // ±20,000 km variation
+        let r_rate_per_s =
+            (2 * delta_r_um) / (2_360_592 / 2);
+
+        Self {
+            lon_rate_per_s,
+            lat_amp,
+            tilt_dir: 1,
+            lat_rate_per_s,
+            mean_r_um,
+            delta_r_um,
+            r_dir: 1,
+            r_rate_per_s,
+        }
+    }
+}

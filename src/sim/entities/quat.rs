@@ -13,3 +13,9 @@ impl UvoxQuat {
         Self { w: 1.0, r: 0.0, lat: 0.0, lon: 0.0 }
     }
 }
+
+impl Default for UvoxQuat {
+    fn default() -> Self {
+        Self::identity()
+    }
+}

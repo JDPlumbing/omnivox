@@ -1,91 +1,36 @@
-use crate::core::{
-    chronovox::{ChronoEvent, EventKind},
-    objex::matcat::materials::props_for,
-};
+use crate::sim::systems::System;
+use crate::sim::world::WorldState;
+use crate::core::chronovox::{ChronoEvent, EventKind};
 
-use crate::sim::{
-    systems::System,
-    world::WorldState,
-    components::uv_degradation::UVDegradationData,
-};
-
-use serde_json::json;
-use serde::{Serialize, Deserialize};
-
-#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct UVDegradationSystem;
 
-impl UVDegradationSystem {
-    /// Convert cumulative UV dose into degradation severity (0–1)
-    fn severity_from_dose(dose: f64, resistance: f64) -> f64 {
-        // Avoid divide-by-zero and nonlinear scaling
-        let effective = dose / (resistance.clamp(0.01, 1.0) * 1e10);
-        effective.min(1.0)
-    }
-}
-
 impl System for UVDegradationSystem {
-    fn name(&self) -> &'static str { "UVDegradationSystem" }
+    fn name(&self) -> &'static str {
+        "UVDegradationSystem"
+    }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
-        let mut events = vec![];
+        let mut events = Vec::new();
 
-        let Some(clock) = &world.clock else { return events; };
-        let now = clock.current;
+        for (entity_id, uv) in world.components.uv_degradation_components.iter_mut() {
+            // Extremely simplified aging law:
+            // More UV dose = less material strength
+            let degrade_factor = (uv.total_uv_dose / 1.0e9).min(0.5); // cap at 50%
 
-        for (entity_id, entity) in world.entities.iter() {
+            if let Some(strength) = world.components.strength_components.get_mut(entity_id) {
+                let original = strength.tensile_strength_mpa;
+                strength.tensile_strength_mpa =
+                original * (1.0 - degrade_factor) as f32;
 
-            // ---- solar exposure required ----
-            let Some(exposure) = world.components.solar_exposure_components.get(entity_id)
-            else {
-                continue;
-            };
 
-            // ---- material: ALWAYS present ----
-            let mat_id = &entity.material().matcat_id;
-            let mat_props = props_for(mat_id);
-
-            let resistance = mat_props.uv_resistance as f64;
-            let cumulative_uv = exposure.uv_j_m2;
-
-            // Compute new severity
-            let severity = Self::severity_from_dose(cumulative_uv, resistance);
-
-            // ---- Update component ----
-            let entry = world.components
-                .uv_degradation_components
-                .entry(*entity_id)
-                .or_insert(UVDegradationData {
-                    cumulative_uv_j_m2: 0.0,
-                    severity: 0.0,
-                    rate_m_per_year: 0.0,
+                events.push(ChronoEvent {
+                    entity_id: *entity_id,
+                    world_id: world.meta.world_id,
+                    t: world.sim_time,
+                    kind: EventKind::Custom("UV_DegradationApplied".into()),
+                    payload: None,
                 });
-
-            entry.cumulative_uv_j_m2 = cumulative_uv;
-            entry.severity = severity;
-
-            // ---- Event type ----
-            let event_name = if severity >= 1.0 {
-                "UVDegradationFailure"
-            } else {
-                "UVDegradationProgress"
-            };
-
-            // ---- Emit event ----
-            events.push(
-                ChronoEvent::new(
-                    entity.entity_id,
-                    entity.world_id,
-                    now,
-                    EventKind::Custom(event_name.into())
-                )
-                .with_payload(json!({
-                    "uv_total_j_m2": cumulative_uv,
-                    "severity": severity,
-                    "resistance": resistance,
-                    "timestamp": clock.current_wall_time().to_rfc3339(),
-                }))
-            );
+            }
         }
 
         events

@@ -18,11 +18,14 @@ use crate::sim::systems::{
     MassSystem,
     MechanicalSystem,
     StrengthSystem,
-    ThermalSystem,
+    //ThermalSystem,
     ElectricalSystem,
     OpticalSystem,
     DegradationSystem,
+    //SolarRaycastSystem,
 };
+use crate::sim::systems::solar_exposure::SolarExposureSystem;
+//use crate::sim::systems::uv_degradation::UVDegradationSystem;
 
 use crate::sim::clock::SimClock;
 use crate::core::tdt::sim_time::SimTime;
@@ -61,7 +64,7 @@ impl Simulation {
         let boot_id = Uuid::new_v4();
 
         // minimal material link
-        let mat = MaterialLink::vacuum();
+        let _mat = MaterialLink::vacuum();
 
 
         // minimal test entity
@@ -102,9 +105,12 @@ impl Simulation {
             Box::new(MassSystem),
             Box::new(MechanicalSystem),
             Box::new(StrengthSystem),
-            Box::new(ThermalSystem),
+            //Box::new(ThermalSystem),
             Box::new(ElectricalSystem),
             Box::new(OpticalSystem),
+            //Box::new(SolarRaycastSystem),
+            Box::new(SolarExposureSystem),
+            //Box::new(UVDegradationSystem),
         ];
 
         //

@@ -191,3 +191,15 @@ impl Div<i64> for SimDuration {
         Self(self.0 / rhs as i128)
     }
 }
+
+// -------------------------------------------------------------
+// Additional conversions
+// -------------------------------------------------------------
+impl SimDuration {
+    pub fn as_seconds(&self) -> f64 {
+        (self.0 as f64) / 1e9
+    }
+    pub fn as_secs_f64(&self) -> f64 {
+        self.as_seconds()
+    }
+}
