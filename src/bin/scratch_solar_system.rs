@@ -62,7 +62,7 @@ fn main() {
     world.clock = Some(SimClock {
         start: sim_t,
         current: sim_t,
-        end: sim_t.add_seconds(3600 * 12),   // simulate 12 hours
+        end: sim_t.add_seconds(3600 * 36),   // simulate 12 hours
         step: dt,
     });
 

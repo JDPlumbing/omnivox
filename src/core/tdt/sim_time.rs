@@ -6,7 +6,7 @@ use crate::core::tdt::sim_duration::SimDuration;
 //use crate::core::tdt::sim_julian::{simtime_to_julian, julian_to_simtime};
 /// Absolute simulation time: nanoseconds since Unix epoch.
 /// Deterministic, monotonic, integer-based.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub struct SimTime(pub i128);
 
 impl SimTime {

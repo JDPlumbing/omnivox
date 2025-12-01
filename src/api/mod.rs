@@ -78,7 +78,7 @@ pub fn api_router() -> Router<AppState> {
     // Worlds routes
     let worlds_routes = Router::new()
         .route("/", get(list_worlds_handler).post(create_world_handler))
-        .route("/{frame_id}",
+        .route("/{world_id}",
             get(get_world_handler)
                 .put(update_world_handler)
                 .patch(patch_world_handler)
