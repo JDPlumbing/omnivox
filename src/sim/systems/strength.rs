@@ -28,7 +28,7 @@ impl System for StrengthSystem {
         let Some(clock) = &world.clock else { return events };
         let now = clock.current;
 
-        for (entity_id, entity) in world.entities.iter() {
+        for (id, entity) in world.entities.iter() {
 
             //---------------------------------------------------------
             // Material properties (direct — NOT Option)
@@ -54,7 +54,7 @@ impl System for StrengthSystem {
             //---------------------------------------------------------
             world.components
                 .strength_components
-                .insert(*entity_id, props);
+                .insert(*id, props);
 
             //---------------------------------------------------------
             // Check failure condition
@@ -64,7 +64,7 @@ impl System for StrengthSystem {
             if failed {
                 events.push(
                     ChronoEvent::new(
-                        entity.entity_id,
+                        entity.id,
                         entity.world_id,
                         now,
                         EventKind::Custom("StrengthFailure".into())

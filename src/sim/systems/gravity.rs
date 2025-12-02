@@ -24,12 +24,12 @@ impl System for GravitySystem {
             return events;
         };
 
-        for (entity_id, entity) in world.entities.iter() {
+        for (id, entity) in world.entities.iter() {
             //
             // Apply gravity to radial acceleration
             //
             let accel = world.components.acceleration_components
-                .entry(*entity_id)
+                .entry(*id)
                 .and_modify(|a| a.ar += EARTH_GRAVITY)
                 .or_insert(Acceleration {
                     ar: EARTH_GRAVITY,
@@ -42,7 +42,7 @@ impl System for GravitySystem {
             //
             events.push(
                 ChronoEvent::new(
-                    entity.entity_id,    // correct new field
+                    entity.id,    // correct new field
                     entity.world_id,     // required for ChronoEvent
                     clock.current,       // timestamp
                     EventKind::Accelerate {

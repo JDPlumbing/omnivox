@@ -11,14 +11,14 @@ use super::{SimulationDto, NewSimulation};
 
 use crate::shared::app_state::AppState;
 use crate::supabasic::simulations::SimulationRow;
-
+use crate::core::id::simulation_id::SimulationId;
 
 /// POST /api/simulations
 pub async fn create_simulation(
     State(app): State<AppState>,
     Json(payload): Json<NewSimulation>,
 ) -> impl IntoResponse {
-    let new_id = payload.simulation_id.unwrap_or_else(Uuid::new_v4);
+    let new_id = payload.simulation_id;
 
     let insert_payload = json!([{
         "simulation_id": new_id,

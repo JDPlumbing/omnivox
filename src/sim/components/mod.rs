@@ -40,46 +40,45 @@ use crate::core::objex::systems::electrical::ElectricalProps;
 use crate::core::objex::systems::degradation::DegradationProps;
 use crate::core::objex::systems::optical::OpticalProps;
 use crate::core::objex::systems::composite::CompositeProps;
-
+use crate::core::id::entity_id::EntityId;
 
 use std::collections::HashMap;
-use uuid::Uuid;
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SimComponents {
     // basic physics
-    pub velocity_components: HashMap<Uuid, Velocity>,
-    pub acceleration_components: HashMap<Uuid, Acceleration>,
+    pub velocity_components: HashMap<EntityId, Velocity>,
+    pub acceleration_components: HashMap<EntityId, Acceleration>,
 
     // transient or derived components
-    pub fracture_components: HashMap<Uuid, FractureData>,
-    pub corrosion_components: HashMap<Uuid, CorrosionData>,
-
+    pub fracture_components: HashMap<EntityId, FractureData>,
+    pub corrosion_components: HashMap<EntityId, CorrosionData>,
     // full physics/property systems
-    pub mass_components: HashMap<Uuid, MassProps>,
-    pub mechanical_components: HashMap<Uuid, MechanicalProps>,
-    pub strength_components: HashMap<Uuid, StrengthProps>,
+    pub mass_components: HashMap<EntityId, MassProps>,
+    pub mechanical_components: HashMap<EntityId, MechanicalProps>,
+    pub strength_components: HashMap<EntityId, StrengthProps>,
    
-    pub electrical_components: HashMap<Uuid, ElectricalProps>,
-    pub degradation_components: HashMap<Uuid, DegradationProps>,
-    pub optical_components: HashMap<Uuid, OpticalProps>,
-    pub composite_components: HashMap<Uuid, CompositeProps>,
+    pub electrical_components: HashMap<EntityId, ElectricalProps>,
+    pub degradation_components: HashMap<EntityId, DegradationProps>,
+    pub optical_components: HashMap<EntityId, OpticalProps>,
+    pub composite_components: HashMap<EntityId, CompositeProps>,
 
         // ☀️ add this
-    pub solar_radiation: HashMap<Uuid, SolarRadiation>,
-    pub sun_damage: HashMap<Uuid, SunDamage>,
+    pub solar_radiation: HashMap<EntityId, SolarRadiation>,
+    pub sun_damage: HashMap<EntityId, SunDamage>,
 
     // sunlight and sun emitter components
-    //pub sunlight_components: HashMap<Uuid, SunlightComponent>,
-    //pub sun_emitter_components: HashMap<Uuid, SunEmitter>,
+    //pub sunlight_components: HashMap<EntityId, SunlightComponent>,
+    //pub sun_emitter_components: HashMap<EntityId, SunEmitter>,
 
-    pub solar_exposure: HashMap<Uuid, SolarExposure>,
+    pub solar_exposure: HashMap<EntityId, SolarExposure>,
 
-    //pub uv_degradation_components: HashMap<Uuid, UVDegradationData>,
-    pub thermal_components: HashMap<Uuid, ThermalData>,
-    pub thermal_exposure: HashMap<Uuid, ThermalExposure>,
-    pub orbital_components: HashMap<Uuid, OrbitalMotion>,
+    //pub uv_degradation_components: HashMap<EntityId, UVDegradationData>,
+    pub thermal_components: HashMap<EntityId, ThermalData>,
+    pub thermal_exposure: HashMap<EntityId, ThermalExposure>,
+    pub orbital_components: HashMap<EntityId, OrbitalMotion>,
 
 }
 

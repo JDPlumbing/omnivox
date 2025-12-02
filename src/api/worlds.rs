@@ -9,11 +9,12 @@ use serde_json::json;
 use crate::supabasic::worlds::{WorldRecord, NewWorld};
 use crate::supabasic::events::EventRow;
 use crate::shared::app_state::AppState;
+use crate::core::id::WorldId;
 
 /// DTO returned to clients
 #[derive(serde::Serialize)]
 pub struct WorldDto {
-    pub world_id: i64,
+    pub world_id: WorldId,
     pub name: Option<String>,
     pub description: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -73,7 +74,7 @@ pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoRespon
 // ------------------------------------------------------------
 // GET /worlds/{world_id}
 // ------------------------------------------------------------
-pub async fn get_world_handler(State(app): State<AppState>, Path(world_id): Path<i64>) -> impl IntoResponse {
+pub async fn get_world_handler(State(app): State<AppState>, Path(world_id): Path<WorldId>) -> impl IntoResponse {
     match WorldRecord::get(&app.supa, world_id).await {
         Ok(row) => {
             let events = EventRow::list_for_world(&app.supa, row.world_id)
@@ -119,7 +120,7 @@ pub async fn create_world_handler(State(app): State<AppState>, Json(payload): Js
 // ------------------------------------------------------------
 pub async fn update_world_handler(
     State(app): State<AppState>,
-    Path(world_id): Path<i64>,
+    Path(world_id): Path<WorldId>,
     Json(updated): Json<WorldUpdate>,
 ) -> impl IntoResponse {
     let payload = serde_json::to_value(&updated).unwrap();
@@ -157,7 +158,7 @@ pub async fn update_world_handler(
 // ------------------------------------------------------------
 pub async fn patch_world_handler(
     State(app): State<AppState>,
-    Path(world_id): Path<i64>,
+    Path(world_id): Path<WorldId>,
     Json(changes): Json<serde_json::Value>,
 ) -> impl IntoResponse {
     let result = app
@@ -185,7 +186,7 @@ pub async fn patch_world_handler(
 // ------------------------------------------------------------
 // DELETE /worlds/{world_id}
 // ------------------------------------------------------------
-pub async fn delete_world_handler(State(app): State<AppState>, Path(world_id): Path<i64>) -> impl IntoResponse {
+pub async fn delete_world_handler(State(app): State<AppState>, Path(world_id): Path<WorldId>) -> impl IntoResponse {
     let result = app
         .supa
         .from("worlds")

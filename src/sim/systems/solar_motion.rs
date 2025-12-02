@@ -43,7 +43,7 @@ impl System for SolarMotionSystem {
         //---------------------------------------------------------------
         // STEP 2 — Get its orbital motion component
         //---------------------------------------------------------------
-        let Some(orbit) = world.components.orbital_components.get_mut(sun_id) else {
+        let Some(orbit) = world.components.orbital_components.get_mut(&sun_id) else {
             return events;
         };
 
@@ -60,30 +60,30 @@ impl System for SolarMotionSystem {
         const DEG_SCALE: f64 = 1e11;       // uvox degrees scaling
         const FULL_ROT: f64 = 360.0 * DEG_SCALE;
 
-        let new_lon = (sun.uvoxid.lon_code as f64 + lon_rate * dt_s)
+        let new_lon = (sun.position.lon_code as f64 + lon_rate * dt_s)
             .rem_euclid(FULL_ROT);
-        sun.uvoxid.lon_code = new_lon as i64;
+        sun.position.lon_code = new_lon as i64;
 
         //---------------------------------------------------------------
         // Step 5 — Latitude oscillation (seasonal tilt)
         //---------------------------------------------------------------
         let mut new_lat =
-            sun.uvoxid.lat_code as f64 + lat_rate * dt_s * orbit.tilt_dir as f64;
+            sun.position.lat_code as f64 + lat_rate * dt_s * orbit.tilt_dir as f64;
 
         if new_lat.abs() > orbit.lat_amp as f64 {
             orbit.tilt_dir *= -1;
             // Reapply using reversed direction so we stay within bounds
             new_lat =
-                sun.uvoxid.lat_code as f64 + lat_rate * dt_s * orbit.tilt_dir as f64;
+                sun.position.lat_code as f64 + lat_rate * dt_s * orbit.tilt_dir as f64;
         }
 
-        sun.uvoxid.lat_code = new_lat as i64;
+        sun.position.lat_code = new_lat as i64;
 
         //---------------------------------------------------------------
         // Step 6 — Radius oscillation (eccentric orbit)
         //---------------------------------------------------------------
         let mut new_r =
-            sun.uvoxid.r_um as f64 + r_rate * dt_s * orbit.r_dir as f64;
+            sun.position.r_um as f64 + r_rate * dt_s * orbit.r_dir as f64;
 
         let max_r = (orbit.mean_r_um + orbit.delta_r_um) as f64;
         let min_r = (orbit.mean_r_um - orbit.delta_r_um) as f64;
@@ -92,26 +92,26 @@ impl System for SolarMotionSystem {
             orbit.r_dir *= -1;
             // recompute with flipped direction
             new_r =
-                sun.uvoxid.r_um as f64 + r_rate * dt_s * orbit.r_dir as f64;
+                sun.position.r_um as f64 + r_rate * dt_s * orbit.r_dir as f64;
         }
 
-        sun.uvoxid.r_um = new_r as i64;
+        sun.position.r_um = new_r as i64;
 
         //---------------------------------------------------------------
         // Step 7 — Emit ChronoEvent in modern format
         //---------------------------------------------------------------
         events.push(
             ChronoEvent::new(
-                sun.entity_id,
+                sun.id,
                 sun.world_id,
                 now,
                 EventKind::Custom("SolarPositionUpdate".into()),
             )
             .with_payload(json!({
-                "entity_id": sun.entity_id,
-                "lat_code": sun.uvoxid.lat_code,
-                "lon_code": sun.uvoxid.lon_code,
-                "r_um": sun.uvoxid.r_um
+                "entity_id": sun.id,
+                "lat_code": sun.position.lat_code,
+                "lon_code": sun.position.lon_code,
+                "r_um": sun.position.r_um
             }))
         );
 

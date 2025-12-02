@@ -23,7 +23,7 @@ impl System for MechanicalSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        for (entity_id, entity) in world.entities.iter() {
+        for (id, entity) in world.entities.iter() {
 
             //---------------------------------------------------------
             // Fetch MatProps (physics material properties)
@@ -49,7 +49,7 @@ impl System for MechanicalSystem {
             //---------------------------------------------------------
             world.components
                 .mechanical_components
-                .insert(*entity_id, props);
+                .insert(*id, props);
         }
 
         events

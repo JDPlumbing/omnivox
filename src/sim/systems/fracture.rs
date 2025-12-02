@@ -14,6 +14,7 @@ use uuid::Uuid;
 use rand::Rng;
 use serde_json::{json, Value};
 use serde::{Serialize, Deserialize};
+use crate::core::id::entity_id::EntityId;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct FractureSystem;
@@ -48,7 +49,7 @@ impl System for FractureSystem {
             }
 
             // Check fracture component
-            let Some(fract) = world.components.fracture_components.get(parent_id) else {
+            let Some(fract) = world.components.fracture_components.get(&parent_id) else {
                 continue;
             };
 
@@ -83,8 +84,8 @@ impl System for FractureSystem {
                 //
                 // Assign a new entity ID
                 //
-                let new_id = Uuid::new_v4();
-                frag.entity_id = new_id;
+                let new_id = EntityId::new(0,0);
+                frag.id = new_id;
 
                 //
                 // Resize spherical fragments (if sphere)
@@ -100,7 +101,7 @@ impl System for FractureSystem {
                 //
                 // Random displacement (µm)
                 //
-                frag.uvoxid.r_um += rng.random_range(-2_000_000..2_000_000);
+                frag.position.r_um += rng.random_range(-2_000_000..2_000_000);
 
                 //
                 // Velocity scatter
@@ -127,7 +128,7 @@ impl System for FractureSystem {
                 //
                 events.push(
                     ChronoEvent::new(
-                        frag.entity_id,
+                        frag.id,
                         frag.world_id,
                         clock.current,
                         EventKind::Spawn
@@ -144,7 +145,7 @@ impl System for FractureSystem {
             //
             events.push(
                 ChronoEvent::new(
-                    parent.entity_id,
+                    parent.id,
                     parent.world_id,
                     clock.current,
                     EventKind::Despawn

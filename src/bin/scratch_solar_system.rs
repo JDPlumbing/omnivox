@@ -23,6 +23,9 @@ use omnivox::core::objex::core::{Objex, MaterialLink};
 use omnivox::core::objex::geospec::shapes::Shape;
 
 use omnivox::sim::time::clock::SimClock;
+use omnivox::core::id::entity_id::EntityId;
+use omnivox::core::id::world_id::WorldId;
+use omnivox::core::id::simulation_id::SimulationId;
 
 use uuid::Uuid;
 use serde_json::Value;
@@ -34,7 +37,7 @@ fn main() {
     // World
     // ---------------------------------------------------------
     let world_meta = World {
-        world_id: 1,
+        id: WorldId(1),
         name: Some("TestWorld".into()),
         description: Some("Solar scratch test".into()),
         world_epoch: Some(SimTime::from_ns(0)),
@@ -69,18 +72,18 @@ fn main() {
     // ---------------------------------------------------------
     // SUN entity
     // ---------------------------------------------------------
-    let sun_id = Uuid::new_v4();
+    let sun_id = EntityId::new(0, 0);
     let sun_uv = solar_uvox(sim_t);
 
     let sun_entity = omnivox::sim::entities::SimEntity {
-        entity_id: sun_id,
-        world_id: 1,
+        id: sun_id,
+        world_id: WorldId(1),
         spawned_at: sim_t,
         blueprint: Objex::sphere(MaterialLink::stellar_plasma(), 1000.0),
         orientation: Default::default(),
         despawned_at: None,
         metadata: Value::Null,
-        uvoxid: sun_uv,
+        position: sun_uv,
     };
 
     world.entities.insert(sun_id, sun_entity);
@@ -91,7 +94,7 @@ fn main() {
     // ---------------------------------------------------------
     // Ground entity — Miami
     // ---------------------------------------------------------
-    let ground_id = Uuid::new_v4();
+    let ground_id = EntityId::new(1, 0);
     let lat = 25.7617;
     let lon = -80.1918;
     let r_um = (6_371_000.0 * 1e6) as i64;
@@ -103,14 +106,14 @@ fn main() {
     );
 
     let ground = omnivox::sim::entities::SimEntity {
-        entity_id: ground_id,
-        world_id: 1,
+        id: ground_id,
+        world_id: WorldId(1),
         spawned_at: sim_t,
         blueprint: Objex::box_shape(MaterialLink::vacuum(), 1.0, 1.0, 1.0),
         orientation: Default::default(),
         despawned_at: None,
         metadata: Value::Null,
-        uvoxid: ground_pos,
+        position: ground_pos,
     };
 
     world.entities.insert(ground_id, ground);

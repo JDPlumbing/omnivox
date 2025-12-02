@@ -9,6 +9,7 @@ use crate::sim::{
 };
 
 use serde::{Serialize, Deserialize};
+use crate::core::id::EntityId;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct AccelerationSystem;
@@ -26,9 +27,9 @@ impl System for AccelerationSystem {
         let dt  = world.sim_delta;
         let end = now.add(dt);
 
-        for (entity_id, accel) in world.components.acceleration_components.iter() {
+        for (id, accel) in world.components.acceleration_components.iter() {
             // Must have velocity component to apply acceleration
-            if let Some(velocity) = world.components.velocity_components.get_mut(entity_id) {
+            if let Some(velocity) = world.components.velocity_components.get_mut(id) {
 
                 //
                 // --- Apply acceleration to velocity ---
@@ -40,7 +41,7 @@ impl System for AccelerationSystem {
                 //
                 // --- Correct SimEntity lookup ---
                 //
-                let Some(entity) = world.entities.get(entity_id) else {
+                let Some(entity) = world.entities.get(&id) else {
                     continue;
                 };
 
@@ -49,7 +50,7 @@ impl System for AccelerationSystem {
                 //
                 events.push(
                     ChronoEvent::new(
-                        entity.entity_id,   // UUID
+                        entity.id,   // UUID
                         entity.world_id,    // world ID
                         end,                // timestamp
                         EventKind::Accelerate {

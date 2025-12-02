@@ -1,10 +1,11 @@
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
+use crate::core::id::entity_id::EntityId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 
 pub struct CorrosionData {
-    pub object_id: Uuid,
+    pub entity_id: EntityId,
     pub surface_area: f64,     // m², to localize corrosion loss
     pub thickness_loss: f64,   // m, material lost over time
     pub rate: f64,             // m/s (corrosion rate)

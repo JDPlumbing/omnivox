@@ -10,6 +10,9 @@ use uuid::Uuid;
 
 use crate::supabasic::events::EventRow;
 use crate::shared::app_state::AppState;
+use crate::core::id::simulation_id::SimulationId;
+use crate::core::id::entity_id::EntityId;
+use crate::core::id::world_id::WorldId;
 
 // ------------------------------------------------------------
 // LIST: all events
@@ -138,7 +141,7 @@ pub async fn delete_event(State(app): State<AppState>, Path(event_id): Path<Uuid
 // ------------------------------------------------------------
 // LIST: events for simulation
 // ------------------------------------------------------------
-pub async fn list_events_for_sim(State(app): State<AppState>, Path(sim_id): Path<Uuid>) -> impl IntoResponse {
+pub async fn list_events_for_sim(State(app): State<AppState>, Path(sim_id): Path<SimulationId>) -> impl IntoResponse {
     match EventRow::list_for_sim(&app.supa, &sim_id).await {
         Ok(events) => Json(events).into_response(),
         Err(e) => (
@@ -152,7 +155,7 @@ pub async fn list_events_for_sim(State(app): State<AppState>, Path(sim_id): Path
 // ------------------------------------------------------------
 // LIST: events for entity
 // ------------------------------------------------------------
-pub async fn list_events_for_entity(State(app): State<AppState>, Path(entity_id): Path<Uuid>) -> impl IntoResponse {
+pub async fn list_events_for_entity(State(app): State<AppState>, Path(entity_id): Path<EntityId>) -> impl IntoResponse {
     match EventRow::list_for_entity(&app.supa, &entity_id).await {
         Ok(events) => Json(events).into_response(),
         Err(e) => (

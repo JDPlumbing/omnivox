@@ -1,24 +1,31 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use uuid::Uuid;
 use chrono::Utc;
 
 use crate::{
-    supabasic::{Supabase},
+    supabasic::Supabase,
     supabasic::events::EventRow,
     sim::simulations::simulation::Simulation,
-    sim::world::state::{World, WorldState},
+    sim::world::state::{WorldState, World},
 };
 
+use crate::core::id::{WorldId, SimulationId, UserId};
+use crate::core::id::EntityId;
+use crate::core::id::UvoxRegionId;
+use crate::core::uvoxid::UvoxId;
 pub type SharedManager = Arc<RwLock<SimulationManager>>;
 
+/// ---------------------------------------------------------------------------
+/// SimulationManager — orchestrates running simulations in memory
+/// ---------------------------------------------------------------------------
 pub struct SimulationManager {
     pub supa: Supabase,
-    pub simulations: HashMap<Uuid, Simulation>,
+    pub simulations: HashMap<SimulationId, Simulation>,
 }
 
 impl SimulationManager {
+
     pub fn new(supa: Supabase) -> Self {
         Self {
             supa,
@@ -26,17 +33,29 @@ impl SimulationManager {
         }
     }
 
-    /// Start a brand-new ad-hoc runtime simulation.
-    /// Uses an empty default world record (world_id = 0, name = Test-Earth).
-    pub async fn start(&mut self) -> anyhow::Result<Uuid> {
-        let sim_id = Uuid::new_v4();
+    /// -----------------------------------------------------------------------
+    /// Start a new ad-hoc simulation
+    /// -----------------------------------------------------------------------
+    pub async fn start(&mut self) -> anyhow::Result<SimulationId> {
 
-        tracing::info!("Starting ad-hoc simulation {sim_id}...");
+        //
+        // A: Create a VALID SimulationId (Option A — structured, meaningful)
+        //
+        let sim_id = SimulationId::new(
+            WorldId(0),
+            UvoxRegionId::new(UvoxId::new(0,0,0), UvoxId::new(100,100,100)),
+            crate::core::tdt::sim_time::SimTime::from_ns(0),
+            UserId(0),
+            0,
+        );
 
-        // Simulation::new expects a WorldRecord, not a runtime World.
-        // So we convert runtime World::default() → WorldRecord.
+        tracing::info!("Starting ad-hoc simulation {:?}", sim_id);
+
+        //
+        // B: Since Simulation::new takes a WorldRecord, build a placeholder one
+        //
         let world_record = crate::supabasic::worlds::WorldRecord {
-            world_id: 0,
+            world_id: WorldId(0),
             name: Some("Test-Earth".into()),
             description: None,
             world_epoch: Some(0),
@@ -47,39 +66,40 @@ impl SimulationManager {
 
         let sim = Simulation::new(world_record);
 
+        //
+        // Insert into active simulations
+        //
         self.simulations.insert(sim_id, sim);
         Ok(sim_id)
     }
 
-
-    /// Perform one simulation tick.
+    /// -----------------------------------------------------------------------
+    /// Perform a simulation tick
+    /// -----------------------------------------------------------------------
     pub async fn tick(
         &mut self,
-        sim_id: Uuid
+        sim_id: SimulationId,
     ) -> anyhow::Result<Vec<crate::core::chronovox::ChronoEvent>> {
 
         let sim = self.simulations.get_mut(&sim_id)
-            .ok_or_else(|| anyhow::anyhow!("Simulation {sim_id} not found"))?;
+            .ok_or_else(|| anyhow::anyhow!("Simulation {:?} not found", sim_id))?;
 
+        // run the tick
         let events = sim.tick();
 
         //
-        // For each ChronoEvent → write EventRow to DB
+        // Persist ChronoEvents → EventRow
         //
         for ev in &events {
 
-            // entity_id extraction
-            let entity_id = ev.payload
-                .as_ref()
-                .and_then(|p| p.get("entity_id"))
-                .and_then(|v| v.as_str())
-                .and_then(|s| Uuid::parse_str(s).ok())
-                .or_else(|| sim.world.entities.keys().next().cloned())
-                .unwrap_or_else(|| Uuid::nil());
+            // Use entity id from event, or fallback to first entity, or nil
+           // remove unwrap_or_else entirely
+            let entity_id = ev.entity_id;
+
 
             let row = EventRow {
                 id: None,
-                simulation_id: sim.simulation_id,
+                simulation_id: sim.simulation_id.clone(),   // stored as structured ID in DB
                 entity_id,
                 world_id: sim.world_id,
                 ticks: ev.t.as_ns(),
@@ -92,25 +112,34 @@ impl SimulationManager {
             let _ = EventRow::create(&self.supa, &row).await;
         }
 
-        tracing::info!("Ticked sim {sim_id} → {} events", events.len());
-
+        tracing::info!("Ticked sim {:?} → {} events", sim_id, events.len());
         Ok(events)
     }
 
-
-    pub async fn stop(&mut self, sim_id: Uuid) -> anyhow::Result<bool> {
+    /// -----------------------------------------------------------------------
+    /// Stop simulation & delete from memory
+    /// -----------------------------------------------------------------------
+    pub async fn stop(&mut self, sim_id: SimulationId) -> anyhow::Result<bool> {
         Ok(self.simulations.remove(&sim_id).is_some())
     }
 
-    pub async fn list(&self) -> anyhow::Result<Vec<Uuid>> {
+    /// -----------------------------------------------------------------------
+    /// List active simulations
+    /// -----------------------------------------------------------------------
+    pub async fn list(&self) -> anyhow::Result<Vec<SimulationId>> {
         Ok(self.simulations.keys().cloned().collect())
     }
 
-    pub async fn load_from_supabase(&mut self, sim_id: Uuid) -> anyhow::Result<()> {
-        tracing::info!("📡 Loading simulation {} from Supabase", sim_id);
+    /// -----------------------------------------------------------------------
+    /// Load a simulation state from Supabase into memory
+    /// -----------------------------------------------------------------------
+    pub async fn load_from_supabase(&mut self, sim_id: SimulationId) -> anyhow::Result<()> {
+
+        tracing::info!("📡 Loading simulation {:?}", sim_id);
 
         let sim = Simulation::load_from_supabase(&self.supa, sim_id).await?;
         self.simulations.insert(sim_id, sim);
+
         Ok(())
     }
 }

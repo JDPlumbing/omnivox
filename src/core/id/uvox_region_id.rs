@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use super::uvox_id::UvoxId;
+use crate::core::uvoxid::UvoxId;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct UvoxRegionId {
@@ -24,5 +24,17 @@ impl UvoxRegionId {
         !(other.max.r_um  < self.min.r_um  || other.min.r_um  > self.max.r_um  ||
           other.max.lat_code < self.min.lat_code || other.min.lat_code > self.max.lat_code ||
           other.max.lon_code < self.min.lon_code || other.min.lon_code > self.max.lon_code)
+    }
+}
+
+// ------------------------------------------------------------
+// Default impl
+// ------------------------------------------------------------
+impl Default for UvoxRegionId {
+    fn default() -> Self {
+        UvoxRegionId {
+            min: UvoxId::new(0, 0, 0),
+            max: UvoxId::new(100, 100, 100),
+        }
     }
 }

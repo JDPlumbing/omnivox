@@ -12,6 +12,7 @@ use omnivox::core::tdt::sim_aggregate::{
     aggregate_events_json_pretty,
     AggregateResolution,
 };
+use omnivox::core::id::{WorldId, EntityId};
 
 use uuid::Uuid;
 use serde_json::json;
@@ -25,9 +26,9 @@ fn main() {
     //----------------------------------------------------------------------
     let mut events = Vec::new();
 
-    let world_id = 1;
-    let entity_a = Uuid::new_v4();
-    let entity_b = Uuid::new_v4();
+    let world_id = WorldId(1);
+    let entity_a = EntityId::new(0, 0);
+    let entity_b = EntityId::new(1, 0);
 
     // Produce events at different simulated times:
     //   month 0, month 1, month 2, etc.

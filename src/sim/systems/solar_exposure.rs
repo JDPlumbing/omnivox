@@ -18,10 +18,10 @@ impl System for SolarExposureSystem {
         // Time step in seconds
         let dt_s = world.sim_delta.as_secs_f64();
 
-        for (entity_id, exposure) in world.components.solar_exposure.iter() {
+        for (id, exposure) in world.components.solar_exposure.iter() {
             // Create or fetch long-term accumulator
             let dmg = world.components.sun_damage
-                .entry(*entity_id)
+                .entry(*id)
                 .or_insert_with(|| crate::sim::components::SunDamage::new());
 
             // Integrate irradiance (W/m² → J/m²)
@@ -43,8 +43,8 @@ impl System for SolarExposureSystem {
             // Add event
             events.push(
                 ChronoEvent::new(
-                    *entity_id,
-                    world.meta.world_id,
+                    *id,
+                    world.meta.id,
                     world.sim_time,
                     EventKind::Custom("SolarExposureIntegrated".into()),
                 )

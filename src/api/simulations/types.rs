@@ -2,15 +2,16 @@ use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use crate::supabasic::simulations::SimulationRow;
 use crate::supabasic::events::EventRow;
+use crate::core::id::{SimulationId, WorldId};
 
 /// DTO used for simulation API responses
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SimulationDto {
-    pub simulation_id: Uuid,
+    pub simulation_id: SimulationId,
     pub user_owner_id: Option<Uuid>,
     pub anon_owner_id: Option<Uuid>,
     pub tick_rate: i64,
-    pub world_id: i64,
+    pub world_id: WorldId,
     pub last_saved: Option<String>,
     #[serde(default)]
     pub events: Vec<EventRow>,
@@ -19,8 +20,8 @@ pub struct SimulationDto {
 /// Payload used when creating new simulations
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewSimulation {
-    pub simulation_id: Option<Uuid>, // optional; generated if missing
-    pub world_id: i64,
+    pub simulation_id: Option<SimulationId>, // optional; generated if missing
+    pub world_id: WorldId,
     pub tick_rate: i64,
     pub last_saved: Option<chrono::DateTime<chrono::Utc>>,
     pub metadata: Option<serde_json::Value>,

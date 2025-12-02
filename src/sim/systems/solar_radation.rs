@@ -32,7 +32,7 @@ impl System for SolarRadiationSystem {
             return events;
         };
 
-        let sun_pos = sun_entity.uvoxid;
+        let sun_pos = sun_entity.position;
 
         // Irradiance at distance r using 1/r² law
         let r_m = sun_pos.r_um as f64 / 1e6;
@@ -44,7 +44,7 @@ impl System for SolarRadiationSystem {
         for (id, entity) in world.entities.iter() {
             if *id == sun_id { continue; }
 
-            let observer = entity.uvoxid;
+            let observer = entity.position;
             let topo = sun_topocentric(observer, now);
 
             let irr_factor = topo.irradiance_factor.max(0.0);

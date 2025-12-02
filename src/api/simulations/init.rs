@@ -105,7 +105,7 @@ pub async fn init_simulation(
     let events: Vec<Value> = entities.iter().map(|ent| {
         json!({
             "simulation_id": sim_id,
-            "entity_id": ent.entity_id,
+            "entity_id": ent.id,
             "world_id": ent.world_id,
             "ticks": ticks,
             "kind": "Installed",

@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use uuid::Uuid;
+use crate::core::id::{WorldId, EntityId};
 
 use crate::core::tdt::sim_time::SimTime;
 use crate::core::tdt::sim_time::serialize_simtime;
@@ -12,10 +13,10 @@ use crate::supabasic::events::EventRow;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChronoEvent {
     /// Which entity this event refers to
-    pub entity_id: Uuid,
+    pub entity_id: EntityId,
 
     /// World where the event occurred
-    pub world_id: i64,
+    pub world_id: WorldId,
 
     /// Absolute simulation timestamp
     #[serde(serialize_with = "serialize_simtime")]
@@ -55,10 +56,10 @@ pub enum EventKind {
     Fracture { plane: String },
 
     // --- Interactions ---
-    Bond { with: Uuid },
-    Unbond { from: Uuid },
+    Bond { with: EntityId },
+    Unbond { from: EntityId },
     Transfer {
-        to: Uuid,
+        to: EntityId,
         what: String,
         amount: f64,
     },
@@ -70,15 +71,16 @@ pub enum EventKind {
 impl ChronoEvent {
     /// Create a new event with no payload.
     #[inline]
-    pub fn new(entity_id: Uuid, world_id: i64, t: SimTime, kind: EventKind) -> Self {
-        Self {
-            entity_id,
-            world_id,
-            t,
-            kind,
-            payload: None,
+    pub fn new(entity_id: EntityId, world_id: WorldId, t: SimTime, kind: EventKind) -> Self {
+
+            Self {
+                entity_id,
+                world_id,
+                t,
+                kind,
+                payload: None,
+            }
         }
-    }
 
     /// Add payload fluently
     #[inline]
@@ -89,7 +91,8 @@ impl ChronoEvent {
 
     /// Create a simple custom event
     #[inline]
-    pub fn custom(entity_id: Uuid, world_id: i64, t: SimTime, label: impl Into<String>) -> Self {
+    pub fn custom(entity_id: EntityId, world_id: WorldId, t: SimTime, label: impl Into<String>) -> Self {
+
         ChronoEvent::new(entity_id, world_id, t, EventKind::Custom(label.into()))
     }
 }

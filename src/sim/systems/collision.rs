@@ -16,7 +16,7 @@ use crate::sim::{
 
 use serde::{Serialize, Deserialize};
 use serde_json::json;
-use uuid::Uuid;
+use crate::core::id::entity_id::EntityId;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct CollisionSystem;
@@ -34,12 +34,12 @@ impl System for CollisionSystem {
         //
         // === ENTITY–ENTITY COLLISIONS ===
         //
-        let entity_ids: Vec<Uuid> = world.entities.keys().cloned().collect();
+        let entity_ids: Vec<EntityId> = world.entities.keys().cloned().collect();
 
         for (i, id_a) in entity_ids.iter().enumerate() {
             for id_b in entity_ids.iter().skip(i + 1) {
-                let a = &world.entities[id_a];
-                let b = &world.entities[id_b];
+                let a = &world.entities.get(&id_a).unwrap();
+                let b = &world.entities.get(&id_b).unwrap();
 
                 //
                 // Shape API changed — YOU MUST DEFINE radius extraction
@@ -47,14 +47,14 @@ impl System for CollisionSystem {
                 let ra = a.shape().radius_um();
                 let rb = b.shape().radius_um();
 
-                let dr = (a.uvoxid.r_um - b.uvoxid.r_um).abs();
+                let dr = (a.position.r_um - b.position.r_um).abs();
 
                 if dr <= (ra + rb) {
                     // Stop velocities
-                    if let Some(v) = world.components.velocity_components.get_mut(id_a) {
+                    if let Some(v) = world.components.velocity_components.get_mut(&id_a) {
                         v.dr = 0.0; v.dlat = 0.0; v.dlon = 0.0;
                     }
-                    if let Some(v) = world.components.velocity_components.get_mut(id_b) {
+                    if let Some(v) = world.components.velocity_components.get_mut(&id_b) {
                         v.dr = 0.0; v.dlat = 0.0; v.dlon = 0.0;
                     }
 
@@ -64,7 +64,7 @@ impl System for CollisionSystem {
                     // Event: A hits B
                     //
                     events.push(ChronoEvent::new(
-                        a.entity_id,
+                        a.id,
                         a.world_id,
                         end,
                         EventKind::Custom(format!("Collision with {}", id_b)),
@@ -81,7 +81,7 @@ impl System for CollisionSystem {
                     // Event: B hits A
                     //
                     events.push(ChronoEvent::new(
-                        b.entity_id,
+                        b.id,
                         b.world_id,
                         end,
                         EventKind::Custom(format!("Collision with {}", id_a)),
@@ -93,12 +93,12 @@ impl System for CollisionSystem {
         //
         // === ENTITY–GROUND COLLISIONS ===
         //
-        for (entity_id, entity) in world.entities.iter_mut() {
-            if entity.uvoxid.r_um <= EARTH_RADIUS {
+        for (id, entity) in world.entities.iter_mut() {
+            if entity.position.r_um <= EARTH_RADIUS {
                 //
                 // Process velocity → bounce or fracture
                 //
-                if let Some(v) = world.components.velocity_components.get_mut(entity_id) {
+                if let Some(v) = world.components.velocity_components.get_mut(&id) {
                     let pre_speed = v.dr.abs();
                     let mut fractured = false;
 
@@ -113,9 +113,9 @@ impl System for CollisionSystem {
                         fractured = true;
 
                         world.components.fracture_components.insert(
-                            *entity_id,
+                            *id,
                             FractureData {
-                                object_id: *entity_id,
+                                entity_id: *id,
                                 plane: "horizontal".to_string(),
                                 energy: impact_energy,
                                 threshold: props.fracture_toughness,
@@ -125,7 +125,7 @@ impl System for CollisionSystem {
                         // Emit fracture event
                         events.push(
                             ChronoEvent::new(
-                                entity.entity_id,
+                                entity.id,
                                 entity.world_id,
                                 end,
                                 EventKind::Fracture { plane: "horizontal".to_string() },
@@ -148,7 +148,7 @@ impl System for CollisionSystem {
 
                     if fractured {
                         if let Some(a) =
-                            world.components.acceleration_components.get_mut(entity_id)
+                            world.components.acceleration_components.get_mut(&id)
                         {
                             a.ar = 0.0;
                             a.alat = 0.0;
@@ -160,22 +160,22 @@ impl System for CollisionSystem {
                 //
                 // Snap to ground
                 //
-                entity.uvoxid.r_um = EARTH_RADIUS;
+                entity.position.r_um = EARTH_RADIUS;
 
                 //
                 // Emit ground collision event
                 //
                 events.push(
                     ChronoEvent::new(
-                        entity.entity_id,
+                        entity.id,
                         entity.world_id,
                         end,
                         EventKind::Custom("GroundCollision".into()),
                     )
                     .with_payload(json!({
-                        "altitude_um": entity.uvoxid.r_um - EARTH_RADIUS,
-                        "altitude_m": um_to_m(entity.uvoxid.r_um - EARTH_RADIUS),
-                        "altitude_human": (entity.uvoxid.r_um - EARTH_RADIUS).to_human(),
+                        "altitude_um": entity.position.r_um - EARTH_RADIUS,
+                        "altitude_m": um_to_m(entity.position.r_um - EARTH_RADIUS),
+                        "altitude_human": (entity.position.r_um - EARTH_RADIUS).to_human(),
                     }))
                 );
             }

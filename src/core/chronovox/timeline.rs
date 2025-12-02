@@ -4,6 +4,7 @@ use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
 use crate::core::chronovox::event::{ChronoEvent};
+use crate::core::id::EntityId;
 
 /// ---------------------------------------------------------------------------
 /// Timeline — a simple ordered log of ChronoEvents
@@ -54,7 +55,7 @@ impl Timeline {
     }
 
     /// Query events for a specific entity
-    pub fn query_entity(&self, entity_id: Uuid) -> Vec<&ChronoEvent> {
+    pub fn query_entity(&self, entity_id: EntityId) -> Vec<&ChronoEvent> {
         self.events
             .iter()
             .filter(|e| e.entity_id == entity_id)

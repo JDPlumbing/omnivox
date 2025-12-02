@@ -11,6 +11,7 @@ use crate::shared::app_state::AppState;
 use crate::sim::entity::SimEntity;
 use crate::supabasic::entity::EntityRecord;
 //use crate::core::objex::Objex;
+use crate::core::id::world_id::WorldId;
 
 // ------------------------------------------------------------
 // POST /api/entities
@@ -23,7 +24,7 @@ pub async fn create_entity(
     let blueprint_id = Uuid::new_v4(); // optional: if you later add blueprint table
 
     match EntityRecord::insert(&app.supa, &entity).await {
-        Ok(rec) => Json(json!({ "entity_id": rec.entity_id })).into_response(),
+        Ok(rec) => Json(json!({ "id": rec.id })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": format!("{e:?}") })),
@@ -74,7 +75,7 @@ pub async fn list_entities(State(app): State<AppState>) -> impl IntoResponse {
 // ------------------------------------------------------------
 pub async fn list_entities_for_world(
     State(app): State<AppState>,
-    Path(world_id): Path<i64>,
+    Path(world_id): Path<WorldId>,
 ) -> impl IntoResponse {
     match EntityRecord::list_for_world(&app.supa, world_id).await {
         Ok(rows) => Json(rows).into_response(),

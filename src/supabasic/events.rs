@@ -5,6 +5,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use crate::core::id::{ WorldId, SimulationId, EntityId };
 
 //use crate::core::chronovox::event::{ChronoEvent, EventKind};
 //use crate::core::tdt::sim_time::SimTime;
@@ -17,9 +18,9 @@ pub struct EventRow {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<Uuid>,
 
-    pub simulation_id: Uuid,
-    pub entity_id: Uuid,
-    pub world_id: i64,
+    pub simulation_id: SimulationId,
+    pub entity_id: EntityId,
+    pub world_id: WorldId,
 
     pub ticks: i128,              // SimTime as ns
     pub kind: String,             // serialized EventKind
@@ -69,7 +70,7 @@ impl EventRow {
     // -----------------------------------------------------------------------
     pub async fn list_for_sim(
         supa: &Supabase,
-        sim_id: &Uuid
+        sim_id: &SimulationId
     ) -> Result<Vec<Self>, SupabasicError> {
 
         supa.from(Self::table())
@@ -84,7 +85,7 @@ impl EventRow {
     // -----------------------------------------------------------------------
     pub async fn list_for_entity(
         supa: &Supabase,
-        entity_id: &Uuid
+        entity_id: &EntityId
     ) -> Result<Vec<Self>, SupabasicError> {
 
         supa.from(Self::table())
@@ -99,7 +100,7 @@ impl EventRow {
     // -----------------------------------------------------------------------
     pub async fn list_for_world(
         supa: &Supabase,
-        world_id: i64
+        world_id: WorldId
     ) -> Result<Vec<Self>, SupabasicError> {
 
         supa.from(Self::table())

@@ -7,6 +7,7 @@ use axum::{
 use serde_json::json;
 use uuid::Uuid;
 use super::SimulationDto;
+use crate::core::id::simulation_id::SimulationId;
 
 use crate::shared::app_state::AppState;
 use crate::supabasic::{simulations::SimulationRow, events::EventRow};
@@ -14,7 +15,7 @@ use crate::supabasic::{simulations::SimulationRow, events::EventRow};
 /// GET /api/simulations/:id
 pub async fn get_simulation(
     State(app): State<AppState>,
-    Path(sim_id): Path<Uuid>,
+    Path(sim_id): Path<SimulationId>,
 ) -> impl IntoResponse {
     match SimulationRow::get(&app.supa, sim_id).await {
         Ok(sim) => {

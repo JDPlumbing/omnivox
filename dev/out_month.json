@@ -4,7 +4,10 @@
     "count": 2,
     "events": [
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "Install_M0"
         },
@@ -16,7 +19,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "entity_id": {
+          "generation": 0,
+          "index": 1
+        },
         "kind": {
           "Custom": "Thermal_M0"
         },
@@ -35,7 +41,10 @@
     "count": 2,
     "events": [
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "Install_M1"
         },
@@ -47,7 +56,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "entity_id": {
+          "generation": 0,
+          "index": 1
+        },
         "kind": {
           "Custom": "Thermal_M1"
         },
@@ -66,7 +78,10 @@
     "count": 2,
     "events": [
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "Install_M2"
         },
@@ -78,7 +93,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "entity_id": {
+          "generation": 0,
+          "index": 1
+        },
         "kind": {
           "Custom": "Thermal_M2"
         },
@@ -97,7 +115,10 @@
     "count": 7,
     "events": [
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "Install_M3"
         },
@@ -109,7 +130,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "entity_id": {
+          "generation": 0,
+          "index": 1
+        },
         "kind": {
           "Custom": "Thermal_M3"
         },
@@ -121,7 +145,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "DailyCheck_D0"
         },
@@ -131,7 +158,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "DailyCheck_D1"
         },
@@ -141,7 +171,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "DailyCheck_D2"
         },
@@ -151,7 +184,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "DailyCheck_D3"
         },
@@ -161,7 +197,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "DailyCheck_D4"
         },
@@ -178,7 +217,10 @@
     "count": 2,
     "events": [
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "Install_M4"
         },
@@ -190,7 +232,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "entity_id": {
+          "generation": 0,
+          "index": 1
+        },
         "kind": {
           "Custom": "Thermal_M4"
         },
@@ -209,7 +254,10 @@
     "count": 2,
     "events": [
       {
-        "entity_id": "d51d1d50-b6c1-451d-8928-77320afd7a7e",
+        "entity_id": {
+          "generation": 0,
+          "index": 0
+        },
         "kind": {
           "Custom": "Install_M5"
         },
@@ -221,7 +269,10 @@
         "world_id": 1
       },
       {
-        "entity_id": "6166ba36-f3c6-4635-bbc7-19b972fc69fd",
+        "entity_id": {
+          "generation": 0,
+          "index": 1
+        },
         "kind": {
           "Custom": "Thermal_M5"
         },

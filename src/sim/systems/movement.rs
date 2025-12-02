@@ -26,8 +26,8 @@ impl System for MovementSystem {
             return triggered_events;
         };
 
-        for (entity_id, velocity) in world.components.velocity_components.iter() {
-            if let Some(entity) = world.entities.get_mut(entity_id) {
+        for (id, velocity) in world.components.velocity_components.iter() {
+            if let Some(entity) = world.entities.get_mut(&id) {
 
                 //
                 // Convert f64 → i64 movement units
@@ -39,9 +39,9 @@ impl System for MovementSystem {
                 //
                 // Apply movement on the µm-grid position
                 //
-                entity.uvoxid.r_um     += dr_i64;
-                entity.uvoxid.lat_code += dlat_i64;
-                entity.uvoxid.lon_code += dlon_i64;
+                entity.position.r_um     += dr_i64;
+                entity.position.lat_code += dlat_i64;
+                entity.position.lon_code += dlon_i64;
 
                 //
                 // Movement metrics (nice to have)
@@ -54,7 +54,7 @@ impl System for MovementSystem {
                 //
                 triggered_events.push(
                     ChronoEvent::new(
-                        entity.entity_id,
+                        entity.id,
                         entity.world_id,
                         clock.current,
                         EventKind::Move {

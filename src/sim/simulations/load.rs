@@ -2,7 +2,6 @@
 use std::convert::TryFrom;
 
 // External crates
-use uuid::Uuid;
 use chrono::Utc;
 
 // Supabase / DB row types
@@ -12,11 +11,13 @@ use crate::supabasic::entity::EntityRecord;
 use crate::supabasic::simulations::SimulationRow;
 use crate::supabasic::events::EventRow;
 
-// Core library types
+// Core types
 use crate::core::tdt::time_delta::TimeDelta;
 use crate::core::chronovox::ChronoEvent;
+use crate::core::id::{WorldId, SimulationId};
+use crate::core::tdt::sim_time::SimTime;
 
-// Simulation types / systems / errors
+// Simulation types
 use crate::sim::world::{WorldState, World};
 use crate::sim::simulations::simulation::Simulation;
 use crate::sim::systems::{System, MovementSystem};
@@ -24,136 +25,123 @@ use crate::sim::error::{OmnivoxError, Result};
 use crate::sim::entities::SimEntity;
 use crate::sim::clock::SimClock;
 
+
 /// ---------------------------------------------------------------------------
-///  LOAD A COMPLETE RUNTIME WORLD FROM SUPABASE BY world_id
+/// Load runtime world
 /// ---------------------------------------------------------------------------
 async fn load_world(
     sup: &Supabase,
-    world_id: i64,
+    world_id: WorldId,
 ) -> Result<WorldState> {
 
-    //
-    // 1. Load world metadata from DB
-    //
     let rec = WorldRecord::get(sup, world_id)
         .await
         .map_err(|e| OmnivoxError::LoadError(format!("world fetch failed: {:?}", e)))?;
 
-    // Convert DB → runtime
     let meta: World = rec.into();
 
-    //
-    // 2. Load entities belonging to this world
-    //
-    let entity_rows: Vec<EntityRecord> =
-        EntityRecord::list_for_world(sup, world_id)
-            .await
-            .unwrap_or_default();
+    let entity_rows = EntityRecord::list_for_world(sup, world_id)
+        .await
+        .unwrap_or_default();
 
     let mut entities = std::collections::HashMap::new();
     for row in entity_rows {
         match SimEntity::try_from(row) {
-            Ok(ent) => {
-                entities.insert(ent.entity_id, ent);
-            }
-            Err(e) => {
-                eprintln!("⚠ Failed to convert EntityRecord → SimEntity: {:?}", e);
-            }
+            Ok(ent) => { entities.insert(ent.id, ent); }
+            Err(e) => eprintln!("⚠ Failed SimEntity conversion: {:?}", e),
         }
     }
 
-    //
-    // 3. Load world events
-    //
-    let events: Vec<EventRow> =
-        EventRow::list_for_world(sup, world_id)
-            .await
-            .unwrap_or_default();
-
-    //
-    // 4. Build runtime world state
-    //
     let mut state = WorldState::new(meta);
     state.entities = entities;
-    state.events = events;
 
     Ok(state)
 }
 
+
 /// ---------------------------------------------------------------------------
-///  LOAD A COMPLETE SIMULATION: metadata + timeline + hydrated world
+/// Load full simulation: metadata + timeline + world
 /// ---------------------------------------------------------------------------
 impl Simulation {
     pub async fn load_from_supabase(
         sup: &Supabase,
-        sim_id: Uuid,
+        sim_id: SimulationId,
     ) -> Result<Self> {
 
         //
-        // 1. Load SimulationRow metadata
+        // 1. Load SimulationRow
         //
-        let row = SimulationRow::get(sup, sim_id)
+        let row = SimulationRow::get(sup, sim_id.clone())
             .await
             .map_err(|e| OmnivoxError::LoadError(format!("simulation fetch failed: {:?}", e)))?;
 
         let _tick_rate = TimeDelta::from_ticks(row.tick_rate, "nanoseconds");
 
         //
-        // 2. Load simulation timeline events
+        // 2. Load timeline events
         //
-        let mut timeline: Vec<ChronoEvent> = Vec::new();
+        let sim_json_id = serde_json::to_value(&row.simulation_id).unwrap();
 
         let raw_events = sup
             .from("events")
             .select("*")
-            .eq("simulation_id", &sim_id.to_string())
+            .eq("simulation_id", sim_json_id.to_string().as_str())
+
             .execute()
-            .await?;
+            .await
+            .map_err(|e| OmnivoxError::LoadError(format!("event fetch failed: {:?}", e)))?;
+
+        let mut timeline = Vec::new();
 
         if let Some(arr) = raw_events.as_array() {
-            let rows: Vec<EventRow> =
-                arr.iter()
-                    .filter_map(|v| serde_json::from_value(v.clone()).ok())
-                    .collect();
-
-            timeline = rows.into_iter().map(ChronoEvent::from).collect();
+            for val in arr {
+                if let Ok(r) = serde_json::from_value::<EventRow>(val.clone()) {
+                    timeline.push(ChronoEvent::from(r));
+                }
+            }
         }
 
         timeline.sort_by_key(|e| e.t.ticks("nanoseconds"));
 
         //
-        // 3. Load world state for the referenced world_id
+        // 3. Load world state
         //
         let world_state = load_world(sup, row.world_id).await?;
 
         //
-        // 4. Initialize systems
+        // 4. Install ECS systems
         //
         let systems: Vec<Box<dyn System + Send + Sync>> = vec![
             Box::new(MovementSystem),
         ];
 
         //
-        // 5. Construct clock
+        // 5. Construct simulation clock
         //
-        use chrono::{Duration};
+        use chrono::Duration;
         let now = Utc::now();
         let start = now - Duration::days(365 * 10);
         let step = Duration::days(30);
+
         let clock = SimClock::from_wall_dates(start, now, step);
         let sim_time = clock.current;
 
         //
-        // 6. Build Simulation object
+        // 6. SimulationId is ALREADY stored in row.simulation_id
+        //
+        let sim_meta = row.simulation_id.clone();
+
+        //
+        // 7. Build Simulation struct
         //
         Ok(Simulation {
-            simulation_id: row.simulation_id,
+            simulation_id: sim_meta,
             world_id: row.world_id,
-            world: world_state,
-            timeline,
-            systems,
             sim_time,
             clock,
+            world: world_state,
+            systems,
+            timeline,
         })
     }
 }

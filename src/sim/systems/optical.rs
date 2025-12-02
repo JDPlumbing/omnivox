@@ -22,7 +22,7 @@ impl System for OpticalSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        for (entity_id, entity) in world.entities.iter() {
+        for (id, entity) in world.entities.iter() {
             //
             // Extract MaterialLink from the entity’s blueprint
             //
@@ -45,7 +45,7 @@ impl System for OpticalSystem {
             //
             // Store optical component for this entity
             //
-            world.components.optical_components.insert(*entity_id, props);
+            world.components.optical_components.insert(*id, props);
         }
 
         events

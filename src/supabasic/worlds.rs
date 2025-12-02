@@ -2,6 +2,7 @@
 
 use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::orm::DbModel;
+use crate::core::id::WorldId;
 
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
@@ -10,7 +11,7 @@ use serde::{Serialize, Deserialize};
 /// Contains ONLY persistent metadata.
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct WorldRecord {
-    pub world_id: i64,
+    pub world_id: WorldId,
     pub name: Option<String>,
     pub description: Option<String>,
 
@@ -35,7 +36,7 @@ impl WorldRecord {
     }
 
     /// Fetch world by world_id
-    pub async fn fetch(supa: &Supabase, world_id: i64) -> Result<Self, SupabasicError> {
+    pub async fn fetch(supa: &Supabase, world_id: WorldId) -> Result<Self, SupabasicError> {
         supa.from(Self::table())
             .select("world_id,name,description,world_epoch,created_at,updated_at,deleted_at")
             .eq("world_id", &world_id.to_string())
@@ -45,7 +46,7 @@ impl WorldRecord {
     }
 
     /// Alias for fetch()
-    pub async fn get(supa: &Supabase, world_id: i64) -> Result<Self, SupabasicError> {
+    pub async fn get(supa: &Supabase, world_id: WorldId) -> Result<Self, SupabasicError> {
         Self::fetch(supa, world_id).await
     }
 
@@ -67,7 +68,7 @@ impl WorldRecord {
 /// Payload for creating new worlds
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewWorld {
-    pub world_id: i64,
+    pub world_id: WorldId,
     pub name: Option<String>,
     pub description: Option<String>,
 }

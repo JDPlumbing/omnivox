@@ -6,22 +6,22 @@ use crate::core::uvoxid::UvoxId;
 use crate::core::objex::{Objex};
 use crate::core::objex::geospec::Shape;
 use crate::core::objex::core::material::MaterialLink;
-
+use crate::core::id::{EntityId, WorldId};
 use crate::core::SimTime;
 use crate::sim::UvoxQuat;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimEntity {
-    pub entity_id: Uuid,
+    pub id: EntityId,
 
     /// World this entity belongs to
-    pub world_id: i64,
+    pub world_id: WorldId,
 
     /// Blueprint (shape + material)
     pub blueprint: Objex,
 
     /// Spatial coordinates inside that world
-    pub uvoxid: UvoxId,
+    pub position: UvoxId,
 
     /// Orientation
     pub orientation: UvoxQuat,
@@ -36,22 +36,26 @@ pub struct SimEntity {
 
 impl SimEntity {
     pub fn spawn(
+        id: EntityId,
         blueprint: Objex,
-        world_id: i64,
-        uvoxid: UvoxId,
-        time: SimTime,
+        world_id: WorldId,
+        position: UvoxId,
+        orientation: UvoxQuat,
+        
+        spawned_at: SimTime,
     ) -> Self {
         Self {
-            entity_id: Uuid::new_v4(),
+            id: id,
             world_id,
-            blueprint,
-            uvoxid,
+            position: position,
             orientation: UvoxQuat::identity(),
-            spawned_at: time,
+            spawned_at: spawned_at,
             despawned_at: None,
             metadata: serde_json::json!({}),
+            blueprint,
         }
     }
+
 
     pub fn despawn(&mut self, t: SimTime) {
         self.despawned_at = Some(t);

@@ -23,7 +23,7 @@ impl System for DegradationSystem {
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
         let mut events = Vec::new();
 
-        for (entity_id, entity) in world.entities.iter() {
+        for (id, entity) in world.entities.iter() {
 
             //---------------------------------------------------------
             // Material properties (MatProps)
@@ -49,7 +49,7 @@ impl System for DegradationSystem {
             //---------------------------------------------------------
             world.components
                 .degradation_components
-                .insert(*entity_id, props);
+                .insert(*id, props);
         }
 
         events

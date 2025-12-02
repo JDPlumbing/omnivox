@@ -42,7 +42,7 @@ impl System for CorrosionSystem {
         let now = clock.current;
         let dt_years = clock.step_seconds() / (365.0 * 86400.0);
 
-        for (entity_id, entity) in world.entities.iter() {
+        for (id, entity) in world.entities.iter() {
 
             //---------------------------------------------------------
             // Material properties — NO Option!
@@ -77,9 +77,9 @@ impl System for CorrosionSystem {
             // Initialize/update component
             //---------------------------------------------------------
             let entry = world.components.corrosion_components
-                .entry(*entity_id)
+                .entry(*id)
                 .or_insert(CorrosionData {
-                    object_id: *entity_id,
+                    entity_id: *id,
                     surface_area: area,
                     thickness_loss: 0.0,
                     rate,
@@ -125,7 +125,7 @@ impl System for CorrosionSystem {
             //---------------------------------------------------------
             events.push(
                 ChronoEvent::new(
-                    entity.entity_id,
+                    entity.id,
                     entity.world_id,
                     now,
                     EventKind::Custom(event_name.into())
