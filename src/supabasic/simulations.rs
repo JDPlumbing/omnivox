@@ -45,7 +45,7 @@ impl SimulationRow {
         let val = supa
             .from(Self::table())
             .select("*")
-            .eq("simulation_id", &json_id.to_string())      // JSONB equality
+            //.eq("simulation_id", serde_json::json!(sim_id)) // 🔥 JSONB compare
             .single()
             .await?;
 

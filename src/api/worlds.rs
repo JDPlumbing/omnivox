@@ -207,3 +207,44 @@ pub async fn delete_world_handler(State(app): State<AppState>, Path(world_id): P
         }
     }
 }
+
+// ------------------------------------------------------------
+// GET /worlds/{world_id}/stats
+// ------------------------------------------------------------
+use serde::Serialize;
+#[derive(Serialize)]
+pub struct WorldStats {
+    pub world_id: WorldId,
+    pub entity_count: i64,
+}
+
+pub async fn get_world_stats(
+    State(app): State<AppState>,
+    Path(world_id): Path<WorldId>,
+) -> impl IntoResponse {
+    let args = json!({ "world_id": world_id.0 });
+
+    // Call the RPC function
+    match app.supa.rpc("count_entities", args).await {
+        Ok(val) => {
+            // RPC returns something like: [{ "count_entities": 123 }]
+            let count = val
+                .get(0)
+                .and_then(|row| row.get("count_entities"))
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0);
+
+            Json(json!({
+                "world_id": world_id.0,
+                "entity_count": count,
+            }))
+            .into_response()
+        }
+
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": format!("{e:?}") })),
+        )
+            .into_response(),
+    }
+}

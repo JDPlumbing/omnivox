@@ -38,3 +38,40 @@ impl Default for UvoxRegionId {
         }
     }
 }
+
+impl UvoxRegionId {
+    /// Convert region to a compact string based on min corner.
+    pub fn to_compact_string(&self) -> String {
+        format!(
+            "{}_{}_{}",
+            self.min.r_um,
+            self.min.lat_code,
+            self.min.lon_code
+        )
+    }
+
+    /// Parse region from a compact string.
+    /// Expected format: r_um_lat_lon
+    pub fn from_compact(s: &str) -> Result<Self, anyhow::Error> {
+        let parts: Vec<&str> = s.split('_').collect();
+        if parts.len() != 3 {
+            return Err(anyhow::anyhow!("Invalid compact region '{}'", s));
+        }
+
+        let r_um     = parts[0].parse::<i64>()?;
+        let lat_code = parts[1].parse::<i64>()?;
+        let lon_code = parts[2].parse::<i64>()?;
+
+        let min = UvoxId {
+            r_um,
+            lat_code,
+            lon_code,
+        };
+
+        // Max is undefined — simulation doesn't need full region geometry.
+        // Use min for both until region math is implemented.
+        let max = min;
+
+        Ok(UvoxRegionId { min, max })
+    }
+}

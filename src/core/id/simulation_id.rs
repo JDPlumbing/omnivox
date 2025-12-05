@@ -32,12 +32,6 @@ impl SimulationId {
     }
 }
 
-impl fmt::Display for SimulationId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
-    }
-}
-
 // ------------------------------------------------------------
 // Default impl
 // ------------------------------------------------------------ 
@@ -50,5 +44,69 @@ impl Default for SimulationId {
             user: UserId::from(0),
             branch: 0,
         }
+    }
+}
+
+use uuid::Uuid;
+
+
+impl TryFrom<Uuid> for SimulationId {
+    type Error = anyhow::Error;
+
+    fn try_from(_u: Uuid) -> Result<Self, Self::Error> {
+        Err(anyhow!(
+            "SimulationId is structured and cannot be built from a UUID"
+        ))
+    }
+}
+
+use std::str::FromStr;
+use anyhow::{anyhow, Error};
+
+// ------------------------------------------------------------
+// Display: WORLD-REGION-STARTNS-USER-BRANCH
+// ------------------------------------------------------------
+impl fmt::Display for SimulationId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}-{}-{}-{}-{}",
+            self.world.0,
+            self.region.to_compact_string(),
+            self.time_start.0,
+            self.user.0,
+            self.branch
+        )
+    }
+}
+
+
+// ------------------------------------------------------------
+// Parse SimulationId from string
+// ------------------------------------------------------------
+impl FromStr for SimulationId {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split('-').collect();
+
+        if parts.len() != 5 {
+            return Err(anyhow!("Invalid SimulationId '{}'", s));
+        }
+
+        // Parse each component
+        let world    = WorldId(parts[0].parse()?);
+        let region   = UvoxRegionId::from_compact(parts[1])?;
+        let start    = SimTime(parts[2].parse()?);
+        let user     = UserId(parts[3].parse()?);
+        let branch   = parts[4].parse::<u32>()?;
+
+        Ok(SimulationId {
+            world,
+            region,
+            time_start: start,
+            user,
+            branch,
+        })
     }
 }

@@ -55,3 +55,6 @@ pub use sun_damage::*;
 
 pub mod solar_radation;
 pub use solar_radation::*;
+
+pub mod analytical;
+pub use analytical::*;

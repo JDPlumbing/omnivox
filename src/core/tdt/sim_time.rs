@@ -160,3 +160,35 @@ impl Default for SimTime {
         SimTime(0)
     }
 }
+// ------------------------------------------------------------
+// Arithmetic impls
+// ------------------------------------------------------------
+
+impl SimTime {
+    pub fn zero() -> Self { SimTime(0) }
+}
+
+
+use std::ops::{Add, Sub};
+
+impl Add<SimDuration> for SimTime {
+    type Output = SimTime;
+    fn add(self, rhs: SimDuration) -> Self::Output {
+        SimTime(self.0 + rhs.0)
+    }
+}
+
+impl Sub<SimDuration> for SimTime {
+    type Output = SimTime;
+    fn sub(self, rhs: SimDuration) -> Self::Output {
+        SimTime(self.0 - rhs.0)
+    }
+}
+
+// Absolute subtraction produces a duration
+impl Sub for SimTime {
+    type Output = SimDuration;
+    fn sub(self, rhs: SimTime) -> Self::Output {
+        SimDuration(self.0 - rhs.0)
+    }
+}

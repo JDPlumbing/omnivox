@@ -30,7 +30,7 @@ use crate::sim::systems::{
     DegradationSystem,
 };
 use crate::sim::systems::solar_exposure::SolarExposureSystem;
-
+use crate::sim::systems::analytical::AnalyticalSystem;
 use crate::core::chronovox::{ChronoEvent, EventKind};
 use crate::core::id::entity_id::EntityId;
 
@@ -191,4 +191,57 @@ impl Simulation {
         self.timeline.extend(all_events.clone());
         all_events
     }
+/*
+    pub fn simulate_to(&mut self, target: SimTime) -> Vec<ChronoEvent> {
+        let mut events = vec![];
+
+        while self.sim_time < target {
+            let dt = target - self.sim_time;
+
+            // 1. Scan systems for predicted events
+            let mut predicted = vec![];
+
+            for sys in &self.systems {
+                if let Some((tevent, kind, entity)) = sys.predict_event(&self.world, dt) {
+                    predicted.push((tevent, kind, entity, sys.as_ref()));
+                }
+            }
+
+            // 2. No events → final analytic jump
+            if predicted.is_empty() {
+                for sys in &mut self.systems {
+                    sys.apply_analytical(&mut self.world, dt);
+                }
+                self.sim_time = target;
+                break;
+            }
+
+            // 3. Earliest event
+            predicted.sort_by_key(|p| p.0);
+            let (tevent, kind, entity, system_ref) = predicted[0].clone();
+
+            // 4. Jump to event time
+            for sys in &mut self.systems {
+                sys.apply_analytical(&mut self.world, tevent);
+            }
+            self.sim_time += tevent;
+
+            // 5. Emit event
+            let ce = ChronoEvent::new(entity, self.world.world_id, self.sim_time, kind.clone());
+            events.push(ce);
+
+            // 6. Apply system-specific event actions
+            system_ref.apply_event(&mut self.world, entity, &kind);
+        }
+
+        events
+    }
+        
+}
+impl Simulation {
+    pub fn add_system<S: AnalyticalSystem + 'static>(&mut self, sys: S) {
+        self.systems.push(Box::new(sys));
+    }
+}
+*/
 }

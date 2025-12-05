@@ -6,13 +6,23 @@ use tower_http::cors::{Any, CorsLayer};
 
 use crate::shared::app_state::AppState;
 
+// --- Time API ---
+mod time;
+pub use time::now::simtime_now;
+
 // --- Users API ---
 mod users;
 pub use users::{get_user, get_anon_user, list_anon_users, create_anon_user};
 
 // --- Worlds API ---
 mod worlds;
-pub use worlds::{list_worlds_handler, get_world_handler, create_world_handler, update_world_handler, patch_world_handler, delete_world_handler};
+pub use worlds::{list_worlds_handler, 
+                get_world_handler,
+                create_world_handler, 
+                update_world_handler, 
+                patch_world_handler, 
+                delete_world_handler, 
+                get_world_stats};
 
 // --- Simulations API ---
 mod simulations;
@@ -73,7 +83,8 @@ pub fn api_router() -> Router<AppState> {
     let users_routes = Router::new()
         .route("/{id}", get(get_user))
         .route("/anon", get(list_anon_users).post(create_anon_user))
-        .route("/anon/{id}", get(get_anon_user));
+        .route("/anon/{id}", get(get_anon_user))
+        ;
 
     // Worlds routes
     let worlds_routes = Router::new()
@@ -83,7 +94,8 @@ pub fn api_router() -> Router<AppState> {
                 .put(update_world_handler)
                 .patch(patch_world_handler)
                 .delete(delete_world_handler),
-        );
+        )
+        .route("/{world_id}/stats", get(get_world_stats));
 
     // Simulations routes
     let simulations_routes = simulations::routes();
@@ -146,6 +158,10 @@ pub fn api_router() -> Router<AppState> {
         .route("/login", post(login))
         .route("/verify", post(verify_session))
         .route("/refresh", post(refresh_token));
+    
+    // Time routes
+    let time_routes = Router::new()
+        .route("/simtime/now", get(simtime_now));
 
     Router::new()
         .route("/ping", get(|| async { "pong" }))
@@ -158,6 +174,7 @@ pub fn api_router() -> Router<AppState> {
         .nest("/simulations", simulations_routes)
         .nest("/entities", entities_routes)
         .nest("/events", events_routes)
+        .nest("/time", time_routes)
         .nest("/pages", pages_routes)
         .layer(
             CorsLayer::new()
