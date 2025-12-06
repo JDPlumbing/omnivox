@@ -14,9 +14,9 @@ use crate::core::id::{WorldId, SimulationId, UserId};
 use crate::core::id::EntityId;
 use crate::core::id::UvoxRegionId;
 use crate::core::uvoxid::UvoxId;
-//use crate::core::uvoxid::LonCode;
-//use crate::core::uvoxid::LatCode;
-//use crate::core::uvoxid::RUm;
+use crate::core::uvoxid::LonCode;
+use crate::core::uvoxid::LatCode;
+use crate::core::uvoxid::RUm;
 pub type SharedManager = Arc<RwLock<SimulationManager>>;
 
 /// ---------------------------------------------------------------------------
@@ -46,7 +46,7 @@ impl SimulationManager {
         //
         let sim_id = SimulationId::new(
             WorldId(0),
-            UvoxRegionId::new(UvoxId::new(0,0,0), UvoxId::new(0, 0, 0)),
+            UvoxRegionId::new(UvoxId::new(RUm(0), LatCode(0), LonCode(0)), UvoxId::new(RUm(0), LatCode(0), LonCode(0))),
             crate::core::tdt::sim_time::SimTime::from_ns(0),
             UserId(0),
             0,

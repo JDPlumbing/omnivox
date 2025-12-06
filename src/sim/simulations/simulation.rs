@@ -7,7 +7,7 @@ use crate::core::objex::core::{MaterialLink, Objex};
 use crate::core::objex::geospec::shapes::Shape;
 
 use crate::core::tdt::sim_time::SimTime;
-use crate::core::uvoxid::{UvoxId};
+use crate::core::uvoxid::{UvoxId, RUm, LatCode, LonCode};
 use crate::sim::entities::UvoxQuat;
 
 use crate::sim::clock::SimClock;
@@ -77,7 +77,7 @@ impl Simulation {
             material: MaterialLink::vacuum(),
         };
 
-        let initial_pos = UvoxId::new(0,0,0);
+        let initial_pos = UvoxId::new(RUm(0), LatCode(0), LonCode(0));
         let initial_orientation = UvoxQuat::identity();
 
         let boot_entity = SimEntity::spawn(

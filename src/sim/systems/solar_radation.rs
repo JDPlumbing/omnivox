@@ -32,11 +32,17 @@ impl System for SolarRadiationSystem {
             return events;
         };
 
-        let sun_pos = sun_entity.position;
+        // Typed radius → meters
+        let r_m = sun_entity.position.r_um.meters();
 
-        // Irradiance at distance r using 1/r² law
-        let r_m = sun_pos.r_um as f64 / 1e6;
-        let irradiance_at_earth = sun_rad.luminosity_w / (4.0 * PI * r_m * r_m);
+        // Avoid division by zero
+        if r_m <= 0.0 {
+            return events;
+        }
+
+        // 1/r² irradiance falloff
+        let irradiance_at_earth =
+            sun_rad.luminosity_w / (4.0 * PI * r_m * r_m);
 
         // ---------------------------------------------------------
         // Compute exposure on each entity
@@ -45,6 +51,8 @@ impl System for SolarRadiationSystem {
             if *id == sun_id { continue; }
 
             let observer = entity.position;
+
+            // Compute solar topocentric geometry
             let topo = sun_topocentric(observer, now);
 
             let irr_factor = topo.irradiance_factor.max(0.0);
@@ -61,7 +69,7 @@ impl System for SolarRadiationSystem {
                 SolarExposure {
                     irradiance_w_m2: irr_local,
                     uv_intensity: irr_local * sun_rad.uv_fraction,
-                    temp_delta_c: irr_local * 0.0002,  // simple heat model
+                    temp_delta_c: irr_local * 0.0002, // simple heat absorption
                 }
             );
         }

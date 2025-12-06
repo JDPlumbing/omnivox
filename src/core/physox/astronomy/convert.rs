@@ -2,15 +2,12 @@
 //!   - UvoxId (r_um, lat_code, lon_code)
 //!   - spherical coordinates (radius, lat, lon)
 //!   - Cartesian vectors for astronomy use
-//!
-//! These conversions are deterministic and reversible +
-//! produce µm-level precision around Earth.
 
-use crate::core::uvoxid::UvoxId;
+use crate::core::uvoxid::{UvoxId, RUm, LatCode, LonCode};
 
 /// Scale factors
-const LATLON_SCALE: f64 = 1e11;           // ±90 degrees → ±90e11 int
-const EARTH_RADIUS_M: f64 = 6_371_000.0;  // for geocode helpers
+const LATLON_SCALE: f64 = 1e11;
+const EARTH_RADIUS_M: f64 = 6_371_000.0;
 
 /// Simple 3D vector for astronomy calculations.
 #[derive(Debug, Clone, Copy)]
@@ -21,39 +18,34 @@ pub struct Vec3 {
 }
 
 /// ------------------------------------------------------------
-/// UvoxId → spherical angles (in radians)
+/// UvoxId → spherical (r meters, lat rad, lon rad)
 /// ------------------------------------------------------------
 pub fn uvox_to_spherical(id: &UvoxId) -> (f64, f64, f64) {
-    let r = id.r_um as f64 * 1e-6; // micrometers → meters
-    let lat = (id.lat_code as f64) / LATLON_SCALE; // degrees
-    let lon = (id.lon_code as f64) / LATLON_SCALE; // degrees
+    let r_m = id.r_um.meters();              // µm → m
+    let lat_deg = id.lat_code.degrees();     // wrapper → f64 degrees
+    let lon_deg = id.lon_code.degrees();
 
-    let lat_rad = lat.to_radians();
-    let lon_rad = lon.to_radians();
-
-    (r, lat_rad, lon_rad)
+    (
+        r_m,
+        lat_deg.to_radians(),
+        lon_deg.to_radians(),
+    )
 }
 
 /// ------------------------------------------------------------
 /// Spherical → UvoxId
-/// lat/lon in degrees
-/// r in meters
+/// lat/lon in degrees, r in meters
 /// ------------------------------------------------------------
 pub fn spherical_to_uvox(r_m: f64, lat_deg: f64, lon_deg: f64) -> UvoxId {
-    let r_um = (r_m * 1e6).round() as i64;
+    let r_um = RUm((r_m * 1e6).round() as i64);
+    let lat_code = LatCode((lat_deg * LATLON_SCALE).round() as i64);
+    let lon_code = LonCode((lon_deg * LATLON_SCALE).round() as i64);
 
-    let lat_code = (lat_deg * LATLON_SCALE).round() as i64;
-    let lon_code = (lon_deg * LATLON_SCALE).round() as i64;
-
-    UvoxId {
-        r_um,
-        lat_code,
-        lon_code,
-    }
+    UvoxId::new(r_um, lat_code, lon_code)
 }
 
 /// ------------------------------------------------------------
-/// UvoxId → Cartesian (for astronomy)
+/// UvoxId → Cartesian
 /// ------------------------------------------------------------
 pub fn uvox_to_cartesian(id: &UvoxId) -> Vec3 {
     let (r_m, lat, lon) = uvox_to_spherical(id);
@@ -72,8 +64,8 @@ pub fn uvox_to_cartesian(id: &UvoxId) -> Vec3 {
 pub fn cartesian_to_uvox(v: Vec3) -> UvoxId {
     let r = (v.x * v.x + v.y * v.y + v.z * v.z).sqrt();
 
-    let lat = (v.z / r).asin();             // radians
-    let lon = v.y.atan2(v.x);               // radians
+    let lat = (v.z / r).asin();
+    let lon = v.y.atan2(v.x);
 
     spherical_to_uvox(
         r,
@@ -83,7 +75,7 @@ pub fn cartesian_to_uvox(v: Vec3) -> UvoxId {
 }
 
 /// ------------------------------------------------------------
-/// Helper: build UvoxId from latitude/longitude/elevation
+/// Helper: latitude/longitude/elevation → UvoxId
 /// ------------------------------------------------------------
 pub fn from_lat_lon(lat_deg: f64, lon_deg: f64, elevation_m: f64) -> UvoxId {
     spherical_to_uvox(

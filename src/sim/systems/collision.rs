@@ -17,6 +17,7 @@ use crate::sim::{
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use crate::core::id::entity_id::EntityId;
+use crate::core::uvoxid::RUm;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct CollisionSystem;
@@ -38,16 +39,14 @@ impl System for CollisionSystem {
 
         for (i, id_a) in entity_ids.iter().enumerate() {
             for id_b in entity_ids.iter().skip(i + 1) {
-                let a = &world.entities.get(&id_a).unwrap();
-                let b = &world.entities.get(&id_b).unwrap();
+                let a = &world.entities[&id_a];
+                let b = &world.entities[&id_b];
 
-                //
-                // Shape API changed — YOU MUST DEFINE radius extraction
-                //
                 let ra = a.shape().radius_um();
                 let rb = b.shape().radius_um();
 
-                let dr = (a.position.r_um - b.position.r_um).abs();
+                // unwrap RUm into µm
+                let dr = (a.position.r_um.0 - b.position.r_um.0).abs();
 
                 if dr <= (ra + rb) {
                     // Stop velocities
@@ -60,32 +59,29 @@ impl System for CollisionSystem {
 
                     let dr_human = dr.to_human();
 
-                    //
                     // Event: A hits B
-                    //
-                    events.push(ChronoEvent::new(
-                        a.id,
-                        a.world_id,
-                        end,
-                        EventKind::Custom(format!("Collision with {}", id_b)),
-                    ).with_payload(json!({
-                        "entity_a": id_a,
-                        "entity_b": id_b,
-                        "impact_distance_um": dr,
-                        "impact_distance_m": um_to_m(dr),
-                        "impact_distance_cm": um_to_cm(dr),
-                        "impact_distance_human": dr_human,
-                    })));
+                    events.push(
+                        ChronoEvent::new(
+                            a.id, a.world_id, end,
+                            EventKind::Custom(format!("Collision with {}", id_b)),
+                        )
+                        .with_payload(json!({
+                            "entity_a": id_a,
+                            "entity_b": id_b,
+                            "impact_distance_um": dr,
+                            "impact_distance_m": um_to_m(dr),
+                            "impact_distance_cm": um_to_cm(dr),
+                            "impact_distance_human": dr_human,
+                        }))
+                    );
 
-                    //
                     // Event: B hits A
-                    //
-                    events.push(ChronoEvent::new(
-                        b.id,
-                        b.world_id,
-                        end,
-                        EventKind::Custom(format!("Collision with {}", id_a)),
-                    ));
+                    events.push(
+                        ChronoEvent::new(
+                            b.id, b.world_id, end,
+                            EventKind::Custom(format!("Collision with {}", id_a)),
+                        )
+                    );
                 }
             }
         }
@@ -94,10 +90,8 @@ impl System for CollisionSystem {
         // === ENTITY–GROUND COLLISIONS ===
         //
         for (id, entity) in world.entities.iter_mut() {
-            if entity.position.r_um <= EARTH_RADIUS {
-                //
+            if entity.position.r_um.0 <= EARTH_RADIUS {
                 // Process velocity → bounce or fracture
-                //
                 if let Some(v) = world.components.velocity_components.get_mut(&id) {
                     let pre_speed = v.dr.abs();
                     let mut fractured = false;
@@ -116,19 +110,16 @@ impl System for CollisionSystem {
                             *id,
                             FractureData {
                                 entity_id: *id,
-                                plane: "horizontal".to_string(),
+                                plane: "horizontal".into(),
                                 energy: impact_energy,
                                 threshold: props.fracture_toughness,
                             },
                         );
 
-                        // Emit fracture event
                         events.push(
                             ChronoEvent::new(
-                                entity.id,
-                                entity.world_id,
-                                end,
-                                EventKind::Fracture { plane: "horizontal".to_string() },
+                                entity.id, entity.world_id, end,
+                                EventKind::Fracture { plane: "horizontal".into() },
                             )
                             .with_payload(json!({
                                 "impact_energy": impact_energy,
@@ -138,9 +129,7 @@ impl System for CollisionSystem {
                         );
 
                     } else {
-                        //
                         // Simple bounce
-                        //
                         v.dr   = -v.dr * restitution;
                         v.dlat =  v.dlat * restitution * 0.8;
                         v.dlon =  v.dlon * restitution * 0.8;
@@ -160,22 +149,19 @@ impl System for CollisionSystem {
                 //
                 // Snap to ground
                 //
-                entity.position.r_um = EARTH_RADIUS;
+                entity.position.r_um = RUm(EARTH_RADIUS);
 
-                //
-                // Emit ground collision event
-                //
+                let altitude_um = entity.position.r_um.0 - EARTH_RADIUS;
+
                 events.push(
                     ChronoEvent::new(
-                        entity.id,
-                        entity.world_id,
-                        end,
+                        entity.id, entity.world_id, end,
                         EventKind::Custom("GroundCollision".into()),
                     )
                     .with_payload(json!({
-                        "altitude_um": entity.position.r_um - EARTH_RADIUS,
-                        "altitude_m": um_to_m(entity.position.r_um - EARTH_RADIUS),
-                        "altitude_human": (entity.position.r_um - EARTH_RADIUS).to_human(),
+                        "altitude_um": altitude_um,
+                        "altitude_m": um_to_m(altitude_um),
+                        "altitude_human": altitude_um.to_human(),
                     }))
                 );
             }

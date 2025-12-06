@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::core::uvoxid::UvoxId;
+use crate::core::uvoxid::{UvoxId, RUm, LatCode, LonCode};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct UvoxRegionId {
@@ -14,16 +14,16 @@ impl UvoxRegionId {
 
     /// Check if a coordinate lies within the region
     pub fn contains(&self, id: UvoxId) -> bool {
-        id.r_um >= self.min.r_um && id.r_um <= self.max.r_um &&
-        id.lat_code >= self.min.lat_code && id.lat_code <= self.max.lat_code &&
-        id.lon_code >= self.min.lon_code && id.lon_code <= self.max.lon_code
+        id.r_um.0     >= self.min.r_um.0     && id.r_um.0     <= self.max.r_um.0 &&
+        id.lat_code.0 >= self.min.lat_code.0 && id.lat_code.0 <= self.max.lat_code.0 &&
+        id.lon_code.0 >= self.min.lon_code.0 && id.lon_code.0 <= self.max.lon_code.0
     }
 
-    /// Check region overlap
+    /// Check region overlap (AABB-style checks)
     pub fn intersects(&self, other: &Self) -> bool {
-        !(other.max.r_um  < self.min.r_um  || other.min.r_um  > self.max.r_um  ||
-          other.max.lat_code < self.min.lat_code || other.min.lat_code > self.max.lat_code ||
-          other.max.lon_code < self.min.lon_code || other.min.lon_code > self.max.lon_code)
+        !(other.max.r_um.0     < self.min.r_um.0     || other.min.r_um.0     > self.max.r_um.0 ||
+          other.max.lat_code.0 < self.min.lat_code.0 || other.min.lat_code.0 > self.max.lat_code.0 ||
+          other.max.lon_code.0 < self.min.lon_code.0 || other.min.lon_code.0 > self.max.lon_code.0)
     }
 }
 
@@ -33,8 +33,8 @@ impl UvoxRegionId {
 impl Default for UvoxRegionId {
     fn default() -> Self {
         UvoxRegionId {
-            min: UvoxId::new(0, 0, 0),
-            max: UvoxId::new(100, 100, 100),
+            min: UvoxId::new(RUm(0), LatCode(0), LonCode(0)),
+            max: UvoxId::new(RUm(100), LatCode(100), LonCode(100)),
         }
     }
 }
@@ -44,32 +44,26 @@ impl UvoxRegionId {
     pub fn to_compact_string(&self) -> String {
         format!(
             "{}_{}_{}",
-            self.min.r_um,
-            self.min.lat_code,
-            self.min.lon_code
+            self.min.r_um.0,
+            self.min.lat_code.0,
+            self.min.lon_code.0
         )
     }
 
-    /// Parse region from a compact string.
-    /// Expected format: r_um_lat_lon
+    /// Parse region from compact string: "r_um_lat_lon"
     pub fn from_compact(s: &str) -> Result<Self, anyhow::Error> {
         let parts: Vec<&str> = s.split('_').collect();
         if parts.len() != 3 {
             return Err(anyhow::anyhow!("Invalid compact region '{}'", s));
         }
 
-        let r_um     = parts[0].parse::<i64>()?;
-        let lat_code = parts[1].parse::<i64>()?;
-        let lon_code = parts[2].parse::<i64>()?;
+        let r_um     = RUm(parts[0].parse::<i64>()?);
+        let lat_code = LatCode(parts[1].parse::<i64>()?);
+        let lon_code = LonCode(parts[2].parse::<i64>()?);
 
-        let min = UvoxId {
-            r_um,
-            lat_code,
-            lon_code,
-        };
+        let min = UvoxId::new(r_um, lat_code, lon_code);
 
-        // Max is undefined — simulation doesn't need full region geometry.
-        // Use min for both until region math is implemented.
+        // For now, define max = min (simulation-specific placeholder)
         let max = min;
 
         Ok(UvoxRegionId { min, max })
