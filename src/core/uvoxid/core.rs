@@ -3,55 +3,231 @@ use serde::{Serialize, Deserialize};
 use std::fmt;
 use std::ops::{Add, AddAssign};
 
-/// Angular scaling constant: 1e11 per radian-degree
-const ANG_SCALE: i128 = 100_000_000_000;
+/// Angular scale: 1e11 units per degree.
+/// (Your original representation — keep this stable.)
+pub const ANG_SCALE: i128 = 100_000_000_000;
 
-#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct UvoxId {
-    pub r_um: i64,
-    pub lat_code: i64,
-    pub lon_code: i64,
+/// Earth constants (μm)
+pub const EARTH_RADIUS_UM: i64 = 6_371_000_000_000;
+pub const ATMOSPHERE_LOWER_UM: i64 = 100_000_000_000; // 100 km
+pub const ATMOSPHERE_UPPER_UM: i64 = 500_000_000_000; // NEAR SPACE
+
+// ------------------------------------------------------------
+// Typed coordinate wrappers
+// ------------------------------------------------------------
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd,)]
+#[repr(transparent)]
+pub struct RUm(pub i64);
+
+impl RUm {
+    #[inline]
+    pub fn meters(&self) -> f64 {
+        self.0 as f64 / 1_000_000.0
+    }
+
+    /// Which broad “environment layer” is this radius in?
+    pub fn layer(&self) -> EnvironmentLayer {
+        match self.0 {
+            r if r < EARTH_RADIUS_UM => EnvironmentLayer::Subsurface,
+            r if r < EARTH_RADIUS_UM + ATMOSPHERE_LOWER_UM => EnvironmentLayer::AtmosphereLow,
+            r if r < EARTH_RADIUS_UM + ATMOSPHERE_UPPER_UM => EnvironmentLayer::AtmosphereHigh,
+            _ => EnvironmentLayer::Vacuum,
+        }
+    }
+}
+
+impl fmt::Display for RUm {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::ops::AddAssign<i64> for RUm {
+    fn add_assign(&mut self, rhs: i64) {
+        self.0 += rhs;
+    }
+}
+
+impl std::ops::Sub for RUm {
+    type Output = i64;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.0 - rhs.0
+    }
+}
+impl std::ops::Sub<i64> for RUm {
+    type Output = i64;
+
+    fn sub(self, rhs: i64) -> Self::Output {
+        self.0 - rhs
+    }
 }
 
 
-impl UvoxId {
-    /// Construct directly
-    pub fn new(r_um: i64, lat_code: i64, lon_code: i64) -> Self {
-        Self {
-            r_um: r_um.max(0),
-            lat_code,
-            lon_code,
+#[derive(Debug)]
+pub enum EnvironmentLayer {
+    Subsurface,
+    AtmosphereLow,
+    AtmosphereHigh,
+    Vacuum,
+}
+
+// ------------------------------------------------------------
+// Latitude wrapper
+// ------------------------------------------------------------
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd)]
+#[repr(transparent)]
+pub struct LatCode(pub i64);
+
+impl LatCode {
+    #[inline]
+    pub fn degrees(&self) -> f64 {
+        (self.0 as f64) / (ANG_SCALE as f64)
+    }
+
+    #[inline]
+    pub fn radians(&self) -> f64 {
+        self.degrees().to_radians()
+    }
+
+    pub fn hemisphere(&self) -> Hemisphere {
+        match self.0.cmp(&0) {
+            std::cmp::Ordering::Greater => Hemisphere::North,
+            std::cmp::Ordering::Less => Hemisphere::South,
+            _ => Hemisphere::Equator,
         }
     }
 
-    /// Convenience: Earth starting coords
-    pub fn earth(r_um: i64, lat_code: i64, lon_code: i64) -> Self {
-        Self::new(r_um, lat_code, lon_code)
+    pub fn is_tropic(&self) -> bool {
+        self.degrees().abs() <= 23.5
     }
 
-    /// tuple helper
-    pub fn as_tuple(&self) -> (i64, i64, i64) {
+    pub fn clamp_valid(&mut self) {
+        let max = (90 * ANG_SCALE) as i64;
+        let min = (-90 * ANG_SCALE) as i64;
+        self.0 = self.0.clamp(min, max);
+
+    }
+}
+impl fmt::Display for LatCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.degrees())
+    }
+}
+
+impl std::ops::AddAssign<i64> for LatCode {
+    fn add_assign(&mut self, rhs: i64) {
+        self.0 += rhs;
+    }
+}
+
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Hemisphere {
+    North,
+    South,
+    Equator,
+}
+
+// ------------------------------------------------------------
+// Longitude wrapper
+// ------------------------------------------------------------
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd)]
+#[repr(transparent)]
+pub struct LonCode(pub i64);
+
+impl LonCode {
+    #[inline]
+    pub fn degrees(&self) -> f64 {
+        (self.0 as f64) / (ANG_SCALE as f64)
+    }
+
+    #[inline]
+    pub fn radians(&self) -> f64 {
+        self.degrees().to_radians()
+    }
+
+    /// Normalize to [-180°, 180°)
+    pub fn wrap(&mut self) {
+        let full: i128 = 360 * ANG_SCALE;
+        let half: i128 = 180 * ANG_SCALE;
+
+        let v = self.0 as i128;
+
+        let wrapped = ((v + half).rem_euclid(full) - half) as i64;
+
+        self.0 = wrapped;
+    }
+
+}
+
+impl fmt::Display for LonCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.degrees())
+    }
+}
+impl std::ops::AddAssign<i64> for LonCode {
+    fn add_assign(&mut self, rhs: i64) {
+        self.0 += rhs;
+    }
+}
+// ------------------------------------------------------------
+// The Fully Typed UvoxId
+// ------------------------------------------------------------
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct UvoxId {
+    pub r_um: RUm,
+    pub lat_code: LatCode,
+    pub lon_code: LonCode,
+}
+
+impl UvoxId {
+    pub fn new(r_um: RUm, lat_code: LatCode, lon_code: LonCode) -> Self {
+        let mut id = Self { r_um, lat_code, lon_code };
+        id.lat_code.clamp_valid();
+        id.lon_code.wrap();
+        id
+    }
+
+    /// Convenience: create an Earth-surface point
+    pub fn earth_surface(lat: LatCode, lon: LonCode) -> Self {
+        Self::new(RUm(EARTH_RADIUS_UM), lat, lon)
+    }
+
+    pub fn as_tuple(&self) -> (RUm, LatCode, LonCode) {
         (self.r_um, self.lat_code, self.lon_code)
     }
 
-    /// Add longitude (wrapped)
-    pub fn wrapping_add_lon(&mut self, delta: i64) {
-        self.lon_code = self.lon_code.wrapping_add(delta);
+    /// Convert to 3D Cartesian (meters)
+    pub fn to_cartesian(&self) -> (f64, f64, f64) {
+        let r = self.r_um.meters();
+        let lat = self.lat_code.radians();
+        let lon = self.lon_code.radians();
+
+        let x = r * lat.cos() * lon.cos();
+        let y = r * lat.cos() * lon.sin();
+        let z = r * lat.sin();
+
+        (x, y, z)
     }
 
-    /// Add latitude (wrapped)
-    pub fn wrapping_add_lat(&mut self, delta: i64) {
-        self.lat_code = self.lat_code.wrapping_add(delta);
-    }
-
-    /// Apply spatial delta
+    /// Apply movement delta (radial + angular)
     pub fn apply_delta(&mut self, delta: Delta) {
-        self.r_um = (self.r_um as i128 + delta.dr_um as i128).max(0) as i64;
+        // ---- Radial
+    self.r_um.0 = (self.r_um.0 as i128 + delta.dr.0 as i128).max(0) as i64;
 
-        let mut lat = self.lat_code as i128 + delta.dlat as i128;
-        let mut lon = self.lon_code as i128 + delta.dlon as i128;
 
-        // latitude wrap
+
+        // ---- Angular
+        let mut lat = self.lat_code.0 as i128 + delta.dlat.0 as i128;
+        let mut lon = self.lon_code.0 as i128 + delta.dlon.0 as i128;
+
+        // Latitude reflection
         while lat > 90 * ANG_SCALE {
             lat = 180 * ANG_SCALE - lat;
             lon += 180 * ANG_SCALE;
@@ -61,37 +237,41 @@ impl UvoxId {
             lon += 180 * ANG_SCALE;
         }
 
-        self.lat_code = lat.clamp(-90 * ANG_SCALE, 90 * ANG_SCALE) as i64;
+        self.lat_code.0 = lat.clamp(-90 * ANG_SCALE, 90 * ANG_SCALE) as i64;
 
-        // wrap lon to [-180°, 180°)
-        self.lon_code = 
-            ((lon + 180 * ANG_SCALE).rem_euclid(360 * ANG_SCALE) - 180 * ANG_SCALE) as i64;
+        // Longitude wrap
+        self.lon_code.0 = ((lon + 180 * ANG_SCALE)
+            .rem_euclid(360 * ANG_SCALE)
+            - 180 * ANG_SCALE) as i64;
     }
 
-    /// Packed hex encoding (no world id anymore)
+    // --------------------------------------------------------
+    // Hex packing for DB / URLs (unchanged behavior)
+    // --------------------------------------------------------
     pub fn to_hex(&self) -> String {
         format!(
             "{:016x}{:016x}{:016x}",
-            self.r_um as u64,
-            self.lat_code as u64,
-            self.lon_code as u64,
+            self.r_um.0 as u64,
+            self.lat_code.0 as u64,
+            self.lon_code.0 as u64,
         )
     }
 
     pub fn from_hex(s: &str) -> Option<Self> {
-        if s.len() != 48 { return None; }
+        if s.len() != 48 {
+            return None;
+        }
+        let r = u64::from_str_radix(&s[0..16], 16).ok()? as i64;
+        let lat = u64::from_str_radix(&s[16..32], 16).ok()? as i64;
+        let lon = u64::from_str_radix(&s[32..48], 16).ok()? as i64;
 
-        let r_bits   = u64::from_str_radix(&s[0..16], 16).ok()?;
-        let lat_bits = u64::from_str_radix(&s[16..32], 16).ok()?;
-        let lon_bits = u64::from_str_radix(&s[32..48], 16).ok()?;
-
-        Some(Self {
-            r_um: r_bits as i64,
-            lat_code: lat_bits as i64,
-            lon_code: lon_bits as i64,
-        })
+        Some(Self::new(RUm(r), LatCode(lat), LonCode(lon)))
     }
 }
+
+// ------------------------------------------------------------
+// Operator overloads for delta math
+// ------------------------------------------------------------
 
 impl Add<Delta> for UvoxId {
     type Output = UvoxId;
@@ -108,12 +288,18 @@ impl AddAssign<Delta> for UvoxId {
     }
 }
 
+// ------------------------------------------------------------
+// Display
+// ------------------------------------------------------------
+
 impl fmt::Display for UvoxId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "r={}µm, lat={}, lon={}",
-            self.r_um, self.lat_code, self.lon_code
+            "r={}µm, lat={}°, lon={}°",
+            self.r_um.0,
+            self.lat_code.degrees(),
+            self.lon_code.degrees()
         )
     }
 }
