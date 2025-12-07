@@ -95,6 +95,25 @@ impl ChronoEvent {
 
         ChronoEvent::new(entity_id, world_id, t, EventKind::Custom(label.into()))
     }
+
+    /// Convenience: acceleration event
+    #[inline]
+    pub fn accelerate(
+        entity_id: EntityId,
+        world_id: WorldId,
+        t: SimTime,
+        ar: f64,
+        alat: f64,
+        alon: f64,
+    ) -> Self {
+        ChronoEvent::new(
+            entity_id,
+            world_id,
+            t,
+            EventKind::Accelerate { ar, alat, alon },
+        )
+    }
+
 }
 
 /// ---------------------------------------------------------------------------

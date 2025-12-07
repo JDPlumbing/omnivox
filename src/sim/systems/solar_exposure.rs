@@ -1,11 +1,11 @@
 use crate::sim::systems::System;
 use crate::sim::world::WorldState;
-use crate::core::chronovox::{ChronoEvent, EventKind};
+use crate::core::chronovox::ChronoEvent;
 
-use crate::sim::components::{SolarExposure, SunDamage};
+use crate::core::env::solar::solar_flux;
+use crate::core::physox::astronomy::topocentric::sun_topocentric;
+use crate::sim::components::{SolarExposure, SolarRadiation};
 
-/// Integrates instantaneous solar exposure into long-term damage.
-/// This runs AFTER SolarRadiationSystem.
 #[derive(Default, Debug)]
 pub struct SolarExposureSystem;
 
@@ -13,41 +13,44 @@ impl System for SolarExposureSystem {
     fn name(&self) -> &'static str { "SolarExposureSystem" }
 
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent> {
-        let mut events = Vec::new();
+        let mut events = vec![];
+        let Some(clock) = &world.clock else { return events; };
+        let now = clock.current;
 
-        // Time step in seconds
-        let dt_s = world.sim_delta.as_secs_f64();
+        // Find Sun
+        let Some((&sun_id, _sun_rad)) =
+            world.components.solar_radiation.iter().next()
+        else { return events; };
 
-        for (id, exposure) in world.components.solar_exposure.iter() {
-            // Create or fetch long-term accumulator
-            let dmg = world.components.sun_damage
-                .entry(*id)
-                .or_insert_with(|| crate::sim::components::SunDamage::new());
+        let Some(sun_entity) = world.entities.get(&sun_id) else { return events; };
+        let sun_pos = sun_entity.position;
 
-            // Integrate irradiance (W/m² → J/m²)
-            dmg.total_irradiance_j_m2 += exposure.irradiance_w_m2 * dt_s;
+        // Compute solar flux at this radial distance (W/m²)
+        let base_flux = solar_flux(&sun_pos);
 
-            // Integrate UV
-            dmg.total_uv_j_m2 += exposure.uv_intensity * dt_s;
-
-            // Integrate thermal burden
-            dmg.total_temp_delta += exposure.temp_delta_c;
-
-            // detect thermal cycles (sign-change tracking)
-            let sign = exposure.temp_delta_c.signum() as i8;
-            if dmg.last_temp_sign != 0 && sign != dmg.last_temp_sign {
-                dmg.thermal_cycles += 1.0;
+        for (id, entity) in world.entities.iter() {
+            if *id == sun_id {
+                continue;
             }
-            dmg.last_temp_sign = sign;
 
-            // Add event
-            events.push(
-                ChronoEvent::new(
-                    *id,
-                    world.meta.id,
-                    world.sim_time,
-                    EventKind::Custom("SolarExposureIntegrated".into()),
-                )
+            let topo = sun_topocentric(entity.position, now);
+
+            let cos_factor = topo.irradiance_factor.max(0.0);
+
+            if cos_factor <= 0.0 {
+                world.components.solar_exposure.remove(id);
+                continue;
+            }
+
+            let local_flux = base_flux * cos_factor;
+
+            world.components.solar_exposure.insert(
+                *id,
+                SolarExposure {
+                    irradiance_w_m2: local_flux,
+                    uv_intensity: local_flux * world.components.solar_radiation[&sun_id].uv_fraction,
+                    temp_delta_c: local_flux * 0.0002, // simple absorption/heat model
+                }
             );
         }
 
