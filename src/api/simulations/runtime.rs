@@ -7,6 +7,9 @@ use serde_json::{json, Value};
 
 use crate::shared::app_state::AppState;
 use crate::core::id::simulation_id::SimulationId;
+use crate::sim::simulations::simulation_config::SimulationConfig;
+use crate::core::id::{WorldId, UvoxRegionId, UserId};
+use axum::http::StatusCode;
 
 //
 // ─────────────────────────────────────────────────────────
@@ -57,21 +60,26 @@ pub async fn tick_sim(
 //
 #[axum::debug_handler]
 pub async fn start_sim(
-    State(app): State<AppState>,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
+    let cfg = SimulationConfig::basic(
+        WorldId(0),
+        UvoxRegionId::default(),
+        UserId(0),
+    );
 
-    tracing::info!("🔥 start_sim endpoint hit");
-    let mut mgr = app.sim_manager.write().await;
+    let mut mgr = state.sim_manager.write().await;
 
-    match mgr.start().await {
-        Ok(sim_id) => Json(json!({
-            "status": "started",
-            "simulation_id": sim_id.to_string()   // FIXED
-        })),
-        Err(e) => Json(json!({
-            "status": "error",
-            "message": e.to_string()
-        })),
+    match mgr.start(cfg).await {
+        Ok(sim_id) => (
+            StatusCode::OK,
+            Json(json!({ "simulation_id": sim_id.to_string() })),
+        ),
+
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": err.to_string() })),
+        ),
     }
 }
 

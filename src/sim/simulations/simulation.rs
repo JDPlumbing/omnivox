@@ -14,6 +14,7 @@ use crate::sim::clock::SimClock;
 use crate::sim::components::Velocity;
 use crate::sim::entities::{SimEntity};
 use crate::sim::world::state::{WorldState, World};
+use crate::core::tdt::sim_duration::SimDuration;
 
 use crate::sim::systems::{
     System,
@@ -35,6 +36,9 @@ use crate::core::chronovox::{ChronoEvent, EventKind};
 use crate::core::id::entity_id::EntityId;
 
 use crate::supabasic::worlds::WorldRecord;
+use crate::sim::simulations::simulation_config::SimulationConfig;
+use crate::sim::simulations::runtime::PersistedSimState;
+
 
 /// ---------------------------------------------------------------------------
 /// Simulation — runtime ECS + clock + systems
@@ -77,7 +81,11 @@ impl Simulation {
             material: MaterialLink::vacuum(),
         };
 
-        let initial_pos = UvoxId::new(RUm(0), LatCode(0), LonCode(0));
+        let initial_pos = UvoxId::earth_surface(
+            LatCode(0),
+            LonCode(0),
+        );
+
         let initial_orientation = UvoxQuat::identity();
 
         let boot_entity = SimEntity::spawn(
@@ -244,4 +252,149 @@ impl Simulation {
     }
 }
 */
+
+/// Create a new Simulation instance using a SimulationConfig.
+/// This replaces the old `Simulation::new(world_record)` path.
+pub fn new_from_config(cfg: &SimulationConfig, world_record: WorldRecord) -> Self {
+    use crate::sim::world::state::WorldState;
+    use crate::sim::systems::*;
+
+    // Create runtime world state from the world record
+    let metadata_world: World = world_record.clone().into();
+    let world_id = metadata_world.id;
+    let mut world_state = WorldState::new(metadata_world);
+
+    // Sync world timing
+    world_state.sim_time = cfg.start_time;
+    world_state.sim_delta = SimDuration::from_seconds(1); // default, can be overridden later
+    world_state.clock = None;
+
+    // Create a bootstrapped test entity (same as Simulation::new)
+    let boot_id = world_state.allocate_entity_id();
+
+    let blueprint = Objex {
+        shape: Shape::default_box(),
+        material: MaterialLink::vacuum(),
+    };
+
+    let initial_pos = cfg.region.min; // place at region min (or center)
+    let initial_orientation = UvoxQuat::identity();
+
+    let boot_entity = SimEntity::spawn(
+        boot_id,
+        blueprint,
+        world_id,
+        initial_pos,
+        initial_orientation,
+        cfg.start_time,
+    );
+
+    world_state.entities.insert(boot_id, boot_entity);
+
+    // Add basic velocity so movement system will fire
+    world_state
+        .components
+        .velocity_components
+        .insert(boot_id, Velocity::new(1.0, 0.0, 0.0));
+
+    // Install systems (same list as original Simulation::new)
+    let systems: Vec<Box<dyn System + Send + Sync>> = vec![
+        Box::new(GravitySystem),
+        Box::new(AccelerationSystem),
+        Box::new(MovementSystem),
+        Box::new(CollisionSystem),
+        Box::new(FractureSystem),
+        Box::new(DegradationSystem),
+        Box::new(MassSystem),
+        Box::new(MechanicalSystem),
+        Box::new(StrengthSystem),
+        Box::new(ElectricalSystem),
+        Box::new(OpticalSystem),
+        Box::new(SolarExposureSystem),
+    ];
+
+    // Build simulation clock
+    let clock = SimClock::from_wall_dates(
+        Utc::now(),
+        Utc::now() + chrono::Duration::days(1),
+        chrono::Duration::seconds(1),
+    );
+
+    Self {
+        simulation_id: SimulationId::new(
+            cfg.world_id,
+            cfg.region,
+            cfg.start_time,
+            cfg.user_id,
+            cfg.branch,
+        ),
+        world_id,
+        sim_time: cfg.start_time,
+        clock,
+        world: world_state,
+        systems,
+        timeline: Vec::new(),
+    }
+}
+/// Restore a Simulation from persisted ECS state and config.
+/// This will eventually rebuild full component tables, clocks, entities, etc.
+/// For now, it produces a minimal but valid Simulation instance.
+pub fn from_persisted(
+    world_record: WorldRecord,
+    persisted: PersistedSimState,
+    cfg: SimulationConfig,
+) -> Self {
+    use crate::sim::world::state::WorldState;
+    use crate::sim::systems::*;
+
+    let metadata_world: World = world_record.clone().into();
+    let world_id = metadata_world.id;
+
+    // Build an *empty* world state for now
+    let mut world_state = WorldState::new(metadata_world);
+
+    // Restore time & clock
+    world_state.sim_time = cfg.start_time;
+    world_state.sim_delta = SimDuration::from_seconds(1); // placeholder
+
+    // Install systems (same as new)
+    let systems: Vec<Box<dyn System + Send + Sync>> = vec![
+        Box::new(GravitySystem),
+        Box::new(AccelerationSystem),
+        Box::new(MovementSystem),
+        Box::new(CollisionSystem),
+        Box::new(FractureSystem),
+        Box::new(DegradationSystem),
+        Box::new(MassSystem),
+        Box::new(MechanicalSystem),
+        Box::new(StrengthSystem),
+        Box::new(ElectricalSystem),
+        Box::new(OpticalSystem),
+        Box::new(SolarExposureSystem),
+    ];
+
+    // Placeholder clock
+    let clock = SimClock::from_wall_dates(
+        Utc::now(),
+        Utc::now() + chrono::Duration::hours(1),
+        chrono::Duration::seconds(1),
+    );
+
+    Self {
+        simulation_id: SimulationId::new(
+            cfg.world_id,
+            cfg.region,
+            cfg.start_time,
+            cfg.user_id,
+            cfg.branch,
+        ),
+        world_id,
+        sim_time: cfg.start_time,
+        clock,
+        world: world_state,
+        systems,
+        timeline: Vec::new(), // could reload timeline later
+    }
+}
+
 }

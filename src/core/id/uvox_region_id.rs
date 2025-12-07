@@ -33,8 +33,8 @@ impl UvoxRegionId {
 impl Default for UvoxRegionId {
     fn default() -> Self {
         UvoxRegionId {
-            min: UvoxId::new(RUm(0), LatCode(0), LonCode(0)),
-            max: UvoxId::new(RUm(100), LatCode(100), LonCode(100)),
+            min: UvoxId::new(RUm(6371000000000), LatCode(0), LonCode(0)),
+            max: UvoxId::new(RUm(6371000000100), LatCode(100), LonCode(100)),
         }
     }
 }

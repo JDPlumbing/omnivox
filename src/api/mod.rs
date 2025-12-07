@@ -26,7 +26,7 @@ pub use worlds::{list_worlds_handler,
 
 // --- Simulations API ---
 mod simulations;
-pub use simulations::{list_simulations, get_simulation, create_simulation, run_simulation};
+pub use simulations::{list_simulations, get_simulation, create_simulation};
 
 // --- Entities API (NEW, replaces objex API) ---
 mod entities;

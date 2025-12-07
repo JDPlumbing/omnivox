@@ -1,131 +1,67 @@
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
     Json,
 };
-
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use uuid::Uuid;
-use chrono::Utc;
+use serde_json::json;
 
 use crate::shared::app_state::AppState;
-use crate::sim::entities::SimEntity;
-use crate::supabasic::entity::EntityRecord;
-use crate::sim::simulations::simulation_config::SimulationConfig;
+use crate::core::id::SimulationId;
 
-use crate::core::tdt::sim_time::SimTime;
-
-
-#[derive(Debug, Deserialize)]
-pub struct RunSimulationRequest {
-    pub simulation_id: Uuid,
-}
-
-
+/// POST /api/simulations/run/:id
+/// Run a single tick of the in-memory simulation
 pub async fn run_simulation(
     State(app): State<AppState>,
-    Json(req): Json<RunSimulationRequest>,
+    Path(sim_id): Path<String>,
 ) -> impl IntoResponse {
 
     // ---------------------------
-    // Load simulation config
+    // Parse SimulationId
     // ---------------------------
-    let config: SimulationConfig = match app.supa
-        .from("simulations")
-        .select("*")
-        .eq("simulation_id", &req.simulation_id.to_string())
-        .single_typed()
-        .await
-    {
-        Ok(c) => c,
+    let sim_id: SimulationId = match sim_id.parse() {
+        Ok(id) => id,
         Err(e) => {
             return (
-                StatusCode::NOT_FOUND,
-                Json(json!({ "error": format!("Simulation not found: {e:?}") }))
-            )
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": format!("Invalid simulation ID: {e}") })),
+            );
         }
     };
 
+    // ---------------------------
+    // Acquire SimulationManager
+    // ---------------------------
+    let mut mgr = app.sim_manager.write().await;
 
     // ---------------------------
-    // Fetch entities in world
+    // Execute ECS tick
     // ---------------------------
-    let rows: Vec<EntityRecord> = match app.supa
-        .from("sim_entities")
-        .select("*")
-        .eq("world_id", &config.world_id.to_string())
-        .execute_typed()
-        .await
-    {
-        Ok(v) => v,
+    let events = match mgr.tick(sim_id).await {
+        Ok(ev) => ev,
         Err(e) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": format!("Failed to load entities: {e:?}") }))
-            )
+                Json(json!({ "error": format!("Tick failed: {e:?}") })),
+            );
         }
     };
 
-    let entities: Vec<SimEntity> =
-        rows.into_iter().filter_map(|r| SimEntity::try_from(r).ok()).collect();
-
-
     // ---------------------------
-    // Compute next timestep
-    // ---------------------------
-    let now = Utc::now();
-    let ticks = now.timestamp_nanos_opt().unwrap_or(0);
-    let next_t = SimTime::from_ns(ticks.into()); //figure out why ticks.into() was i64 at all
-
-
-    // ---------------------------
-    // Generate "Tick" events
-    // ---------------------------
-    let dt_seconds = config.dt.seconds_f64();
-
-    
-
-    let events: Vec<Value> = entities.iter().map(|ent| {
-        json!({
-            "simulation_id": config.simulation_id,
-            "entity_id": ent.id,
-            "world_id": ent.world_id,
-            "ticks": next_t.as_ns(),
-            "kind": "Tick",
-            "payload": {
-                "dt_seconds": dt_seconds,
-                "source": "run_simulation"
-            },
-            "created_at": now
-        })
-    }).collect();
-
-
-    // Insert into DB
-    let inserted = match app.supa
-        .from("events")
-        .insert_raw(json!(events))
-        .select("id")
-        .execute()
-        .await
-    {
-        Ok(v) => v.as_array().map(|a| a.len()).unwrap_or(0),
-        Err(_) => 0,
-    };
-
-
-    // ---------------------------
-    // SUCCESS RESPONSE
-    // MUST return (StatusCode, Json<Value>)
+    // Build response
     // ---------------------------
     (
         StatusCode::OK,
         Json(json!({
-            "status": "ok",
-            "new_events": inserted,
-            "next_time": next_t.as_ns()
+            "simulation_id": sim_id.to_string(),
+            "event_count": events.len(),
+            "events": events.into_iter().map(|e| json!({
+                "entity_id": e.entity_id,
+                "kind": format!("{:?}", e.kind),
+                "payload": e.payload,
+                "ticks": e.t.as_ns(),
+                "world_id": e.world_id,
+            })).collect::<Vec<_>>()
         }))
     )
 }

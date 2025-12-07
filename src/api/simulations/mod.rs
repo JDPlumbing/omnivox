@@ -13,7 +13,7 @@ mod get;
 mod list;
 mod update;
 mod init;
-mod run;
+//mod run;
 
 // --- Public exports ---
 pub use types::{SimulationDto, NewSimulation};
@@ -23,7 +23,7 @@ pub use get::get_simulation;
 pub use list::list_simulations;
 pub use update::{update_simulation, patch_simulation};
 pub use init::init_simulation;
-pub use run::run_simulation;
+//pub use run::run_simulation;
 
 use runtime::{start_sim, tick_sim, stop_sim, list_sims};
 
@@ -40,7 +40,7 @@ pub fn routes() -> Router<AppState> {
                 .delete(delete_simulation),
         )
         .route("/init", post(init_simulation))
-        .route("/run", post(run_simulation))
+        //.route("/run", post(run_simulation))
         // Runtime control routes
         .route("/runtime/start", post(start_sim))
         .route("/runtime/{id}/tick", post(tick_sim))

@@ -1,23 +1,109 @@
+//! Simulation runtime manager (rewritten scaffolding version B)
+//!
+//! This version is designed to:
+//! - Use `SimulationConfig` for starting new simulations
+//! - Support loading persisted simulations from Supabase
+//! - Provide a `start_dev()` helper for local testing
+//! - Cleanly separate concerns: config, runtime creation, persistence, ticking
+//!
+//! NOTE: All persistence loaders (`SupabaseSimLoader`, `PersistedSimState`) are stubs.
+//! You will fill them in once you define how your ECS/world state is saved.
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use chrono::Utc;
 
-use crate::{
-    supabasic::Supabase,
-    supabasic::events::EventRow,
-    sim::simulations::simulation::Simulation,
-    sim::world::state::{WorldState, World},
-};
+use crate::supabasic::Supabase;
+use crate::supabasic::events::EventRow;
+use crate::supabasic::worlds::WorldRecord;
 
-use crate::core::id::{WorldId, SimulationId, UserId};
-use crate::core::id::EntityId;
+use crate::sim::simulations::simulation::Simulation;
+use crate::sim::world::state::{WorldState, World};
+
+use crate::core::chronovox::ChronoEvent;
+use crate::core::id::{SimulationId, WorldId, UserId};
+use crate::sim::simulations::simulation_config::SimulationConfig;
 use crate::core::id::UvoxRegionId;
-use crate::core::uvoxid::UvoxId;
-use crate::core::uvoxid::LonCode;
-use crate::core::uvoxid::LatCode;
-use crate::core::uvoxid::RUm;
+use crate::core::uvoxid::{UvoxId, RUm, LatCode, LonCode};
+
 pub type SharedManager = Arc<RwLock<SimulationManager>>;
+
+/// ---------------------------------------------------------------------------
+/// Persisted Simulation State (stub)
+/// ---------------------------------------------------------------------------
+/// Eventually this will contain:
+/// - serialized ECS component tables
+/// - entities
+/// - world clock
+/// - region/world metadata
+///
+/// For now it is a placeholder that allows compilation.
+#[derive(Debug, Clone)]
+pub struct PersistedSimState {
+    // TODO: Fill with your actual ECS snapshot format
+    pub placeholder: bool,
+}
+
+/// ---------------------------------------------------------------------------
+/// Stub loader for Supabase → persisted state + config + world record
+/// ---------------------------------------------------------------------------
+pub struct SupabaseSimLoader;
+
+impl SupabaseSimLoader {
+    pub async fn load_everything(
+        supa: &Supabase,
+        sim_id: SimulationId,
+    ) -> anyhow::Result<(WorldRecord, PersistedSimState, SimulationConfig)> {
+
+        // --- Load world record ---
+        let world_record = Self::load_world_record(supa, sim_id.world).await?;
+
+        // --- Load config ---
+        let cfg = Self::load_config(supa, sim_id).await?;
+
+        // --- Load persisted ECS/world state ---
+        let persisted = Self::load_runtime_state(supa, sim_id).await?;
+
+        Ok((world_record, persisted, cfg))
+    }
+
+    async fn load_world_record(
+        supa: &Supabase,
+        world_id: WorldId,
+    ) -> anyhow::Result<WorldRecord> {
+        // TODO: replace with real Supabase fetch
+        Ok(WorldRecord {
+            world_id,
+            name: Some("Loaded-World".into()),
+            description: None,
+            world_epoch: Some(0),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            deleted_at: None,
+        })
+    }
+
+    async fn load_config(
+        supa: &Supabase,
+        sim_id: SimulationId,
+    ) -> anyhow::Result<SimulationConfig> {
+        // TODO: Replace with real persisted config fetch
+        Ok(SimulationConfig::basic(
+            sim_id.world,
+            sim_id.region,
+            UserId(0),
+        ))
+    }
+
+    async fn load_runtime_state(
+        _supa: &Supabase,
+        _sim_id: SimulationId,
+    ) -> anyhow::Result<PersistedSimState> {
+        // TODO: Load entity/component tables, clocks, etc.
+        Ok(PersistedSimState { placeholder: true })
+    }
+}
 
 /// ---------------------------------------------------------------------------
 /// SimulationManager — orchestrates running simulations in memory
@@ -37,43 +123,63 @@ impl SimulationManager {
     }
 
     /// -----------------------------------------------------------------------
-    /// Start a new ad-hoc simulation
+    /// Start a new simulation from config
     /// -----------------------------------------------------------------------
-    pub async fn start(&mut self) -> anyhow::Result<SimulationId> {
+    pub async fn start(
+        &mut self,
+        cfg: SimulationConfig,
+    ) -> anyhow::Result<SimulationId> {
 
-        //
-        // A: Create a VALID SimulationId (Option A — structured, meaningful)
-        //
         let sim_id = SimulationId::new(
-            WorldId(0),
-            UvoxRegionId::new(UvoxId::new(RUm(0), LatCode(0), LonCode(0)), UvoxId::new(RUm(0), LatCode(0), LonCode(0))),
-            crate::core::tdt::sim_time::SimTime::from_ns(0),
-            UserId(0),
-            0,
+            cfg.world_id,
+            cfg.region,
+            cfg.start_time,
+            cfg.user_id,
+            cfg.branch,
         );
 
-        tracing::info!("Starting ad-hoc simulation {:?}", sim_id);
+        tracing::info!("Starting simulation {:?}", sim_id);
 
-        //
-        // B: Since Simulation::new takes a WorldRecord, build a placeholder one
-        //
-        let world_record = crate::supabasic::worlds::WorldRecord {
-            world_id: WorldId(0),
-            name: Some("Test-Earth".into()),
-            description: None,
-            world_epoch: Some(0),
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-            deleted_at: None,
-        };
+        // Load world metadata from DB
+        let world_record = SupabaseSimLoader::load_world_record(&self.supa, cfg.world_id).await?;
 
-        let sim = Simulation::new(world_record);
+        // Construct the simulation from config
+        let sim = Simulation::new_from_config(&cfg, world_record);
 
-        //
-        // Insert into active simulations
-        //
         self.simulations.insert(sim_id, sim);
         Ok(sim_id)
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Start a dev-mode simulation with hardcoded testing values
+    /// -----------------------------------------------------------------------
+    pub async fn start_dev(&mut self) -> anyhow::Result<SimulationId> {
+        let cfg = SimulationConfig::basic(
+            WorldId(0),
+            UvoxRegionId::default(),
+            UserId(0),
+        );
+
+        self.start(cfg).await
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Load persisted simulation from Supabase and rehydrate runtime
+    /// -----------------------------------------------------------------------
+    pub async fn load_from_supabase(
+        &mut self,
+        sim_id: SimulationId,
+    ) -> anyhow::Result<()> {
+
+        tracing::info!("📡 Loading simulation {:?}", sim_id);
+
+        let (world_record, persisted, cfg) =
+            SupabaseSimLoader::load_everything(&self.supa, sim_id).await?;
+
+        let sim = Simulation::from_persisted(world_record, persisted, cfg);
+
+        self.simulations.insert(sim_id, sim);
+        Ok(())
     }
 
     /// -----------------------------------------------------------------------
@@ -82,28 +188,18 @@ impl SimulationManager {
     pub async fn tick(
         &mut self,
         sim_id: SimulationId,
-    ) -> anyhow::Result<Vec<crate::core::chronovox::ChronoEvent>> {
+    ) -> anyhow::Result<Vec<ChronoEvent>> {
 
         let sim = self.simulations.get_mut(&sim_id)
             .ok_or_else(|| anyhow::anyhow!("Simulation {:?} not found", sim_id))?;
 
-        // run the tick
         let events = sim.tick();
 
-        //
-        // Persist ChronoEvents → EventRow
-        //
         for ev in &events {
-
-            // Use entity id from event, or fallback to first entity, or nil
-           // remove unwrap_or_else entirely
-            let entity_id = ev.entity_id;
-
-
             let row = EventRow {
                 id: None,
-                simulation_id: sim.simulation_id.clone(),   // stored as structured ID in DB
-                entity_id,
+                simulation_id: sim.simulation_id.clone(),
+                entity_id: ev.entity_id,
                 world_id: sim.world_id,
                 ticks: ev.t.as_ns(),
                 timestamp: Some(Utc::now()),
@@ -127,22 +223,10 @@ impl SimulationManager {
     }
 
     /// -----------------------------------------------------------------------
-    /// List active simulations
+    /// List active simulations in memory
     /// -----------------------------------------------------------------------
     pub async fn list(&self) -> anyhow::Result<Vec<SimulationId>> {
         Ok(self.simulations.keys().cloned().collect())
     }
-
-    /// -----------------------------------------------------------------------
-    /// Load a simulation state from Supabase into memory
-    /// -----------------------------------------------------------------------
-    pub async fn load_from_supabase(&mut self, sim_id: SimulationId) -> anyhow::Result<()> {
-
-        tracing::info!("📡 Loading simulation {:?}", sim_id);
-
-        let sim = Simulation::load_from_supabase(&self.supa, sim_id).await?;
-        self.simulations.insert(sim_id, sim);
-
-        Ok(())
-    }
 }
+

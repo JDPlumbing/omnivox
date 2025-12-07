@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+API="http://localhost:8000/api/simulations/runtime"
+STORE=".sim_id"
+
+function save_id() {
+    echo -n "$1" > "$STORE"
+    echo "Saved simulation ID: $1"
+}
+
+function load_id() {
+    if [ ! -f "$STORE" ]; then
+        echo "❌ No simulation ID stored. Run './sim start' first."
+        exit 1
+    fi
+    cat "$STORE"
+}
+
+case "$1" in
+    start)
+        echo "🔥 Starting simulation..."
+        RESPONSE=$(curl -s -X POST "$API/start")
+        SIM_ID=$(echo "$RESPONSE" | jq -r '.simulation_id')
+        if [ "$SIM_ID" == "null" ]; then
+            echo "❌ Failed to start simulation:"
+            echo "$RESPONSE"
+            exit 1
+        fi
+        save_id "$SIM_ID"
+        echo "$RESPONSE"
+        ;;
+
+    tick)
+        SIM_ID=$(load_id)
+        echo "⏱  Ticking simulation $SIM_ID..."
+        curl -s -X POST "$API/$SIM_ID/tick" | jq
+        ;;
+
+    stop)
+        SIM_ID=$(load_id)
+        echo "🛑 Stopping simulation $SIM_ID..."
+        curl -s -X POST "$API/$SIM_ID/stop" | jq
+        rm -f "$STORE"
+        ;;
+
+    list)
+        echo "📋 Listing active simulations..."
+        curl -s "$API/list" | jq
+        ;;
+
+    id)
+        SIM_ID=$(load_id)
+        echo "Stored simulation ID: $SIM_ID"
+        ;;
+
+    clear)
+        rm -f "$STORE"
+        echo "🧹 Cleared stored simulation ID."
+        ;;
+            stop-all)
+        echo "🛑 Stopping ALL running simulations..."
+        LIST=$(curl -s "$API/list")
+        IDS=$(echo "$LIST" | jq -r '.active_simulations[]')
+
+        if [ -z "$IDS" ]; then
+            echo "No active simulations."
+            exit 0
+        fi
+
+        for ID in $IDS; do
+            echo " → Stopping $ID"
+            curl -s -X POST "$API/$ID/stop" | jq
+        done
+
+        # clear stored sim id if present
+        rm -f "$STORE"
+        echo "✔ All simulations stopped."
+        ;;
+
+
+    *)
+        echo "Usage:"
+        echo "  ./sim start      # start a new simulation"
+        echo "  ./sim tick       # tick the stored simulation"
+        echo "  ./sim stop       # stop the stored simulation"
+        echo "  ./sim list       # list active simulations"
+        echo "  ./sim id         # show stored sim ID"
+        echo "  ./sim clear      # remove stored sim ID"
+        ;;
+esac
