@@ -68,15 +68,7 @@ use anyhow::{anyhow, Error};
 // ------------------------------------------------------------
 impl fmt::Display for SimulationId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}-{}-{}-{}-{}",
-            self.world.0,
-            self.region.to_compact_string(),
-            self.time_start.0,
-            self.user.0,
-            self.branch
-        )
+        write!(f, "{}", serde_json::to_string(self).unwrap())
     }
 }
 
@@ -85,28 +77,23 @@ impl fmt::Display for SimulationId {
 // Parse SimulationId from string
 // ------------------------------------------------------------
 impl FromStr for SimulationId {
-    type Err = Error;
+    type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split('-').collect();
+    fn from_str(s: &str) -> anyhow::Result<Self> {
+        Ok(serde_json::from_str(s)?)
+    }
+}
+impl SimulationId {
+    /// Convert the structured ID into a hashed, opaque API ID string.
+    /// Uses SipHash (Rust's default hasher) — fast and stable.
+    pub fn to_api_id(&self) -> String {
+        use std::hash::{Hash, Hasher};
+        use std::collections::hash_map::DefaultHasher;
 
-        if parts.len() != 5 {
-            return Err(anyhow!("Invalid SimulationId '{}'", s));
-        }
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        let hash = hasher.finish();
 
-        // Parse each component
-        let world    = WorldId(parts[0].parse()?);
-        let region   = UvoxRegionId::from_compact(parts[1])?;
-        let start    = SimTime(parts[2].parse()?);
-        let user     = UserId(parts[3].parse()?);
-        let branch   = parts[4].parse::<u32>()?;
-
-        Ok(SimulationId {
-            world,
-            region,
-            time_start: start,
-            user,
-            branch,
-        })
+        format!("{:016x}", hash)
     }
 }

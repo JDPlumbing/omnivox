@@ -78,18 +78,17 @@ pub use pages::{get_page, create_page, update_page, delete_page, list_pages};
 mod auth;
 use auth::{login::login, verify::verify_session, refresh::refresh_token};
 
-pub fn api_router() -> Router<AppState> {
+pub fn api_router(app_state: AppState) -> Router<AppState> {
     // Users routes
     let users_routes = Router::new()
         .route("/{id}", get(get_user))
         .route("/anon", get(list_anon_users).post(create_anon_user))
-        .route("/anon/{id}", get(get_anon_user))
-        ;
+        .route("/anon/{id}", get(get_anon_user));
 
-    // Worlds routes
     let worlds_routes = Router::new()
         .route("/", get(list_worlds_handler).post(create_world_handler))
-        .route("/{world_id}",
+        .route(
+            "/{world_id}",
             get(get_world_handler)
                 .put(update_world_handler)
                 .patch(patch_world_handler)
@@ -97,20 +96,16 @@ pub fn api_router() -> Router<AppState> {
         )
         .route("/{world_id}/stats", get(get_world_stats));
 
-    // Simulations routes
     let simulations_routes = simulations::routes();
 
-    // Entities routes (NEW)
     let entities_routes = Router::new()
         .route("/", get(list_entities).post(create_entity))
         .route("/world/{world_id}", get(list_entities_for_world))
         .route(
             "/{entity_id}",
-            get(get_entity)
-                .delete(delete_entity),
+            get(get_entity).delete(delete_entity),
         );
 
-    // Events routes
     let events_routes = Router::new()
         .route("/", get(list_events).post(create_event))
         .route("/sim/{simulation_id}", get(list_events_for_sim))
@@ -123,7 +118,6 @@ pub fn api_router() -> Router<AppState> {
                 .delete(delete_event),
         );
 
-    // Address routes
     let address_routes = Router::new()
         .route("/", get(list_addresses).post(create_address))
         .route(
@@ -135,7 +129,6 @@ pub fn api_router() -> Router<AppState> {
         )
         .route("/{id}/resolve", post(resolve_address));
 
-    // Properties routes
     let property_routes = Router::new()
         .route("/", get(list_properties).post(create_property))
         .route(
@@ -146,20 +139,17 @@ pub fn api_router() -> Router<AppState> {
         )
         .route("/world/{world_id}", get(list_properties_for_world));
 
-    // Pages routes
     let pages_routes = Router::new()
         .route("/", get(list_pages).post(create_page))
         .route("/{slug}", get(get_page))
         .route("/id/{id}", put(update_page))
         .route("/{slug}", delete(delete_page));
 
-    // Auth routes
     let auth_routes = Router::new()
         .route("/login", post(login))
         .route("/verify", post(verify_session))
         .route("/refresh", post(refresh_token));
-    
-    // Time routes
+
     let time_routes = Router::new()
         .route("/simtime/now", get(simtime_now));
 
@@ -176,6 +166,7 @@ pub fn api_router() -> Router<AppState> {
         .nest("/events", events_routes)
         .nest("/time", time_routes)
         .nest("/pages", pages_routes)
+        .with_state(app_state)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -183,3 +174,4 @@ pub fn api_router() -> Router<AppState> {
                 .allow_headers(Any),
         )
 }
+

@@ -6,26 +6,26 @@ use omnivox::api::api_router;
 use omnivox::shared::app_state::AppState;
 use tokio::net::TcpListener;
 
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
     dotenvy::dotenv().ok();
 
-    let app_state = AppState::new_from_env()?;
+    let app_state = AppState::new_from_env()?;   // Build state once
 
+    // Build router with app state
     let app = Router::new()
-        .nest("/api", api_router())
+        .nest("/api", api_router(app_state.clone()))
+        .with_state(app_state)   // Attach global shared state
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
                 .allow_methods(Any)
                 .allow_headers(Any),
-        )
-        .with_state(app_state.clone()); // 👈 attach state this way now
+        );
 
+    // 🚀 START THE SERVER — THIS WAS MISSING
     let listener = TcpListener::bind("0.0.0.0:8000").await?;
-
     println!("🚀 Listening on http://localhost:8000");
 
     axum::serve(listener, app).await?;
@@ -33,6 +33,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+// KEEP YOUR TEST MODULE
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -40,12 +41,11 @@ mod tests {
 
     #[test]
     fn test_matcat_integrity() {
-        // Pick a few canonical IDs
         let ids = vec![
-            MatCatId::new(1, 1, 0), // Metal - Steel - Standard
-            MatCatId::new(2, 1, 0), // Plastic - PVC
-            MatCatId::new(3, 0, 0), // Wood - Generic
-            MatCatId::new(9, 0, 0), // Concrete
+            MatCatId::new(1, 1, 0),
+            MatCatId::new(2, 1, 0),
+            MatCatId::new(3, 0, 0),
+            MatCatId::new(9, 0, 0),
         ];
 
         for id in ids {
