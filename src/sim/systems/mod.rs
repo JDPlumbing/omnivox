@@ -6,7 +6,8 @@ pub trait System: Send + Sync {
     fn name(&self) -> &'static str;
     fn tick(&mut self, world: &mut WorldState) -> Vec<ChronoEvent>;
 }
-
+pub mod movement_system;
+pub use movement_system::*;
 pub mod movement;
 pub use movement::*;
 pub mod acceleration;

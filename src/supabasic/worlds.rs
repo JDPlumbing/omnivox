@@ -10,7 +10,7 @@ use serde::{Serialize, Deserialize};
 /// Mirrors the `worlds` table in Supabase.
 /// Contains ONLY persistent metadata.
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct WorldRecord {
+pub struct WorldRow {
     pub world_id: WorldId,
     pub name: Option<String>,
     pub description: Option<String>,
@@ -22,11 +22,11 @@ pub struct WorldRecord {
     pub world_epoch: Option<i128>,  // raw i128 ns
 }
 
-impl DbModel for WorldRecord {
+impl DbModel for WorldRow {
     fn table() -> &'static str { "worlds" }
 }
 
-impl WorldRecord {
+impl WorldRow {
     /// List all worlds
     pub async fn list(supa: &Supabase) -> Result<Vec<Self>, SupabasicError> {
         supa.from(Self::table())

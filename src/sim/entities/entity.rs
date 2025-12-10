@@ -17,8 +17,8 @@ pub struct SimEntity {
     /// World this entity belongs to
     pub world_id: WorldId,
 
-    /// Blueprint (shape + material)
-    pub blueprint: Objex,
+    /// objex (shape + material)
+    pub template: Objex,
 
     /// Spatial coordinates inside that world
     pub position: UvoxId,
@@ -37,7 +37,7 @@ pub struct SimEntity {
 impl SimEntity {
     pub fn spawn(
         id: EntityId,
-        blueprint: Objex,
+        template: Objex,
         world_id: WorldId,
         position: UvoxId,
         orientation: UvoxQuat,
@@ -52,7 +52,7 @@ impl SimEntity {
             spawned_at: spawned_at,
             despawned_at: None,
             metadata: serde_json::json!({}),
-            blueprint,
+            template,
         }
     }
 
@@ -79,10 +79,10 @@ impl SimEntity {
     }
 
     pub fn shape(&self) -> &Shape {
-        &self.blueprint.shape
+        &self.template.shape
     }
 
     pub fn material(&self) -> &MaterialLink {
-        &self.blueprint.material
+        &self.template.material
     }
 }

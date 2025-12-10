@@ -6,8 +6,8 @@ use chrono::Utc;
 
 // Supabase / DB row types
 use crate::supabasic::Supabase;
-use crate::supabasic::worlds::WorldRecord;
-use crate::supabasic::entity::EntityRecord;
+use crate::supabasic::worlds::WorldRow;
+use crate::supabasic::entity::EntityRow;
 use crate::supabasic::simulations::SimulationRow;
 use crate::supabasic::events::EventRow;
 
@@ -34,13 +34,13 @@ async fn load_world(
     world_id: WorldId,
 ) -> Result<WorldState> {
 
-    let rec = WorldRecord::get(sup, world_id)
+    let rec = WorldRow::get(sup, world_id)
         .await
         .map_err(|e| OmnivoxError::LoadError(format!("world fetch failed: {:?}", e)))?;
 
     let meta: World = rec.into();
 
-    let entity_rows = EntityRecord::list_for_world(sup, world_id)
+    let entity_rows = EntityRow::list_for_world(sup, world_id)
         .await
         .unwrap_or_default();
 

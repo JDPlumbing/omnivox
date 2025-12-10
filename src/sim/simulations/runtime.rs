@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use crate::core::chronovox::ChronoEvent;
 use crate::sim::simulations::simulation::Simulation;
 use crate::sim::simulations::simulation_config::SimulationConfig;
-use crate::supabasic::worlds::WorldRecord;
+use crate::supabasic::worlds::WorldRow;
 use crate::sim::simulations::persist::state::PersistedSimState;
 
 /// Shared manager between API and runtime
@@ -32,7 +32,7 @@ impl SimulationManager {
     pub async fn start(
         &mut self,
         cfg: SimulationConfig,
-        world_record: WorldRecord,
+        world_record: WorldRow,
     ) -> anyhow::Result<String> 
     {
         let real_id = cfg.to_simulation_id();
@@ -95,7 +95,7 @@ impl SimulationManager {
     pub async fn load_snapshot(
         &mut self,
         api_id: String,
-        world_record: WorldRecord,
+        world_record: WorldRow,
         cfg: SimulationConfig,
         snapshot: PersistedSimState,
     ) -> anyhow::Result<()> 

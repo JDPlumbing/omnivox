@@ -5,7 +5,7 @@ use uuid::Uuid;
 use std::collections::HashMap;
 
 use crate::supabasic::events::EventRow;
-use crate::supabasic::worlds::WorldRecord;
+use crate::supabasic::worlds::WorldRow;
 
 use crate::sim::clock::SimClock;
 use crate::sim::components::SimComponents;
@@ -120,8 +120,8 @@ impl Default for WorldState {
 }
 
 
-impl From<WorldRecord> for World {
-    fn from(rec: WorldRecord) -> Self {
+impl From<WorldRow> for World {
+    fn from(rec: WorldRow) -> Self {
         World {
             id: rec.world_id,
             name: rec.name,

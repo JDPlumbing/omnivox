@@ -78,6 +78,17 @@ pub use pages::{get_page, create_page, update_page, delete_page, list_pages};
 mod auth;
 use auth::{login::login, verify::verify_session, refresh::refresh_token};
 
+
+mod viewer;
+use viewer::viewer_routes;
+
+
+
+
+
+
+
+
 pub fn api_router(app_state: AppState) -> Router<AppState> {
     // Users routes
     let users_routes = Router::new()
@@ -153,6 +164,9 @@ pub fn api_router(app_state: AppState) -> Router<AppState> {
     let time_routes = Router::new()
         .route("/simtime/now", get(simtime_now));
 
+    let viewer_routes = viewer::viewer_routes();
+
+
     Router::new()
         .route("/ping", get(|| async { "pong" }))
         .nest("/auth", auth_routes)
@@ -166,6 +180,8 @@ pub fn api_router(app_state: AppState) -> Router<AppState> {
         .nest("/events", events_routes)
         .nest("/time", time_routes)
         .nest("/pages", pages_routes)
+        .nest("/viewer", viewer_routes)
+
         .with_state(app_state)
         .layer(
             CorsLayer::new()

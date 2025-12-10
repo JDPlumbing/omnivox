@@ -123,6 +123,11 @@ impl std::ops::AddAssign<i64> for LatCode {
     }
 }
 
+impl LatCode {
+    pub fn from_degrees(deg: f64) -> Self {
+        LatCode((deg * ANG_SCALE as f64) as i64)
+    }
+}
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -163,6 +168,11 @@ impl LonCode {
         self.0 = wrapped;
     }
 
+}
+impl LonCode {
+    pub fn from_degrees(deg: f64) -> Self {
+        LonCode((deg * ANG_SCALE as f64) as i64)
+    }
 }
 
 impl fmt::Display for LonCode {
@@ -267,6 +277,16 @@ impl UvoxId {
 
         Some(Self::new(RUm(r), LatCode(lat), LonCode(lon)))
     }
+    
+    // ----------------------------------------------------------
+    // Camera Conversion
+    // ----------------------------------------------------------
+    pub fn relative_to_camera(entity: &UvoxId, camera: &UvoxId) -> (f64, f64, f64) {
+        let (ex, ey, ez) = entity.to_cartesian();
+        let (cx, cy, cz) = camera.to_cartesian();
+        (ex - cx, ey - cy, ez - cz)
+    }
+
 }
 
 // ------------------------------------------------------------

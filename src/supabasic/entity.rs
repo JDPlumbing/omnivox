@@ -14,25 +14,25 @@ use crate::core::SimTime;
 
 /// ---------------------------------------------------------------------------
 /// Mirrors the `sim_entities` table in Supabase.
-/// Blueprints + uvoxid are stored **inline** as JSON.
+/// objexs + uvoxid are stored **inline** as JSON.
 /// ---------------------------------------------------------------------------
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct EntityRecord {
+pub struct EntityRow {
     pub id: EntityId,
 
     pub world_id: WorldId,
 
-    pub blueprint: Value,   // inline Objex
+    pub template: Value,   // inline Objex
     pub position: Value,      // inline UvoxId
     pub orientation: Value, // inline UvoxQuat
 
-    pub spawned_at: i128,
-    pub despawned_at: Option<i128>,
+    pub spawned_at: SimTime,
+    pub despawned_at: Option<SimTime>,
 
     pub metadata: Value,
 }
 
-impl DbModel for EntityRecord {
+impl DbModel for EntityRow {
     fn table() -> &'static str { "sim_entities" }
 }
 
@@ -40,39 +40,40 @@ impl DbModel for EntityRecord {
 // Conversions
 // ---------------------------------------------------------------------------
 
-impl From<&SimEntity> for EntityRecord {
+impl From<&SimEntity> for EntityRow {
     fn from(e: &SimEntity) -> Self {
-        EntityRecord {
+        EntityRow {
             id: e.id,
 
             world_id: e.world_id,
 
-            blueprint: serde_json::to_value(&e.blueprint).unwrap(),
+            template: serde_json::to_value(&e.template).unwrap(),
             position: serde_json::to_value(&e.position).unwrap(),
             orientation: serde_json::to_value(&e.orientation).unwrap(),
 
-            spawned_at: e.spawned_at.as_ns(),
-            despawned_at: e.despawned_at.map(|t| t.as_ns()),
+            spawned_at: e.spawned_at,
+            despawned_at: e.despawned_at,
 
             metadata: e.metadata.clone(),
         }
     }
 }
 
-impl TryFrom<EntityRecord> for SimEntity {
+impl TryFrom<EntityRow> for SimEntity {
     type Error = serde_json::Error;
 
-    fn try_from(r: EntityRecord) -> Result<Self, Self::Error> {
+    fn try_from(r: EntityRow) -> Result<Self, Self::Error> {
         Ok(SimEntity {
             id: r.id,
             world_id: r.world_id,
 
-            blueprint: serde_json::from_value(r.blueprint)?,
+            template: serde_json::from_value(r.template)?,
             position: serde_json::from_value(r.position)?,
             orientation: serde_json::from_value(r.orientation)?,
 
-            spawned_at: SimTime::from_ns(r.spawned_at),
-            despawned_at: r.despawned_at.map(SimTime::from_ns),
+            spawned_at: r.spawned_at,
+            despawned_at: r.despawned_at,
+
 
             metadata: r.metadata,
         })
@@ -83,7 +84,7 @@ impl TryFrom<EntityRecord> for SimEntity {
 // CRUD Helpers
 // ---------------------------------------------------------------------------
 
-impl EntityRecord {
+impl EntityRow {
     /// Insert SimEntity → DB
     pub async fn insert(
         supa: &Supabase,
@@ -91,7 +92,7 @@ impl EntityRecord {
     ) -> Result<Self, SupabasicError> {
 
         // Insert expects a JSON array
-        let payload = serde_json::json!([EntityRecord::from(entity)]);
+        let payload = serde_json::json!([EntityRow::from(entity)]);
 
         let raw = supa
             .from(Self::table())

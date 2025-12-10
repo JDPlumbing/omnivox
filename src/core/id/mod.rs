@@ -1,6 +1,8 @@
 pub mod entity_id;
 pub mod property_id;
 pub mod user_id;
+pub mod user_words;
+
 pub mod uvox_region_id;
 //pub mod uvox_id;
 pub mod world_id;
@@ -13,3 +15,4 @@ pub use uvox_region_id::UvoxRegionId;
 //pub use uvox_id::UvoxId;
 pub use world_id::WorldId;
 pub use simulation_id::SimulationId;
+pub use user_words::WORDS;

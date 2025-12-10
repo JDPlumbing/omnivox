@@ -6,7 +6,7 @@ use axum::{
 };
 use serde_json::json;
 
-use crate::supabasic::worlds::{WorldRecord, NewWorld};
+use crate::supabasic::worlds::{WorldRow, NewWorld};
 use crate::supabasic::events::EventRow;
 use crate::shared::app_state::AppState;
 use crate::core::id::WorldId;
@@ -29,8 +29,8 @@ pub struct WorldUpdate {
     pub description: Option<String>,
 }
 
-impl From<WorldRecord> for WorldDto {
-    fn from(w: WorldRecord) -> Self {
+impl From<WorldRow> for WorldDto {
+    fn from(w: WorldRow) -> Self {
         Self {
             world_id: w.world_id,
             name: w.name,
@@ -47,7 +47,7 @@ impl From<WorldRecord> for WorldDto {
 // GET /worlds
 // ------------------------------------------------------------
 pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoResponse {
-    match WorldRecord::list(&app.supa).await {
+    match WorldRow::list(&app.supa).await {
         Ok(rows) => {
             let mut result = Vec::new();
             for row in rows {
@@ -75,7 +75,7 @@ pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoRespon
 // GET /worlds/{world_id}
 // ------------------------------------------------------------
 pub async fn get_world_handler(State(app): State<AppState>, Path(world_id): Path<WorldId>) -> impl IntoResponse {
-    match WorldRecord::get(&app.supa, world_id).await {
+    match WorldRow::get(&app.supa, world_id).await {
         Ok(row) => {
             let events = EventRow::list_for_world(&app.supa, row.world_id)
                 .await
@@ -99,7 +99,7 @@ pub async fn get_world_handler(State(app): State<AppState>, Path(world_id): Path
 // POST /worlds
 // ------------------------------------------------------------
 pub async fn create_world_handler(State(app): State<AppState>, Json(payload): Json<NewWorld>) -> impl IntoResponse {
-    match WorldRecord::create(&app.supa, &payload).await {
+    match WorldRow::create(&app.supa, &payload).await {
         Ok(row) => {
             let dto = WorldDto::from(row);
             (StatusCode::CREATED, Json(dto)).into_response()
@@ -132,7 +132,7 @@ pub async fn update_world_handler(
         .eq("world_id", &world_id.to_string())
         .update(payload)
         .select("*")
-        .execute_typed::<WorldRecord>()
+        .execute_typed::<WorldRow>()
         .await;
 
     match result {
@@ -167,7 +167,7 @@ pub async fn patch_world_handler(
         .eq("world_id", &world_id.to_string())
         .update(changes)
         .select("*")
-        .execute_typed::<WorldRecord>()
+        .execute_typed::<WorldRow>()
         .await;
 
     match result {

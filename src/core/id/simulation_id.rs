@@ -41,7 +41,7 @@ impl Default for SimulationId {
             world: WorldId::from(0),
             region: UvoxRegionId::default(),
             time_start: SimTime::from_ns(0),
-            user: UserId::from(0),
+            user: UserId::zero(),
             branch: 0,
         }
     }

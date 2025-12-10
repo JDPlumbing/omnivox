@@ -9,7 +9,7 @@ use crate::sim::world::state::{WorldState, World};
 use crate::sim::entities::SimEntity;
 use crate::sim::components::SimComponents;
 
-use crate::supabasic::worlds::WorldRecord;
+use crate::supabasic::worlds::WorldRow;
 use crate::sim::simulations::simulation::Simulation;
 use crate::sim::simulations::simulation_config::SimulationConfig;
 use crate::core::id::EntityId;
@@ -97,7 +97,7 @@ impl PersistedSimState {
 
     pub fn to_runtime(
         self,
-        world_record: WorldRecord,
+        world_record: WorldRow,
         cfg: SimulationConfig,
     ) -> Simulation {
 

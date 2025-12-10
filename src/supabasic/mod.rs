@@ -10,7 +10,7 @@ pub mod geolocations;
 pub mod properties;
 pub mod entity;
 
-pub use entity::EntityRecord;
+pub use entity::EntityRow;
 pub use client::Supabase;
 pub use error::{SupabasicError, Result};
 pub use entities::Entity;
@@ -20,7 +20,7 @@ pub use addresses::AddressRow;
 pub use geolocations::GeolocationRecord;
 // worlds: only re-export the low-level DB functions
 // src/supabasic/mod.rs
-pub use self::worlds::WorldRecord;
+pub use self::worlds::WorldRow;
 pub use self::worlds::NewWorld as NewWorldRow;
 
 // simulations: just re-export the model
@@ -48,7 +48,7 @@ impl Supabase {
         Ok(serde_json::from_value(res)?)
     }
 
-    pub async fn list_entities_for_property(&self, property_id: Uuid) -> anyhow::Result<Vec<EntityRecord>> {
+    pub async fn list_entities_for_property(&self, property_id: Uuid) -> anyhow::Result<Vec<EntityRow>> {
         let res = self
             .from("objex_entities")
             .select("*")

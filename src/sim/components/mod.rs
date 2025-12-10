@@ -31,7 +31,11 @@ pub use solar_radiation::SolarRadiation;
 pub use solar_exposure::SolarExposure;
 pub use sun_damage::SunDamage;
 
+pub mod camera;
+pub use camera::Camera;
 
+pub mod quaternion;
+pub use quaternion::QuaternionLocal;
 
 use crate::core::objex::systems::mass::MassProps;
 use crate::core::objex::systems::mechanical::MechanicalProps;
@@ -79,6 +83,8 @@ pub struct SimComponents {
     pub thermal_components: HashMap<EntityId, ThermalData>,
     pub thermal_exposure: HashMap<EntityId, ThermalExposure>,
     pub orbital_components: HashMap<EntityId, OrbitalMotion>,
+    pub camera_components: HashMap<EntityId, Camera>,
+    pub quaternion_local: HashMap<EntityId, QuaternionLocal>,
 
 }
 
@@ -113,6 +119,9 @@ impl SimComponents {
             thermal_exposure: HashMap::new(),
 
             orbital_components: HashMap::new(),
+            camera_components: HashMap::new(),
+            quaternion_local: HashMap::new(),
+
         }
     }
 }

@@ -9,7 +9,7 @@ use axum::http::StatusCode;
 use crate::shared::app_state::AppState;
 use crate::sim::simulations::simulation_config::SimulationConfig;
 use crate::core::id::{WorldId, UvoxRegionId, UserId};
-use crate::supabasic::worlds::WorldRecord;
+use crate::supabasic::worlds::WorldRow;
 //
 // ───────────────────────────────────────────────
 //   START SIM
@@ -23,13 +23,13 @@ pub async fn start_sim(
     let cfg = SimulationConfig::basic(
         WorldId(0),
         UvoxRegionId::default(),
-        UserId(0),
+        UserId::zero(),
     );
 
     let mut mgr = state.sim_manager.write().await;
 
     // Fetch world from DB
-    let world_record = match WorldRecord::fetch(&state.supa, cfg.world_id).await {
+    let world_record = match WorldRow::fetch(&state.supa, cfg.world_id).await {
         Ok(w) => w,
         Err(e) => {
             return (

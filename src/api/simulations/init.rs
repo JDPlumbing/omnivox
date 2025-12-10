@@ -12,7 +12,7 @@ use chrono::Utc;
 
 use crate::shared::app_state::AppState;
 use crate::sim::entities::SimEntity;
-use crate::supabasic::entity::EntityRecord;
+use crate::supabasic::entity::EntityRow;
 
 use crate::core::tdt::sim_duration::SimDuration;
 
@@ -76,7 +76,7 @@ pub async fn init_simulation(
     // ---------------------------
     // Load SimEntities for this world
     // ---------------------------
-    let rows: Vec<EntityRecord> = match app.supa
+    let rows: Vec<EntityRow> = match app.supa
         .from("sim_entities")
         .select("*")
         .eq("world_id", &req.world_id.to_string())

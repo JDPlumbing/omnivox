@@ -1,6 +1,6 @@
 use crate::supabasic::Supabase;
-use crate::supabasic::worlds::WorldRecord;
-use crate::supabasic::entity::EntityRecord;
+use crate::supabasic::worlds::WorldRow;
+use crate::supabasic::entity::EntityRow;
 
 use crate::core::id::WorldId;
 use crate::core::tdt::sim_time::SimTime;
@@ -21,7 +21,7 @@ pub async fn load_world(
     //
     // 1. Load world metadata row
     //
-    let meta_rec = WorldRecord::get(supa, world_id).await?;
+    let meta_rec = WorldRow::get(supa, world_id).await?;
 
     //
     // Convert DB → runtime metadata World
@@ -36,8 +36,8 @@ pub async fn load_world(
     //
     // 2. Load all entity records for this world
     //
-    let rows: Vec<EntityRecord> =
-        EntityRecord::list_for_world(supa, world_id).await?;
+    let rows: Vec<EntityRow> =
+        EntityRow::list_for_world(supa, world_id).await?;
 
     //
     // 3. Convert each DB row into a SimEntity
@@ -51,7 +51,7 @@ pub async fn load_world(
                 state.entities.insert(ent.id, ent);
             }
             Err(e) => {
-                eprintln!("⚠ Failed to convert EntityRecord → SimEntity: {:?}", e);
+                eprintln!("⚠ Failed to convert EntityRow → SimEntity: {:?}", e);
             }
         }
     }

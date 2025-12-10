@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::shared::app_state::AppState;
 use crate::sim::entity::SimEntity;
-use crate::supabasic::entity::EntityRecord;
+use crate::supabasic::entity::EntityRow;
 //use crate::core::objex::Objex;
 use crate::core::id::world_id::WorldId;
 
@@ -21,9 +21,9 @@ pub async fn create_entity(
     State(app): State<AppState>,
     Json(entity): Json<SimEntity>,
 ) -> impl IntoResponse {
-    let blueprint_id = Uuid::new_v4(); // optional: if you later add blueprint table
+    let objex_id = Uuid::new_v4(); // optional: if you later add objex table
 
-    match EntityRecord::insert(&app.supa, &entity).await {
+    match EntityRow::insert(&app.supa, &entity).await {
         Ok(rec) => Json(json!({ "id": rec.id })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
@@ -40,7 +40,7 @@ pub async fn get_entity(
     State(app): State<AppState>,
     Path(entity_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    match EntityRecord::fetch(&app.supa, entity_id).await {
+    match EntityRow::fetch(&app.supa, entity_id).await {
         Ok(rec) => Json(rec).into_response(),
         Err(e) => (
             StatusCode::NOT_FOUND,
@@ -77,7 +77,7 @@ pub async fn list_entities_for_world(
     State(app): State<AppState>,
     Path(world_id): Path<WorldId>,
 ) -> impl IntoResponse {
-    match EntityRecord::list_for_world(&app.supa, world_id).await {
+    match EntityRow::list_for_world(&app.supa, world_id).await {
         Ok(rows) => Json(rows).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,

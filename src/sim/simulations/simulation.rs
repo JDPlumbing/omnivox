@@ -36,7 +36,7 @@ use crate::sim::systems::solar_exposure::SolarExposureSystem;
 use crate::core::chronovox::{ChronoEvent, EventKind};
 use crate::core::id::entity_id::EntityId;
 
-use crate::supabasic::worlds::WorldRecord;
+use crate::supabasic::worlds::WorldRow;
 use crate::sim::simulations::simulation_config::SimulationConfig;
 use crate::sim::simulations::persist::state::PersistedSimState;
 
@@ -63,7 +63,7 @@ pub struct Simulation {
 impl Simulation {
 
     /// Construct a new simulation from the DB world metadata.
-    pub fn new(meta: WorldRecord) -> Self {
+    pub fn new(meta: WorldRow) -> Self {
         let metadata_world: World = meta.clone().into();
         let world_id = metadata_world.id;
 
@@ -121,7 +121,7 @@ impl Simulation {
             world_id,
             UvoxRegionId::default(),
             sim_time,
-            UserId::from(0),
+            UserId::zero(),
             0,
         );
 
@@ -140,7 +140,7 @@ impl Simulation {
     // ========================================================================
     // NEW: new_from_config
     // ========================================================================
-    pub fn new_from_config(cfg: &SimulationConfig, world_record: WorldRecord) -> Self {
+    pub fn new_from_config(cfg: &SimulationConfig, world_record: WorldRow) -> Self {
         let metadata_world: World = world_record.clone().into();
         let world_id = metadata_world.id;
 
@@ -216,7 +216,7 @@ impl Simulation {
     // NEW: from_persisted
     // ========================================================================
     pub fn from_persisted(
-        world_record: WorldRecord,
+        world_record: WorldRow,
         persisted: PersistedSimState,
         cfg: SimulationConfig,
     ) -> Self {

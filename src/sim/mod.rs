@@ -20,3 +20,6 @@ pub use address::Address;
 
 pub use entities::*;
 pub use time::*;
+
+pub mod math;
+pub use math::*;

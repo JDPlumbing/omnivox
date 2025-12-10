@@ -90,8 +90,8 @@ impl System for FractureSystem {
                 //
                 // Resize spherical fragments (if sphere)
                 //
-                if let Shape::Sphere(s) = frag.blueprint.shape.clone() {
-                    frag.blueprint.shape = Shape::Sphere(
+                if let Shape::Sphere(s) = frag.template.shape.clone() {
+                    frag.template.shape = Shape::Sphere(
                         crate::core::objex::geospec::shapes::Sphere {
                             radius: s.radius / (child_count as f64).sqrt(),
                         }
