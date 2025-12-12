@@ -16,3 +16,5 @@ pub use uvox_region_id::UvoxRegionId;
 pub use world_id::WorldId;
 pub use simulation_id::SimulationId;
 pub use user_words::WORDS;
+pub mod u8dict;
+pub use u8dict::*;

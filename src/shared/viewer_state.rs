@@ -13,11 +13,17 @@ pub struct CameraState {
 
 impl Default for CameraState {
     fn default() -> Self {
+        // Spawn at lat=0, lon=0
+        let mut pos = UvoxId::earth_surface(
+            LatCode::from_degrees(0.0),
+            LonCode::from_degrees(0.0),
+        );
+
+        // Raise camera by +500 km
+        pos.r_um.0 += 500_000_000_000; // 500 km in micrometers
+
         Self {
-            pos: UvoxId::earth_surface(
-                LatCode::from_degrees(0.0),
-                LonCode::from_degrees(0.0),
-            ),
+            pos,
             orient: QuaternionLocal::identity(),
         }
     }

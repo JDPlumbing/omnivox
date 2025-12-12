@@ -323,3 +323,27 @@ impl fmt::Display for UvoxId {
         )
     }
 }
+
+impl UvoxId {
+    pub fn to_vec3(&self) -> [f32; 3] {
+        let (x, y, z) = self.to_cartesian();
+        [x as f32, y as f32, z as f32]
+    }
+
+    pub fn from_vec3(v: [f32; 3]) -> Self {
+        let x = v[0] as f64;
+        let y = v[1] as f64;
+        let z = v[2] as f64;
+
+        let r_m = (x * x + y * y + z * z).sqrt();
+        let r_um = (r_m * 1_000_000.0) as i64;
+
+        let lat_rad = (z / r_m).asin();
+        let lon_rad = y.atan2(x);
+
+        let lat_code = LatCode((lat_rad.to_degrees() * ANG_SCALE as f64) as i64);
+        let lon_code = LonCode((lon_rad.to_degrees() * ANG_SCALE as f64) as i64);
+
+        UvoxId::new(RUm(r_um), lat_code, lon_code)
+    }
+}

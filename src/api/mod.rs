@@ -3,12 +3,13 @@ use axum::{
     Router,
 };
 use tower_http::cors::{Any, CorsLayer};
+use axum::http::Method;
 
 use crate::shared::app_state::AppState;
 
 // --- Time API ---
 mod time;
-pub use time::now::simtime_now;
+pub use time::{time_routes};
 
 // --- Users API ---
 mod users;
@@ -22,7 +23,8 @@ pub use worlds::{list_worlds_handler,
                 update_world_handler, 
                 patch_world_handler, 
                 delete_world_handler, 
-                get_world_stats};
+                get_world_stats,
+                world_time_now};
 
 // --- Simulations API ---
 mod simulations;
@@ -89,7 +91,7 @@ use viewer::viewer_routes;
 
 
 
-pub fn api_router(app_state: AppState) -> Router<AppState> {
+pub fn api_router(app_state: AppState) -> Router {
     // Users routes
     let users_routes = Router::new()
         .route("/{id}", get(get_user))
@@ -105,7 +107,8 @@ pub fn api_router(app_state: AppState) -> Router<AppState> {
                 .patch(patch_world_handler)
                 .delete(delete_world_handler),
         )
-        .route("/{world_id}/stats", get(get_world_stats));
+        .route("/{world_id}/stats", get(get_world_stats))
+        .route("/{world_id}/time/now", get(world_time_now));
 
     let simulations_routes = simulations::routes();
 
@@ -161,9 +164,7 @@ pub fn api_router(app_state: AppState) -> Router<AppState> {
         .route("/verify", post(verify_session))
         .route("/refresh", post(refresh_token));
 
-    let time_routes = Router::new()
-        .route("/simtime/now", get(simtime_now));
-
+    let time_routes = time::time_routes();
     let viewer_routes = viewer::viewer_routes();
 
 
@@ -186,8 +187,10 @@ pub fn api_router(app_state: AppState) -> Router<AppState> {
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
-                .allow_methods(Any)
-                .allow_headers(Any),
+                .allow_methods([Method::GET, Method::POST, Method::PUT, Method::PATCH, Method::DELETE])
+                .allow_headers(Any)
+                .expose_headers(Any)
         )
+
 }
 

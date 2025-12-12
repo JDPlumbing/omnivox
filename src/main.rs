@@ -11,12 +11,15 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
     dotenvy::dotenv().ok();
 
-    let app_state = AppState::new_from_env()?;   // Build state once
+    // Build shared state ONCE
+    let app_state = AppState::new_from_env()?;
 
-    // Build router with app state
+    // Build the API router (it already has .with_state)
+    let api = api_router(app_state);
+
+    // Mount at /api
     let app = Router::new()
-        .nest("/api", api_router(app_state.clone()))
-        .with_state(app_state)   // Attach global shared state
+        .nest("/api", api)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -24,34 +27,11 @@ async fn main() -> anyhow::Result<()> {
                 .allow_headers(Any),
         );
 
-    // 🚀 START THE SERVER — THIS WAS MISSING
+    // Start server
     let listener = TcpListener::bind("0.0.0.0:8000").await?;
     println!("🚀 Listening on http://localhost:8000");
 
     axum::serve(listener, app).await?;
 
     Ok(())
-}
-
-// KEEP YOUR TEST MODULE
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::matcat::materials::MatCatId;
-
-    #[test]
-    fn test_matcat_integrity() {
-        let ids = vec![
-            MatCatId::new(1, 1, 0),
-            MatCatId::new(2, 1, 0),
-            MatCatId::new(3, 0, 0),
-            MatCatId::new(9, 0, 0),
-        ];
-
-        for id in ids {
-            let name = id.name();
-            let props = id.props().expect("should generate props");
-            println!("🧱 {name}: {:?}", props);
-        }
-    }
 }

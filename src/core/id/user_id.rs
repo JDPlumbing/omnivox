@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use std::fmt;
+use crate::core::id::u8dict::U8Dict;
 
 /// A human-friendly 48-bit user ID:
 /// five word indices + a number (0-255)
@@ -54,5 +55,25 @@ impl fmt::Display for UserId {
 impl UserId {
     pub fn zero() -> Self {
         Self { words: [0; 5], num: 0 }
+    }
+}
+
+impl UserId {
+    pub fn from_string(s: &str) -> Self {
+        // reverse of .to_string(): 5 words + number
+        let parts: Vec<&str> = s.split('-').collect();
+        if parts.len() != 6 { return UserId::zero(); }
+
+        let words = [
+            U8Dict::encode(parts[0]),
+            U8Dict::encode(parts[1]),
+            U8Dict::encode(parts[2]),
+            U8Dict::encode(parts[3]),
+            U8Dict::encode(parts[4]),
+        ];
+
+        let num = parts[5].parse().unwrap_or(0);
+
+        UserId::new(words, num)
     }
 }

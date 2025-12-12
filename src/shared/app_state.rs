@@ -16,7 +16,7 @@ pub struct AppState {
     pub anon_owner_id: Option<UserId>,
 
     pub sim_manager: Arc<RwLock<SimulationManager>>,
-   pub viewer_registry: Arc<RwLock<ViewerRegistry>>,
+    pub viewer_registry: Arc<RwLock<ViewerRegistry>>,
 
 
 }

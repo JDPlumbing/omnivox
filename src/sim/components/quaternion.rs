@@ -22,3 +22,9 @@ impl QuaternionLocal {
         Self { w: q.w, x: q.x, y: q.y, z: q.z }
     }
 }
+
+impl QuaternionLocal {
+    pub fn to_xyzw(&self) -> [f32; 4] {
+        [self.x, self.y, self.z, self.w]
+    }
+}

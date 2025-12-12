@@ -4,6 +4,7 @@ use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::orm::DbModel;
 use crate::core::id::WorldId;
 
+
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 
@@ -19,7 +20,7 @@ pub struct WorldRow {
     pub updated_at: DateTime<Utc>,
     pub deleted_at: Option<DateTime<Utc>>,
 
-    pub world_epoch: Option<i128>,  // raw i128 ns
+    pub world_epoch: Option<String>,  // raw i128 ns
 }
 
 impl DbModel for WorldRow {
@@ -71,4 +72,5 @@ pub struct NewWorld {
     pub world_id: WorldId,
     pub name: Option<String>,
     pub description: Option<String>,
+    pub world_epoch: Option<String>,  // raw i128 ns
 }

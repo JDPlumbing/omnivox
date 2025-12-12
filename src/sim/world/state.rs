@@ -126,7 +126,11 @@ impl From<WorldRow> for World {
             id: rec.world_id,
             name: rec.name,
             description: rec.description,
-            world_epoch: rec.world_epoch.map(SimTime::from_ns),
+            world_epoch: rec.world_epoch
+                .as_ref()
+                .and_then(|s| s.parse::<i128>().ok())
+                .map(SimTime::from_ns),
+
         }
     }
 }

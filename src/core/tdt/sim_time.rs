@@ -49,17 +49,33 @@ impl SimTime {
     }
 
     pub fn to_sim_date(&self) -> SimDate {
-        let mut ns = self.0.max(0);
+        let mut ns = self.0; // ← DO NOT CLAMP TO ZERO
 
-        let year = (ns / NANOS_PER_YEAR) as i32;
+        // Allow negative time: shift the origin so division works
+        // Convert negative values into (year, month, day)
+        let mut year = ns / NANOS_PER_YEAR;
         ns %= NANOS_PER_YEAR;
 
-        let month = (ns / NANOS_PER_MONTH) as u8 + 1;
+        if ns < 0 {
+            ns += NANOS_PER_YEAR;
+            year -= 1;
+        }
+
+        let mut month = ns / NANOS_PER_MONTH;
         ns %= NANOS_PER_MONTH;
 
-        let day = (ns / NANOS_PER_DAY) as u8 + 1;
+        if ns < 0 {
+            ns += NANOS_PER_MONTH;
+            month -= 1;
+        }
 
-        SimDate { year, month, day }
+        let day = ns / NANOS_PER_DAY;
+
+        SimDate {
+            year: year as i32,
+            month: (month as u8) + 1,
+            day: (day as u8) + 1,
+        }
     }
 
     pub fn format_rfc3339(&self) -> String {

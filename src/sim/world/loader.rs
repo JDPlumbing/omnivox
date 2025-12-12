@@ -30,7 +30,11 @@ pub async fn load_world(
         id: world_id,
         name: meta_rec.name.clone(),
         description: meta_rec.description.clone(),
-        world_epoch: meta_rec.world_epoch.map(SimTime::from_ns),
+        world_epoch: meta_rec.world_epoch
+            .as_ref()
+            .and_then(|s| s.parse::<i128>().ok())
+            .map(SimTime::from_ns),
+
     };
 
     //
