@@ -24,7 +24,8 @@ pub use worlds::{list_worlds_handler,
                 patch_world_handler, 
                 delete_world_handler, 
                 get_world_stats,
-                world_time_now};
+                world_time_now,
+                set_world_epoch};
 
 // --- Simulations API ---
 mod simulations;
@@ -54,8 +55,8 @@ pub use events::{
 };
 
 // --- Address API ---
-mod address;
-pub use address::*;
+mod location;
+pub use location::*;
 
 // --- Properties API ---
 mod properties;
@@ -85,12 +86,6 @@ mod viewer;
 use viewer::viewer_routes;
 
 
-
-
-
-
-
-
 pub fn api_router(app_state: AppState) -> Router {
     // Users routes
     let users_routes = Router::new()
@@ -108,7 +103,9 @@ pub fn api_router(app_state: AppState) -> Router {
                 .delete(delete_world_handler),
         )
         .route("/{world_id}/stats", get(get_world_stats))
-        .route("/{world_id}/time/now", get(world_time_now));
+        .route("/{world_id}/time/now", get(world_time_now))
+        .route("/{worlds_id}/epoch/set", post(set_world_epoch))
+;
 
     let simulations_routes = simulations::routes();
 
@@ -132,16 +129,7 @@ pub fn api_router(app_state: AppState) -> Router {
                 .delete(delete_event),
         );
 
-    let address_routes = Router::new()
-        .route("/", get(list_addresses).post(create_address))
-        .route(
-            "/{id}",
-            get(get_address)
-                .put(update_address)
-                .patch(patch_address)
-                .delete(delete_address),
-        )
-        .route("/{id}/resolve", post(resolve_address));
+    let location_routes = location::location_routes();
 
     let property_routes = Router::new()
         .route("/", get(list_properties).post(create_property))
@@ -172,7 +160,7 @@ pub fn api_router(app_state: AppState) -> Router {
         .route("/ping", get(|| async { "pong" }))
         .nest("/auth", auth_routes)
         .route("/session/init", get(init_session))
-        .nest("/address", address_routes)
+        .nest("/location", location_routes)
         .nest("/properties", property_routes)
         .nest("/users", users_routes)
         .nest("/worlds", worlds_routes)
