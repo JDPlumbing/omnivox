@@ -21,7 +21,7 @@ pub use geolocations::GeolocationRecord;
 // worlds: only re-export the low-level DB functions
 // src/supabasic/mod.rs
 pub use self::worlds::WorldRow;
-pub use self::worlds::NewWorld as NewWorldRow;
+pub use self::worlds::NewWorldRow;
 
 // simulations: just re-export the model
 pub use simulations::SimulationRow;

@@ -2,7 +2,8 @@ use crate::core::{
     chronovox::ChronoEvent,
     objex::core::Objex,
     objex::systems::optical::{derive_optical, OpticalProps},
-    objex::matcat::materials::{props_for, default_props},
+    objex::matcat::materials::{props_for},
+    objex::matcat::properties::{default_props},
 };
 use crate::engine::{
     systems::System,

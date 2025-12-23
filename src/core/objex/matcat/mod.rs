@@ -13,13 +13,18 @@ pub mod materials;
 pub mod category_ranges;
 pub mod api;
 pub mod grades;
-
-pub use materials::{
-    MatCatId,
-    MatProps,
-    props_for,
-    find_closest_material,
+pub mod properties;
+pub use categories::{
+    CategoryId,
 };
+pub use variants::{
+    VariantId,
+}; 
+pub use grades::{
+    GradeId,
+};
+pub use properties::*;
+pub use materials::*;
 
 pub use category_ranges::*;
 /*

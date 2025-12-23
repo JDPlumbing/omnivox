@@ -1,5 +1,6 @@
 use rand::Rng;
-use crate::core::objex::matcat::materials::MatProps;
+use crate::core::objex::matcat::properties::MatProps;
+
 
 pub struct PropRange {
     // Mechanical
@@ -608,7 +609,7 @@ let mut props = MatProps {
 }
 /// Normalize numeric properties to bring all values into expected ranges.
 /// Useful for clamping noisy random data.
-fn normalize_props(props: &mut crate::core::objex::matcat::materials::MatProps) {
+fn normalize_props(props: &mut crate::core::objex::matcat::properties::MatProps) {
     use num_traits::clamp;
 
     props.density = clamp(props.density, 0.0, 2.5e4);

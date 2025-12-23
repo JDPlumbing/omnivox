@@ -1,5 +1,12 @@
 
-use crate::core::objex::matcat::{MatCatId, MatProps, props_for};
+use crate::core::objex::matcat::{MatCatId,
+                                CategoryId,
+                                VariantId,
+                                GradeId,
+};
+use crate::core::objex::matcat::properties::{MatProps};
+use crate::core::objex::matcat::materials::props_for;
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -52,7 +59,11 @@ impl MaterialLink {
 impl MaterialLink {
     pub fn new(name: MaterialName) -> Self {
         let matcat_id = MatCatId::from_name(&name)
-            .unwrap_or_else(|| MatCatId { category: 0, variant: 0, grade: 0 });
+            .unwrap_or_else(|| MatCatId { 
+                category: CategoryId(0), 
+                variant: Some(VariantId(0)), 
+                grade: Some(GradeId(0)    
+            ) });
 
         // Infer kind automatically
         let kind = match name {

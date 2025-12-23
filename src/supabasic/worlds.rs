@@ -52,7 +52,7 @@ impl WorldRow {
     }
 
     /// Insert a new world
-    pub async fn create(supa: &Supabase, payload: &NewWorld) -> Result<Self, SupabasicError> {
+    pub async fn create(supa: &Supabase, payload: &NewWorldRow) -> Result<Self, SupabasicError> {
         let rows: Vec<Self> = supa
             .from(Self::table())
             .insert(payload)
@@ -68,7 +68,7 @@ impl WorldRow {
 
 /// Payload for creating new worlds
 #[derive(Debug, Serialize, Deserialize)]
-pub struct NewWorld {
+pub struct NewWorldRow {
     pub world_id: WorldId,
     pub name: Option<String>,
     pub description: Option<String>,

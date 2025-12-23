@@ -4,7 +4,8 @@ use crate::core::{
         interaction::{restitution as compute_restitution, damage},
         energy::kinetic_energy,
     },
-    objex::matcat::materials::{props_for, restitution_from_props},
+    objex::matcat::materials::{props_for},
+    objex::matcat::properties::restitution_from_props,
     uvoxid::units::{um_to_m, um_to_cm, HumanLength},
 };
 

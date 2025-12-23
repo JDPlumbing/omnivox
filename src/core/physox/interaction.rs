@@ -1,6 +1,6 @@
 //! Material interactions: restitution, damage, and energy exchange.
 
-use crate::core::objex::matcat::materials::MatProps;
+use crate::core::objex::matcat::properties::MatProps;
 
 /// Calculate combined restitution (bounciness) between two materials.
 pub fn restitution(a: &MatProps, b: &MatProps) -> f32 {

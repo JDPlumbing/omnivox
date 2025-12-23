@@ -6,7 +6,7 @@ use axum::{
 };
 use serde_json::json;
 
-use crate::supabasic::worlds::{WorldRow, NewWorld};
+use crate::supabasic::worlds::{WorldRow, NewWorldRow};
 use crate::supabasic::events::EventRow;
 use crate::shared::app_state::AppState;
 use crate::core::id::WorldId;
@@ -98,7 +98,7 @@ pub async fn get_world_handler(State(app): State<AppState>, Path(world_id): Path
 // ------------------------------------------------------------
 // POST /worlds
 // ------------------------------------------------------------
-pub async fn create_world_handler(State(app): State<AppState>, Json(payload): Json<NewWorld>) -> impl IntoResponse {
+pub async fn create_world_handler(State(app): State<AppState>, Json(payload): Json<NewWorldRow>) -> impl IntoResponse {
     match WorldRow::create(&app.supa, &payload).await {
         Ok(row) => {
             let dto = WorldDto::from(row);

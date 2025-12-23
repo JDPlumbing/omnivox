@@ -1,74 +1,85 @@
 use std::collections::HashMap;
 use once_cell::sync::Lazy;
+use crate::core::objex::matcat::categories::CategoryId;
+use crate::core::objex::matcat::variants::VariantId;
+use serde::{Serialize, Deserialize};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct GradeId(pub u16);
 /// Grade tiers for each (category, variant) combination.
 /// Represented by the last 2 bytes of MatCatId.
-pub static GRADE_MAP: Lazy<HashMap<(u8, u16, u16), &'static str>> = Lazy::new(|| {
+pub static GRADE_MAP: Lazy<HashMap<(CategoryId, VariantId, GradeId), &'static str>> = Lazy::new(|| {
     let mut m = HashMap::new();
 
     // Metals - Steel
-    m.insert((1, 1, 1), "A36 Structural");
-    m.insert((1, 1, 2), "304 Stainless");
-    m.insert((1, 1, 3), "4140 Alloy");
-    m.insert((1, 1, 4), "Tool Steel");
+    m.insert((CategoryId(1), VariantId(1), GradeId(1)), "A36 Structural");
+    m.insert((CategoryId(1), VariantId(1), GradeId(2)), "304 Stainless");
+    m.insert((CategoryId(1), VariantId(1), GradeId(3)), "4140 Alloy");
+    m.insert((CategoryId(1), VariantId(1), GradeId(4)), "Tool Steel");
 
     // Metals - Aluminum
-    m.insert((1, 2, 1), "6061-T6");
-    m.insert((1, 2, 2), "7075-T6");
-    m.insert((1, 2, 3), "1100 Pure");
+    m.insert((CategoryId(1), VariantId(2), GradeId(1)), "6061-T6");
+    m.insert((CategoryId(1), VariantId(2), GradeId(2)), "7075-T6");
+    m.insert((CategoryId(1), VariantId(2), GradeId(3)), "1100 Pure");
 
     // Metals - Copper
-    m.insert((1, 3, 1), "C110 Electrolytic Tough Pitch");
-    m.insert((1, 3, 2), "C122 Phosphor Deoxidized");
+    m.insert((CategoryId(1), VariantId(3), GradeId(1)), "C110 Electrolytic Tough Pitch");
+    m.insert((CategoryId(1), VariantId(3), GradeId(2)), "C122 Phosphor Deoxidized");
 
     // Concrete
-    m.insert((9, 1, 1), "M20");
-    m.insert((9, 1, 2), "M25");
-    m.insert((9, 1, 3), "M40");
+    m.insert((CategoryId(9), VariantId(1), GradeId(1)), "M20");
+    m.insert((CategoryId(9), VariantId(1), GradeId(2)), "M25");
+    m.insert((CategoryId(9), VariantId(1), GradeId(3)), "M40");
 
     // Wood
-    m.insert((3, 1, 1), "Construction Grade");
-    m.insert((3, 1, 2), "Select Structural");
-    m.insert((3, 1, 3), "Cabinet Grade");
+    m.insert((CategoryId(3), VariantId(1), GradeId(1)), "Construction Grade");
+    m.insert((CategoryId(3), VariantId(1), GradeId(2)), "Select Structural");
+    m.insert((CategoryId(3), VariantId(1), GradeId(3)), "Cabinet Grade");
 
     // Plastics - PVC
-    m.insert((2, 1, 1), "Schedule 40");
-    m.insert((2, 1, 2), "Schedule 80");
+    m.insert((CategoryId(2), VariantId(1), GradeId(1)), "Schedule 40");
+    m.insert((CategoryId(2), VariantId(1), GradeId(2)), "Schedule 80");
 
     // Composites
-    m.insert((4, 1, 1), "Standard Modulus");
-    m.insert((4, 1, 2), "High Modulus");
-    m.insert((4, 1, 3), "Ultra-High Modulus");
+    m.insert((CategoryId(4), VariantId(1), GradeId(1)), "Standard Modulus");
+    m.insert((CategoryId(4), VariantId(1), GradeId(2)), "High Modulus");
+    m.insert((CategoryId(4), VariantId(1), GradeId(3)), "Ultra-High Modulus");
 
     // Glass
-    m.insert((5, 1, 1), "Annealed");
-    m.insert((5, 1, 2), "Tempered");
-    m.insert((5, 1, 3), "Laminated");
+    m.insert((CategoryId(5), VariantId(1), GradeId(1)), "Annealed");
+    m.insert((CategoryId(5), VariantId(1), GradeId(2)), "Tempered");
+    m.insert((CategoryId(5), VariantId(1), GradeId(3)), "Laminated");
 
     // Ceramics
-    m.insert((6, 1, 1), "Low-Fire");
-    m.insert((6, 1, 2), "Mid-Fire");
-    m.insert((6, 1, 3), "High-Fire");
+    m.insert((CategoryId(6), VariantId(1), GradeId(1)), "Low-Fire");
+    m.insert((CategoryId(6), VariantId(1), GradeId(2)), "Mid-Fire");
+    m.insert((CategoryId(6), VariantId(1), GradeId(3)), "High-Fire");
 
     // Rubbers
-    m.insert((8, 1, 1), "Soft");
-    m.insert((8, 1, 2), "Medium");
-    m.insert((8, 1, 3), "Hard");
+    m.insert((CategoryId(8), VariantId(1), GradeId(1)), "Soft");
+    m.insert((CategoryId(8), VariantId(1), GradeId(2)), "Medium");
+    m.insert((CategoryId(8), VariantId(1), GradeId(3)), "Hard");
 
     // Plasma
-    m.insert((26, 1, 1), "Default Stellar");
+    m.insert((CategoryId(26), VariantId(1), GradeId(1)), "Default Stellar");
 
     // Water
-    m.insert((27, 1, 1), "Freshwater Standard");
-    m.insert((27, 2, 1), "Saltwater Standard");
-
-    // General fallback tiers for any category/variant
-    for cat in 1..=27 {
-        for var in 1..=5 {
-            m.entry((cat, var, 99)).or_insert("Standard Grade");
-            m.entry((cat, var, 100)).or_insert("High Grade");
-        }
-    }
+    m.insert((CategoryId(27), VariantId(1), GradeId(1)), "Freshwater Standard");
+    m.insert((CategoryId(27), VariantId(2), GradeId(1)), "Saltwater Standard");
 
     m
 });
+
+
+impl GradeId {
+    pub fn name(self, category: CategoryId, variant: VariantId) -> &'static str {
+        GRADE_MAP
+            .get(&(category, variant, self))
+            .copied()
+            .unwrap_or("Generic")
+    }
+    pub fn exists(self, category: CategoryId, variant: VariantId) -> bool {
+        GRADE_MAP.contains_key(&(category, variant, self))
+    }
+}
+
