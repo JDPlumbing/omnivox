@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
 use crate::core::uvoxid::{UvoxId, LatCode, LonCode, RUm};
-use crate::sim::components::quaternion::QuaternionLocal;
+use crate::engine::components::quaternion::QuaternionLocal;
 use crate::core::id::UserId;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

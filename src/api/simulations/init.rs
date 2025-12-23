@@ -11,7 +11,7 @@ use uuid::Uuid;
 use chrono::Utc;
 
 use crate::shared::app_state::AppState;
-use crate::sim::entities::SimEntity;
+use crate::engine::entities::SimEntity;
 use crate::supabasic::entity::EntityRow;
 
 use crate::core::tdt::sim_duration::SimDuration;

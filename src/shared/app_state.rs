@@ -4,7 +4,7 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::supabasic::Supabase;
-use crate::sim::simulations::runtime::SimulationManager;
+use crate::engine::simulations::runtime::SimulationManager;
 use crate::core::UserId;
 use crate::shared::viewer_state::ViewerRegistry;
 

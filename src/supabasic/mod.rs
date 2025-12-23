@@ -28,7 +28,7 @@ pub use simulations::SimulationRow;
 
 // optionally, if you want to reach into sim layer directly
 
-pub use crate::sim::World;
+pub use crate::engine::World;
 pub mod events;
 
 use crate::supabasic::{properties::PropertyRecord, events::EventRow};

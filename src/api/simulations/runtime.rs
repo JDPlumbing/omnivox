@@ -7,7 +7,7 @@ use serde_json::json;
 use axum::http::StatusCode;
 
 use crate::shared::app_state::AppState;
-use crate::sim::simulations::simulation_config::SimulationConfig;
+use crate::engine::simulations::simulation_config::SimulationConfig;
 use crate::core::id::{WorldId, UvoxRegionId, UserId};
 use crate::supabasic::worlds::WorldRow;
 //

@@ -10,11 +10,11 @@ use crate::{
     shared::app_state::AppState,
     shared::viewer_state::{ViewerRegistry, CameraState},
     core::id::UserId,
-    sim::systems::movement::camera::CameraDelta,
-    sim::systems::movement::camera::update_camera_from_delta,
+    engine::systems::movement::camera::CameraDelta,
+    engine::systems::movement::camera::update_camera_from_delta,
 };
 
-use crate::sim::math::orientation::compute_global_orientation;
+use crate::engine::math::orientation::compute_global_orientation;
 
 #[derive(Serialize)]
 pub struct CameraStateResponse {
