@@ -47,7 +47,7 @@ impl System for CorrosionSystem {
             //---------------------------------------------------------
             // Material properties — NO Option!
             //---------------------------------------------------------
-            let mat_id = &entity.material().matcat_id;
+            let mat_id = &entity.material();
             let mat_props = props_for(mat_id);
 
             //---------------------------------------------------------

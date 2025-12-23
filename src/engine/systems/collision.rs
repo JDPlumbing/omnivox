@@ -97,7 +97,7 @@ impl System for CollisionSystem {
                     let pre_speed = v.dr.abs();
                     let mut fractured = false;
 
-                    let mat_id = entity.material().matcat_id;
+                    let mat_id = entity.material();
                     let props = props_for(&mat_id);
                     let restitution = restitution_from_props(&props);
 

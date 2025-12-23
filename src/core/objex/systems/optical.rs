@@ -21,7 +21,7 @@ pub fn derive_optical(obj: &Objex) -> OpticalProps {
     // -------------------------------
     // Material optical properties
     // -------------------------------
-    let mat = props_for(&obj.material.matcat_id);
+    let mat = props_for(&obj.material);
 
     // -------------------------------
     // Geometry

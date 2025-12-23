@@ -19,7 +19,7 @@ pub fn derive_mass(obj: &Objex) -> MassProps {
     // -------------------------
     // Material density (kg/m³)
     // -------------------------
-    let mat_props = props_for(&obj.material.matcat_id);
+    let mat_props = props_for(&obj.material);
     let density   = mat_props.density as f64;
 
     // -------------------------

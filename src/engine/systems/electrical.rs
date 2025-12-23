@@ -28,7 +28,7 @@ impl System for ElectricalSystem {
             //---------------------------------------------------------
             // Material properties (MatProps)
             //---------------------------------------------------------
-            let mat_id = &entity.material().matcat_id;
+            let mat_id = &entity.material();
             let mat_props = props_for(mat_id);
 
             //---------------------------------------------------------

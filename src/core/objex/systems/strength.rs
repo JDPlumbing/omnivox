@@ -17,7 +17,7 @@ pub struct StrengthProps {
 /// Geometry comes from Shape traits.
 pub fn derive_strength(obj: &Objex) -> StrengthProps {
     // Material props (always present)
-    let mat_props = props_for(&obj.material.matcat_id);
+    let mat_props = props_for(&obj.material);
 
     // Geometry
     let area   = obj.shape.surface_area();
@@ -33,6 +33,6 @@ pub fn derive_strength(obj: &Objex) -> StrengthProps {
 
 /// True if applied stress (MPa) exceeds tensile strength.
 pub fn will_fail(obj: &Objex, applied_stress_mpa: f32) -> bool {
-    let props = props_for(&obj.material.matcat_id);
+    let props = props_for(&obj.material);
     applied_stress_mpa > props.tensile_strength
 }

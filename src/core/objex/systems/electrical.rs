@@ -18,7 +18,7 @@ pub fn derive_electrical(obj: &Objex) -> ElectricalProps {
     // --------------------------
     // Material electrical props
     // --------------------------
-    let mat_props = props_for(&obj.material.matcat_id);
+    let mat_props = props_for(&obj.material);
 
     let conductivity = mat_props.electrical_conductivity; 
     let resistivity = if conductivity > 0.0 {

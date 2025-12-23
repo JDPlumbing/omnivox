@@ -22,6 +22,7 @@ pub static CATEGORY_MAP: Lazy<HashMap<CategoryId, &'static str>> = Lazy::new(|| 
     m.insert(CategoryId(10), "Wood");
     m.insert(CategoryId(11), "Bamboo");
     m.insert(CategoryId(12), "Cork");
+    
     // 🧬 Synthetic / Processed
     m.insert(CategoryId(13), "Plastic");
     m.insert(CategoryId(14), "Rubber");

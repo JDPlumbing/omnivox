@@ -28,7 +28,7 @@ impl System for MechanicalSystem {
             //---------------------------------------------------------
             // Fetch MatProps (physics material properties)
             //---------------------------------------------------------
-            let mat_id = &entity.material().matcat_id;
+            let mat_id = &entity.material();
             let mat_props = props_for(mat_id);
 
             //---------------------------------------------------------

@@ -25,7 +25,7 @@ impl CompositeObject {
         self.layers
             .iter()
             .map(|obj| {
-                let mat_id = obj.material.matcat_id;
+                let mat_id = obj.material; // ✅ FIXED
                 let props = props_for(&mat_id);
 
                 let density = props.density as f64;
@@ -45,7 +45,7 @@ impl CompositeObject {
         let sum: f32 = self.layers
             .iter()
             .map(|obj| {
-                let mat_id = obj.material.matcat_id;
+                let mat_id = obj.material; // ✅ FIXED
                 let props = props_for(&mat_id);
 
                 props.thermal_conductivity
@@ -60,7 +60,7 @@ impl CompositeObject {
         self.layers
             .iter()
             .map(|obj| {
-                let mat_id = obj.material.matcat_id;
+                let mat_id = obj.material; // ✅ FIXED
                 let props = props_for(&mat_id);
 
                 props.tensile_strength

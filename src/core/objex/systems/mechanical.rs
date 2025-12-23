@@ -19,7 +19,7 @@ pub fn derive_mechanical(obj: &Objex) -> MechanicalProps {
     // -------------------------------
     // Material properties
     // -------------------------------
-    let mat = props_for(&obj.material.matcat_id);  // <-- correct fix
+    let mat = props_for(&obj.material);  // <-- correct fix
 
     // -------------------------------
     // Geometry

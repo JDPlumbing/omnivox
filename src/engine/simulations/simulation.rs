@@ -3,8 +3,9 @@ use chrono::{Duration, Utc};
 use crate::core::id::{WorldId, SimulationId, UserId};
 use crate::core::id::UvoxRegionId;
 
-use crate::core::objex::core::{MaterialLink, Objex};
+use crate::core::objex::core::{Objex};
 use crate::core::objex::geospec::shapes::Shape;
+use crate::core::objex::matcat::materials::MatCatId;
 
 use crate::core::tdt::sim_time::SimTime;
 use crate::core::tdt::sim_duration::SimDuration;
@@ -73,7 +74,8 @@ impl Simulation {
         let boot_id: EntityId = world_state.allocate_entity_id();
         let blueprint = Objex {
             shape: Shape::default_box(),
-            material: MaterialLink::vacuum(),
+            material: MatCatId::category_only(0),
+
         };
 
         let initial_pos = UvoxId::earth_surface(LatCode(0), LonCode(0));
@@ -151,7 +153,8 @@ impl Simulation {
         let boot_id = world_state.allocate_entity_id();
         let blueprint = Objex {
             shape: Shape::default_box(),
-            material: MaterialLink::vacuum(),
+            material: MatCatId::category_only(0),
+
         };
 
         let initial_pos = cfg.region.min;

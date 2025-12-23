@@ -24,7 +24,7 @@ pub fn derive_thermal(obj: &Objex) -> ThermalProps {
     // ----------------------------
     // Material properties
     // ----------------------------
-    let mat_props = props_for(&obj.material.matcat_id);
+    let mat_props = props_for(&obj.material);
 
     // ----------------------------
     // Geometry

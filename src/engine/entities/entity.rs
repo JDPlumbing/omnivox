@@ -9,7 +9,11 @@ use crate::core::objex::core::material::MaterialLink;
 use crate::core::id::{EntityId, WorldId};
 use crate::core::SimTime;
 use crate::engine::UvoxQuat;
+use crate::core::objex::matcat::materials::MatCatId;
 
+/// -------------------------------------------------------------------
+/// In-memory representation of a simulated entity
+/// -------------------------------------------------------------------
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimEntity {
     pub id: EntityId,
@@ -82,7 +86,10 @@ impl SimEntity {
         &self.template.shape
     }
 
-    pub fn material(&self) -> &MaterialLink {
+
+
+    pub fn material(&self) -> &MatCatId {
         &self.template.material
     }
+
 }

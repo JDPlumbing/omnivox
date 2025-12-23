@@ -22,7 +22,7 @@ pub fn derive_degradation(obj: &Objex) -> DegradationProps {
     // ------------------------------
     // Material degradation data
     // ------------------------------
-    let mat_id = obj.material.matcat_id;   // MatCatId (not Option)
+    let mat_id = obj.material;   // MatCatId (not Option)
     let mat_props = props_for(&mat_id);
 
     // ------------------------------
