@@ -16,6 +16,7 @@ pub enum Shape {
     Box(BoxShape),
     Cylinder(Cylinder),
     Cone(Cone),
+    //Polygon(Vec<[f64; 3]>), // list of vertices
 }
 
 impl Default for Shape {
@@ -47,6 +48,15 @@ impl Shape {
             height: 1.0,
         })
     }
+
+    pub fn default_cone() -> Self {
+        Shape::Cone(Cone {
+            radius: 1.0,
+            height: 1.0,
+        })
+    }
+
+    
 }
 
 /// ---------------------------------------------------------------------------
@@ -310,6 +320,22 @@ impl Volume for Shape {
             Shape::Plane(_)     => 0.0, // 2D object
             Shape::Line(_)      => 0.0, // 1D object
             Shape::Point(_)     => 0.0, // 0D object
+        }
+    }
+}
+
+
+
+impl Dimensions for Shape {
+    fn as_json(&self) -> serde_json::Value {
+        match self {
+            Shape::Point(p)     => p.as_json(),
+            Shape::Line(l)      => l.as_json(),
+            Shape::Plane(p)     => p.as_json(),
+            Shape::Sphere(s)    => s.as_json(),
+            Shape::Box(b)       => b.as_json(),
+            Shape::Cylinder(c)  => c.as_json(),
+            Shape::Cone(c)      => c.as_json(),
         }
     }
 }

@@ -71,7 +71,7 @@ pub use properties::{
 
 // --- Session API ---
 mod session;
-pub use session::init_session;
+pub use session::{init_session, session_status};
 
 // --- Pages API ---
 mod pages;
@@ -85,6 +85,10 @@ use auth::{login::login, verify::verify_session, refresh::refresh_token};
 mod viewer;
 use viewer::viewer_routes;
 
+mod objex;
+use objex::materials::material_routes;
+
+use objex::geometry::geometry_routes;
 
 pub fn api_router(app_state: AppState) -> Router {
     // Users routes
@@ -104,7 +108,7 @@ pub fn api_router(app_state: AppState) -> Router {
         )
         .route("/{world_id}/stats", get(get_world_stats))
         .route("/{world_id}/time/now", get(world_time_now))
-        .route("/{worlds_id}/epoch/set", post(set_world_epoch))
+        .route("/{world_id}/epoch/set", post(set_world_epoch))
 ;
 
     let simulations_routes = simulations::routes();
@@ -160,12 +164,16 @@ pub fn api_router(app_state: AppState) -> Router {
         .route("/ping", get(|| async { "pong" }))
         .nest("/auth", auth_routes)
         .route("/session/init", get(init_session))
+        .route("/session/status", get(session_status))
+
         .nest("/location", location_routes)
         .nest("/properties", property_routes)
         .nest("/users", users_routes)
         .nest("/worlds", worlds_routes)
         .nest("/simulations", simulations_routes)
         .nest("/entities", entities_routes)
+        .nest("/objex/materials", material_routes())
+        .nest("/objex/geometry", geometry_routes())
         .nest("/events", events_routes)
         .nest("/time", time_routes)
         .nest("/pages", pages_routes)

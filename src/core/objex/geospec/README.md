@@ -1,6 +1,6 @@
 # geospec Module
 
-The `geospec` module provides geometric primitives, traits, and inference utilities for representing and working with basic shapes in simulations and scientific applications. It enables calculation of surface area, volume, and serialization of geometric data, as well as inferring missing properties from partial JSON input.
+The `geospec` ( GEOmetric SPECification) module provides geometric primitives, traits, and inference utilities for representing and working with basic shapes in simulations and scientific applications. It enables calculation of surface area, volume, and serialization of geometric data, as well as inferring missing properties from partial JSON input.
 
 ## Features
 

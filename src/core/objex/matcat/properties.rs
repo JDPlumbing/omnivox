@@ -1,6 +1,8 @@
+use serde::{Serialize, Deserialize};
+
 /// Canonical material property set.
 /// Physics consumes this. Identity does not.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MatProps {
     // --- Mechanical ---
     pub density: f32,              // kg/m³
