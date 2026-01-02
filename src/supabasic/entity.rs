@@ -10,6 +10,7 @@ use crate::supabasic::orm::DbModel;
 //use crate::core::uvoxid::UvoxId;
 use crate::engine::entity::SimEntity;
 use crate::core::SimTime;
+use crate::core::sim_time::{ deserialize_simtime, deserialize_simtime_opt } ;
 
 
 /// ---------------------------------------------------------------------------
@@ -18,19 +19,24 @@ use crate::core::SimTime;
 /// ---------------------------------------------------------------------------
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EntityRow {
-    pub id: EntityId,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub row_id: Option<Uuid>,   // ← // DB identity ONLY
 
     pub world_id: WorldId,
 
-    pub template: Value,   // inline Objex
-    pub position: Value,      // inline UvoxId
-    pub orientation: Value, // inline UvoxQuat
+    pub template: Value,
+    pub position: Value,
+    pub orientation: Value,
 
+    #[serde(deserialize_with = "deserialize_simtime")]
     pub spawned_at: SimTime,
+
+    #[serde(deserialize_with = "deserialize_simtime_opt")]
     pub despawned_at: Option<SimTime>,
 
     pub metadata: Value,
 }
+
 
 impl DbModel for EntityRow {
     fn table() -> &'static str { "sim_entities" }
@@ -43,7 +49,8 @@ impl DbModel for EntityRow {
 impl From<&SimEntity> for EntityRow {
     fn from(e: &SimEntity) -> Self {
         EntityRow {
-            id: e.id,
+            
+            row_id: None, // ← let Postgres generate it
 
             world_id: e.world_id,
 
@@ -58,13 +65,13 @@ impl From<&SimEntity> for EntityRow {
         }
     }
 }
-
 impl TryFrom<EntityRow> for SimEntity {
     type Error = serde_json::Error;
 
     fn try_from(r: EntityRow) -> Result<Self, Self::Error> {
         Ok(SimEntity {
-            id: r.id,
+            id: EntityId::provisional(0), // or allocator.next()
+
             world_id: r.world_id,
 
             template: serde_json::from_value(r.template)?,
@@ -73,7 +80,6 @@ impl TryFrom<EntityRow> for SimEntity {
 
             spawned_at: r.spawned_at,
             despawned_at: r.despawned_at,
-
 
             metadata: r.metadata,
         })
@@ -96,7 +102,8 @@ impl EntityRow {
 
         let raw = supa
             .from(Self::table())
-            .insert(payload)
+            .insert_raw(payload)
+            
             .select("*")
             .execute()
             .await?;
@@ -116,7 +123,8 @@ impl EntityRow {
     {
         supa.from(Self::table())
             .select("*")
-            .eq("entity_id", &id.to_string())
+            .eq("row_id", &id.to_string())
+
             .single_typed()
             .await
     }

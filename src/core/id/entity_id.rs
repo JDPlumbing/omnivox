@@ -38,3 +38,13 @@ impl FromStr for EntityId {
         })
     }
 }
+
+impl EntityId {
+    /// TEMP: used only during early prototyping
+    pub fn provisional(index: u32) -> Self {
+        Self {
+            index,
+            generation: 0,
+        }
+    }
+}

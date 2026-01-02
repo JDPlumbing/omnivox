@@ -34,11 +34,12 @@ pub use simulations::{list_simulations, get_simulation, create_simulation};
 // --- Entities API (NEW, replaces objex API) ---
 mod entities;
 pub use entities::{
-    create_entity,
+    //create_entity,
     get_entity,
     list_entities,
     list_entities_for_world,
     delete_entity,
+    create_entities,
 };
 
 // --- Events API ---
@@ -71,7 +72,7 @@ pub use properties::{
 
 // --- Session API ---
 mod session;
-pub use session::{init_session, session_status};
+pub use session::{init_session, session_status, set_session_world};
 
 // --- Pages API ---
 mod pages;
@@ -109,12 +110,13 @@ pub fn api_router(app_state: AppState) -> Router {
         .route("/{world_id}/stats", get(get_world_stats))
         .route("/{world_id}/time/now", get(world_time_now))
         .route("/{world_id}/epoch/set", post(set_world_epoch))
+        
 ;
 
     let simulations_routes = simulations::routes();
 
     let entities_routes = Router::new()
-        .route("/", get(list_entities).post(create_entity))
+        .route("/", get(list_entities).post(create_entities))
         .route("/world/{world_id}", get(list_entities_for_world))
         .route(
             "/{entity_id}",
@@ -165,6 +167,8 @@ pub fn api_router(app_state: AppState) -> Router {
         .nest("/auth", auth_routes)
         .route("/session/init", get(init_session))
         .route("/session/status", get(session_status))
+        .route("/session/world", post(set_session_world))
+
 
         .nest("/location", location_routes)
         .nest("/properties", property_routes)

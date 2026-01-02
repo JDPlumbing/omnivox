@@ -12,11 +12,16 @@ use crate::engine::entity::SimEntity;
 use crate::supabasic::entity::EntityRow;
 //use crate::core::objex::Objex;
 use crate::core::id::world_id::WorldId;
+use crate::engine::entity::CreateSimEntity;
+use crate::core::UvoxId;
+use crate::core::objex::Objex;
+use crate::core::id::EntityId;
 
 // ------------------------------------------------------------
 // POST /api/entities
 // Create a new SimEntity
 // ------------------------------------------------------------
+/*
 pub async fn create_entity(
     State(app): State<AppState>,
     Json(entity): Json<SimEntity>,
@@ -24,13 +29,49 @@ pub async fn create_entity(
     let objex_id = Uuid::new_v4(); // optional: if you later add objex table
 
     match EntityRow::insert(&app.supa, &entity).await {
-        Ok(rec) => Json(json!({ "id": rec.id })).into_response(),
+        Ok(rec) => Json(json!({ "row_id": rec.row_id })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": format!("{e:?}") })),
         )
             .into_response(),
     }
+}
+*/
+pub async fn create_entities(
+    State(app): State<AppState>,
+    Json(payload): Json<Vec<CreateSimEntity>>,
+) -> impl IntoResponse {
+    let mut created = Vec::new();
+
+    for req in payload {
+        let entity = SimEntity {
+            id: EntityId::provisional(0),
+           // TODO: EntityId allocation must move to engine allocator
+            // This provisional ID is replaced after DB insert
+
+            world_id: req.world_id,
+            template: req.template,
+            position: req.position,
+            orientation: req.orientation,
+            spawned_at: req.spawned_at,
+            despawned_at: None,
+            metadata: req.metadata,
+        };
+
+        match EntityRow::insert(&app.supa, &entity).await {
+            Ok(row) => created.push(row),
+            Err(e) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({ "error": format!("{e:?}") })),
+                )
+                    .into_response();
+            }
+        }
+    }
+
+    Json(created).into_response()
 }
 
 // ------------------------------------------------------------

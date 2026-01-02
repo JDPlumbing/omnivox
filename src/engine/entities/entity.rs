@@ -10,6 +10,7 @@ use crate::core::id::{EntityId, WorldId};
 use crate::core::SimTime;
 use crate::engine::UvoxQuat;
 use crate::core::objex::matcat::materials::MatCatId;
+use crate::core::tdt::sim_time::deserialize_simtime;
 
 /// -------------------------------------------------------------------
 /// In-memory representation of a simulated entity
@@ -92,4 +93,33 @@ impl SimEntity {
         &self.template.material
     }
 
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateSimEntity {
+    pub world_id: WorldId,
+    pub template: Objex,
+    pub position: UvoxId,
+    pub orientation: UvoxQuat,
+    #[serde(deserialize_with = "deserialize_simtime")]
+    pub spawned_at: SimTime,
+    pub metadata: serde_json::Value,
+}
+impl CreateSimEntity {
+    pub fn new(
+        world_id: WorldId,
+        template: Objex,
+        position: UvoxId,
+        orientation: UvoxQuat,
+        spawned_at: SimTime,
+    ) -> Self {
+        Self {
+            world_id,
+            template,
+            position,
+            orientation,
+            spawned_at,
+            metadata: serde_json::json!({}),
+        }
+    }
 }
