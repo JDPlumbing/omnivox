@@ -3,6 +3,9 @@ use crate::supabasic::orm::DbModel;
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use crate::core::WorldId;
+use crate::core::UvoxId;
+use crate::supabasic::geolocations::GeolocationRecord as GeoCoords;
 
 // ------------------------
 // Enums (core controlled vocab) 
@@ -108,6 +111,7 @@ pub struct Metadata {
     pub notes: Option<String>,
 }
 
+
 // ------------------------
 // Main PropertyRecord
 // ------------------------
@@ -117,9 +121,14 @@ pub struct PropertyRecord {
     // Core identity
     #[serde(skip_serializing_if = "Option::is_none")]
     pub property_id: Option<Uuid>,
+  
     pub address_id: Option<Uuid>,
     pub user_owner_id: Option<Uuid>,
-    pub world_id: Option<i64>, // 👈 NEW: link to world
+
+    pub anchor_uvox: serde_json::Value,
+
+    pub world_id: WorldId, // optional denormalization
+
     pub name: Option<String>,
     pub property_type: Option<PropertyType>,
 

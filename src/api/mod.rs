@@ -28,8 +28,8 @@ pub use worlds::{list_worlds_handler,
                 set_world_epoch};
 
 // --- Simulations API ---
-mod simulations;
-pub use simulations::{list_simulations, get_simulation, create_simulation};
+//mod simulations;
+//pub use simulations::{list_simulations, get_simulation, create_simulation};
 
 // --- Entities API (NEW, replaces objex API) ---
 mod entities;
@@ -43,8 +43,8 @@ pub use entities::{
 };
 
 // --- Events API ---
-mod events;
-pub use events::{
+//mod events;
+/*pub use events::{
     create_event,
     list_events,
     get_event,
@@ -54,6 +54,7 @@ pub use events::{
     list_events_for_sim,
     list_events_for_entity,
 };
+*/
 
 // --- Address API ---
 mod location;
@@ -82,14 +83,14 @@ pub use pages::{get_page, create_page, update_page, delete_page, list_pages};
 mod auth;
 use auth::{login::login, verify::verify_session, refresh::refresh_token};
 
-
+/*
 mod viewer;
 use viewer::viewer_routes;
-
+*/
 mod objex;
 use objex::materials::material_routes;
-
-use objex::geometry::geometry_routes;
+use objex::geospec::geospec_routes;
+use objex::templates::template_routes;
 
 pub fn api_router(app_state: AppState) -> Router {
     // Users routes
@@ -113,7 +114,7 @@ pub fn api_router(app_state: AppState) -> Router {
         
 ;
 
-    let simulations_routes = simulations::routes();
+    //let simulations_routes = simulations::routes();
 
     let entities_routes = Router::new()
         .route("/", get(list_entities).post(create_entities))
@@ -123,7 +124,7 @@ pub fn api_router(app_state: AppState) -> Router {
             get(get_entity).delete(delete_entity),
         );
 
-    let events_routes = Router::new()
+    /* let events_routes = Router::new()
         .route("/", get(list_events).post(create_event))
         .route("/sim/{simulation_id}", get(list_events_for_sim))
         .route("/entity/{entity_id}", get(list_events_for_entity))
@@ -134,7 +135,7 @@ pub fn api_router(app_state: AppState) -> Router {
                 .patch(patch_event)
                 .delete(delete_event),
         );
-
+    */
     let location_routes = location::location_routes();
 
     let property_routes = Router::new()
@@ -159,7 +160,7 @@ pub fn api_router(app_state: AppState) -> Router {
         .route("/refresh", post(refresh_token));
 
     let time_routes = time::time_routes();
-    let viewer_routes = viewer::viewer_routes();
+    //let viewer_routes = viewer::viewer_routes();
 
 
     Router::new()
@@ -174,14 +175,16 @@ pub fn api_router(app_state: AppState) -> Router {
         .nest("/properties", property_routes)
         .nest("/users", users_routes)
         .nest("/worlds", worlds_routes)
-        .nest("/simulations", simulations_routes)
+        //.nest("/simulations", simulations_routes)
         .nest("/entities", entities_routes)
         .nest("/objex/materials", material_routes())
-        .nest("/objex/geometry", geometry_routes())
-        .nest("/events", events_routes)
+        .nest("/objex/geospec", geospec_routes())
+        .nest("/objex", template_routes())
+        .nest("/geometry/templates", template_routes())
+        //.nest("/events", events_routes)
         .nest("/time", time_routes)
         .nest("/pages", pages_routes)
-        .nest("/viewer", viewer_routes)
+        //.nest("/viewer", viewer_routes)
 
         .with_state(app_state)
         .layer(

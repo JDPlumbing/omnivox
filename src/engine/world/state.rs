@@ -8,7 +8,7 @@ use crate::supabasic::events::EventRow;
 use crate::supabasic::worlds::WorldRow;
 
 use crate::engine::clock::SimClock;
-use crate::engine::components::SimComponents;
+//use crate::engine::components::SimComponents;
 use crate::core::tdt::sim_time::SimTime;
 use crate::core::tdt::sim_duration::SimDuration;
 
@@ -48,7 +48,7 @@ impl Default for World {
     }
 }
 
-
+/*
 /// -------------------------------------------------------------------
 /// In-memory simulation state for a running world
 /// -------------------------------------------------------------------
@@ -134,3 +134,5 @@ impl From<WorldRow> for World {
         }
     }
 }
+
+*/

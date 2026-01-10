@@ -34,41 +34,7 @@ pub mod events;
 use crate::supabasic::{properties::PropertyRecord, events::EventRow};
 use uuid::Uuid;
 
-impl Supabase {
-    pub async fn get_property_by_frame(&self, frame_id: i64) -> anyhow::Result<PropertyRecord> {
-        let res = self
-            .from("properties")
-            .select("*")
-            .eq("frame_id", &frame_id.to_string())
-
-            .single()
-            
-            .await?;
-
-        Ok(serde_json::from_value(res)?)
-    }
-
-    pub async fn list_entities_for_property(&self, property_id: Uuid) -> anyhow::Result<Vec<EntityRow>> {
-        let res = self
-            .from("objex_entities")
-            .select("*")
-            .eq("property_id", &property_id.to_string())
-            .execute()
-            .await?; // ✅ add await
+pub mod objex;
+pub use objex::*;
 
 
-
-        Ok(serde_json::from_value(res)?)
-    }
-
-    pub async fn list_events_for_property(&self, property_id: Uuid) -> anyhow::Result<Vec<EventRow>> {
-        let res = self
-            .from("events")
-            .select("*")
-            .eq("property_id", &property_id.to_string())
-            .execute()
-            .await?; // ✅ add await
-
-        Ok(serde_json::from_value(res)?)
-    }
-}

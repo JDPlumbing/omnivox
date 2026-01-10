@@ -142,3 +142,43 @@ impl EntityRow {
             .await
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn entityrow_deserializes_from_supabase_json() {
+        let raw = json!({
+            "row_id": "e729c3cc-e51d-4e03-a5dd-08669f359e3c",
+            "world_id": 1,
+            "template": {
+                "shape": { "Box": { "width": 1.0, "height": 1.0, "length": 1.0 } },
+                "material": { "category": 26, "variant": 0, "grade": 0 }
+            },
+            "position": {
+                "r_um": 6371000200000,
+                "lat_code": 2616481420000,
+                "lon_code": -8029963860000
+            },
+            "orientation": {
+                "w": 1.0,
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "spawned_at": "1767396172552334663",
+            "despawned_at": null,
+            "metadata": { "editor": true }
+        });
+
+        let row: EntityRow =
+            serde_json::from_value(raw).expect("EntityRow should deserialize");
+
+        assert_eq!(row.world_id, 1.into());
+        assert_eq!(row.spawned_at.0, 1767396172552334663i128);
+        assert!(row.despawned_at.is_none());
+    }
+}

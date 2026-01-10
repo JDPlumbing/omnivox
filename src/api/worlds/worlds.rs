@@ -7,9 +7,10 @@ use axum::{
 use serde_json::json;
 
 use crate::supabasic::worlds::{WorldRow, NewWorldRow};
-use crate::supabasic::events::EventRow;
+use crate::supabasic::entity::EntityRow;
 use crate::shared::app_state::AppState;
 use crate::core::id::WorldId;
+use crate::core::sim_time::SimTime;
 
 /// DTO returned to clients
 #[derive(serde::Serialize)]
@@ -20,7 +21,8 @@ pub struct WorldDto {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub events: Vec<EventRow>,
+    pub entities: Vec<EntityRow>,
+    pub world_epoch: Option<String>,
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -38,7 +40,8 @@ impl From<WorldRow> for WorldDto {
             created_at: w.created_at,
             updated_at: w.updated_at,
             deleted_at: w.deleted_at,
-            events: vec![],
+            entities: vec![],
+            world_epoch: w.world_epoch,
         }
     }
 }
@@ -51,11 +54,11 @@ pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoRespon
         Ok(rows) => {
             let mut result = Vec::new();
             for row in rows {
-                let events = EventRow::list_for_world(&app.supa, row.world_id)
+                let ents = EntityRow::list_for_world(&app.supa, row.world_id)
                     .await
                     .unwrap_or_default();
                 let mut dto = WorldDto::from(row);
-                dto.events = events;
+                dto.entities = ents;
                 result.push(dto);
             }
             Json(result).into_response()
@@ -77,11 +80,11 @@ pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoRespon
 pub async fn get_world_handler(State(app): State<AppState>, Path(world_id): Path<WorldId>) -> impl IntoResponse {
     match WorldRow::get(&app.supa, world_id).await {
         Ok(row) => {
-            let events = EventRow::list_for_world(&app.supa, row.world_id)
+            let ents = EntityRow::list_for_world(&app.supa, row.world_id)
                 .await
                 .unwrap_or_default();
             let mut dto = WorldDto::from(row);
-            dto.events = events;
+            dto.entities = ents;
             Json(dto).into_response()
         }
         Err(e) => {

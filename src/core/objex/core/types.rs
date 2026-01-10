@@ -1,43 +1,38 @@
 use serde::{Serialize, Deserialize};
+use uuid::Uuid;
+
 use crate::core::objex::matcat::materials::MatCatId;
 
-use crate::core::objex::geospec::shapes::{Shape, Sphere, BoxShape, Cylinder};
-
-/// Canonical blueprint for a physical object.
-/// Identified by a stable UUID.
-
-
+/// Canonical physical object definition.
+/// Geometry is referenced, not embedded.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Objex {
-    pub shape: Shape,
-    pub material: MatCatId,
+    pub id: Uuid,
+
+    /// Reference to canonical geometry
+    pub geospec_id: Uuid,
+
+    /// Material identity (deterministic, not UUID)
+    pub matcat: MatCatId,
 }
 
-
 impl Objex {
-    pub fn new(shape: Shape, material: MatCatId) -> Self {
-        Self { shape, material }
+    /// Create a new Objex from an existing GeoSpec
+    pub fn new(geospec_id: Uuid, matcat: MatCatId) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            geospec_id,
+            matcat,
+        }
     }
 
-    pub fn sphere(material: MatCatId, radius: f64) -> Self {
-        Self::new(
-            Shape::Sphere(Sphere { radius }),
-            material,
-        )
-    }
-
-    pub fn box_shape(material: MatCatId, l: f64, w: f64, h: f64) -> Self {
-        Self::new(
-            Shape::Box(BoxShape { length: l, width: w, height: h }),
-            material,
-        )
-    }
-
-    pub fn cylinder(material: MatCatId, radius: f64, height: f64) -> Self {
-        Self::new(
-            Shape::Cylinder(Cylinder { radius, height }),
-            material,
-        )
+    /// Create with explicit ID (used by stores / DB)
+    pub fn with_id(id: Uuid, geospec_id: Uuid, matcat: MatCatId) -> Self {
+        Self {
+            id,
+            geospec_id,
+            matcat,
+        }
     }
 }
 

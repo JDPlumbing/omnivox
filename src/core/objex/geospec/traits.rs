@@ -1,5 +1,4 @@
-
-
+use serde_json::Value;
 
 pub trait SurfaceArea {
     fn surface_area(&self) -> f64;
@@ -10,5 +9,5 @@ pub trait Volume {
 }
 
 pub trait Dimensions {
-    fn as_json(&self) -> serde_json::Value;
+    fn as_json(&self) -> Value;
 }

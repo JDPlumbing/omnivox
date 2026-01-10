@@ -1,47 +1,39 @@
-use serde::Serialize;
-use crate::core::objex::geospec::Shape;
+use serde::{Serialize, Deserialize};
+use uuid::Uuid;
+
+use crate::core::objex::geospec::shape::Shape;
 use crate::core::objex::geospec::traits::Dimensions;
 
-#[derive(Serialize)]
+
+/// ─────────────────────────────────────────────
+/// Geometry templates (internal, static)
+/// These are *starter* geospecs, not user-created
+/// ─────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeometryTemplate {
-    pub geometry_id: String,
+    pub geometry_id: Uuid,
     pub label: String,
     pub shape: serde_json::Value,
 }
 
+
+/// Deterministic UUIDs so these remain stable forever
+const GEO_BOX_ID: Uuid = Uuid::from_u128(0x1000_0000_0000_0000_0000_0000_0000_0001);
+const GEO_SPHERE_ID: Uuid = Uuid::from_u128(0x1000_0000_0000_0000_0000_0000_0000_0002);
+
+
 pub fn geometry_templates() -> Vec<GeometryTemplate> {
     vec![
         GeometryTemplate {
-            geometry_id: "geo:point".into(),
-            label: "Point".into(),
-            shape: Shape::default_point().as_json(),
-        },
-        GeometryTemplate {
-            geometry_id: "geo:line:1m".into(),
-            label: "Line (1m)".into(),
-            shape: Shape::Line(
-                crate::core::objex::geospec::Line { length: 1.0 }
-            ).as_json(),
-        },
-        GeometryTemplate {
-            geometry_id: "geo:box:1x1x1".into(),
-            label: "Box (1m × 1m × 1m)".into(),
+            geometry_id: GEO_BOX_ID,
+            label: "Box".to_string(),
             shape: Shape::default_box().as_json(),
         },
         GeometryTemplate {
-            geometry_id: "geo:sphere:r1".into(),
-            label: "Sphere (r=1m)".into(),
+            geometry_id: GEO_SPHERE_ID,
+            label: "Sphere".to_string(),
             shape: Shape::default_sphere().as_json(),
-        },
-        GeometryTemplate {
-            geometry_id: "geo:cylinder:1x1".into(),
-            label: "Cylinder (1m × 1m)".into(),
-            shape: Shape::default_cylinder().as_json(),
-        },
-        GeometryTemplate {
-            geometry_id: "geo:cone:1x1".into(),
-            label: "Cone (1m × 1m)".into(),
-            shape: Shape::default_cone().as_json(),
         },
     ]
 }

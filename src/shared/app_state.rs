@@ -1,60 +1,70 @@
-use std::sync::Arc; 
-use std::collections::HashMap;
-use tokio::sync::RwLock; 
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::supabasic::Supabase;
-use crate::engine::simulations::runtime::SimulationManager;
+//use crate::engine::simulations::runtime::SimulationManager;
+//use crate::shared::viewer_state::ViewerRegistry;
 use crate::core::UserId;
-use crate::shared::viewer_state::ViewerRegistry;
+use crate::core::objex::store::ObjexStore;
+use crate::core::objex::geospec::store::GeoSpecStore;
 
 #[derive(Clone)]
 pub struct AppState {
     pub supa: Supabase,
+
     pub session_id: Option<Uuid>,
     pub user_owner_id: Option<UserId>,
     pub anon_owner_id: Option<UserId>,
 
-    pub sim_manager: Arc<RwLock<SimulationManager>>,
-    pub viewer_registry: Arc<RwLock<ViewerRegistry>>,
+    //pub sim_manager: Arc<RwLock<SimulationManager>>,
+    //pub viewer_registry: Arc<RwLock<ViewerRegistry>>,
+    pub geospec_store: Arc<RwLock<GeoSpecStore>>,
 
-
+    /// TEMPORARY in-memory Objex template store
+    pub objex_store: Arc<RwLock<ObjexStore>>,
 }
 
 impl AppState {
-    /// Build a new AppState from environment
     pub fn new_from_env() -> anyhow::Result<Self> {
         let supa = Supabase::new_from_env()?;
 
         Ok(Self {
-            supa: supa.clone(),
+            supa,
+
             session_id: None,
             user_owner_id: None,
             anon_owner_id: None,
-            viewer_registry: Arc::new(RwLock::new(ViewerRegistry::default())),
 
-
-            sim_manager: Arc::new(RwLock::new(SimulationManager::new())), // ✔ FIXED
+            //sim_manager: Arc::new(RwLock::new(SimulationManager::new())),
+            //viewer_registry: Arc::new(RwLock::new(ViewerRegistry::default())),
+            geospec_store: Arc::new(RwLock::new(GeoSpecStore::new())),
+            objex_store: Arc::new(RwLock::new(ObjexStore::new())),
         })
     }
 
-    /// Attach session
-    pub fn with_session(mut self, session_id: Uuid, anon_owner_id: Option<UserId>) -> Self {
-        self.session_id = Some(session_id);
-        self.anon_owner_id = anon_owner_id;
-        self
-    }
-
-    /// Alternate constructor
     pub fn new(supa: Supabase) -> Self {
         Self {
-            supa: supa.clone(),
+            supa,
+
             session_id: None,
             user_owner_id: None,
             anon_owner_id: None,
-            viewer_registry: Arc::new(RwLock::new(ViewerRegistry::default())),
 
-            sim_manager: Arc::new(RwLock::new(SimulationManager::new())), // ✔ FIXED
+            //sim_manager: Arc::new(RwLock::new(SimulationManager::new())),
+            //viewer_registry: Arc::new(RwLock::new(ViewerRegistry::default())),
+            geospec_store: Arc::new(RwLock::new(GeoSpecStore::new())),
+            objex_store: Arc::new(RwLock::new(ObjexStore::new())),
         }
+    }
+
+    pub fn with_session(
+        mut self,
+        session_id: Uuid,
+        anon_owner_id: Option<UserId>,
+    ) -> Self {
+        self.session_id = Some(session_id);
+        self.anon_owner_id = anon_owner_id;
+        self
     }
 }

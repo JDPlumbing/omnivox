@@ -8,6 +8,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
+    use crate::core::{ WorldId, UvoxId};
 
 use crate::{
     shared::app_state::AppState, // 👈 new import
@@ -27,14 +28,21 @@ use crate::{
         },
     },
 };
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnchorDto {
+    pub world_id: WorldId,
+    pub uvox: UvoxId,
+}
 
 /// Payload for creating or updating a property
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PropertyInput {
     pub address_id: Option<Uuid>,
     pub user_owner_id: Option<Uuid>,
+   
     pub name: Option<String>,
-    pub world_id: Option<i64>,
+    pub anchor: AnchorDto,
+
     pub property_type: Option<PropertyType>,
     pub square_feet: Option<i64>,
     pub sqft_under_air: Option<i64>,
@@ -64,9 +72,15 @@ impl From<PropertyInput> for PropertyRecord {
         Self {
             property_id: None,
             address_id: input.address_id,
+            world_id: input.anchor.world_id,
+
+            anchor_uvox: serde_json::to_value(input.anchor.uvox)
+                .expect("UvoxId must serialize"),
+
+
             user_owner_id: input.user_owner_id,
             name: input.name,
-            world_id: input.world_id,
+           
             property_type: input.property_type,
             square_feet: input.square_feet,
             sqft_under_air: input.sqft_under_air,

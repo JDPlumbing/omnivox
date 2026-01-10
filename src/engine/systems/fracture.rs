@@ -1,7 +1,7 @@
 use crate::core::{
     chronovox::{ChronoEvent, EventKind},
     tdt::time_delta::TimeDelta,
-    objex::geospec::Shape,
+    {Shape, Sphere}
 };
 
 use crate::engine::{
@@ -90,11 +90,11 @@ impl System for FractureSystem {
                 //
                 // Resize spherical fragments (if sphere)
                 //
-                if let Shape::Sphere(s) = frag.template.shape.clone() {
+                if let Shape::Sphere(Sphere { radius: s }) = frag.template.shape.clone() {
+                    let new_radius = s / (child_count as f64).sqrt();
+
                     frag.template.shape = Shape::Sphere(
-                        crate::core::objex::geospec::shapes::Sphere {
-                            radius: s.radius / (child_count as f64).sqrt(),
-                        }
+                        Sphere { radius: new_radius }
                     );
                 }
 

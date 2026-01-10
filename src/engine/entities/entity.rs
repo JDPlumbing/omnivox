@@ -83,14 +83,14 @@ impl SimEntity {
         "ObjexInstance"
     }
 
-    pub fn shape(&self) -> &Shape {
-        &self.template.shape
+    pub fn shape(&self) -> &Uuid {
+        &self.template.geospec_id
     }
 
 
 
     pub fn material(&self) -> &MatCatId {
-        &self.template.material
+        &self.template.matcat
     }
 
 }

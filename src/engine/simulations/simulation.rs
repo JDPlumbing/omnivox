@@ -4,7 +4,7 @@ use crate::core::id::{WorldId, SimulationId, UserId};
 use crate::core::id::UvoxRegionId;
 
 use crate::core::objex::core::{Objex};
-use crate::core::objex::geospec::shapes::Shape;
+use crate::core::Shape;
 use crate::core::objex::matcat::materials::MatCatId;
 
 use crate::core::tdt::sim_time::SimTime;
