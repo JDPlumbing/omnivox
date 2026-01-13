@@ -215,6 +215,7 @@ pub async fn delete_world_handler(State(app): State<AppState>, Path(world_id): P
 // GET /worlds/{world_id}/stats
 // ------------------------------------------------------------
 use serde::Serialize;
+
 #[derive(Serialize)]
 pub struct WorldStats {
     pub world_id: WorldId,
@@ -225,22 +226,21 @@ pub async fn get_world_stats(
     State(app): State<AppState>,
     Path(world_id): Path<WorldId>,
 ) -> impl IntoResponse {
-    let args = json!({ "world_id": world_id.0 });
+    let args = json!({
+        "p_world_id": world_id.0
+    });
+    
 
-    // Call the RPC function
-    match app.supa.rpc("count_entities", args).await {
+    match app.supa.rpc("count_sim_entities", args).await {
         Ok(val) => {
-            // RPC returns something like: [{ "count_entities": 123 }]
-            let count = val
-                .get(0)
-                .and_then(|row| row.get("count_entities"))
-                .and_then(|v| v.as_i64())
-                .unwrap_or(0);
+            eprintln!("RPC raw value: {:?}", val);
 
-            Json(json!({
-                "world_id": world_id.0,
-                "entity_count": count,
-            }))
+            let count = val.as_i64().unwrap_or(0);
+
+            Json(WorldStats {
+                world_id,
+                entity_count: count,
+            })
             .into_response()
         }
 
@@ -250,4 +250,6 @@ pub async fn get_world_stats(
         )
             .into_response(),
     }
+
+    
 }

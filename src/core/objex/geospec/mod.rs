@@ -17,7 +17,7 @@ pub mod store;
 pub use store::GeoSpecStore;
 
 use serde::{Serialize, Deserialize};
-use uuid::Uuid;
+//use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Bounds {

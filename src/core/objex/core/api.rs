@@ -6,7 +6,7 @@ use crate::shared::app_state::AppState;
 
 use crate::core::objex::core::types::Objex;
 use crate::core::objex::matcat::materials::MatCatId;
-use crate::core::objex::geospec::GeoSpec;
+//use crate::core::objex::geospec::GeoSpec;
 
 
 /// ─────────────────────────────────────────────

@@ -103,6 +103,11 @@ impl QueryBuilder {
     }
 
     pub fn select(mut self, fields: &str) -> Self {
+        let cleaned = fields
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join("");
+        
         if self.query.is_empty() {
             self.query = format!("?select={}", fields);
         } else {
@@ -317,3 +322,5 @@ impl QueryBuilder {
         Ok(serde_json::from_value(val)?)
     }
 }
+
+

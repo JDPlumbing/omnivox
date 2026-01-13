@@ -6,6 +6,8 @@ use tower_http::cors::{Any, CorsLayer};
 use axum::http::Method;
 
 use crate::shared::app_state::AppState;
+use axum::middleware;
+use crate::shared::auth_middleware::populate_user_from_auth;
 
 // --- Time API ---
 mod time;
@@ -13,7 +15,15 @@ pub use time::{time_routes};
 
 // --- Users API ---
 mod users;
-pub use users::{get_user, get_anon_user, list_anon_users, create_anon_user};
+pub use users::{get_user, 
+                get_anon_user, 
+                list_anon_users, 
+                create_anon_user, 
+                list_users, 
+                create_user,
+                delete_user,
+                get_me,
+            };
 
 // --- Worlds API ---
 mod worlds;
@@ -43,8 +53,8 @@ pub use entities::{
 };
 
 // --- Events API ---
-//mod events;
-/*pub use events::{
+mod events;
+pub use events::{
     create_event,
     list_events,
     get_event,
@@ -54,7 +64,7 @@ pub use entities::{
     list_events_for_sim,
     list_events_for_entity,
 };
-*/
+
 
 // --- Address API ---
 mod location;
@@ -88,16 +98,20 @@ mod viewer;
 use viewer::viewer_routes;
 */
 mod objex;
+use objex::objex::objex_routes;
 use objex::materials::material_routes;
 use objex::geospec::geospec_routes;
-use objex::templates::template_routes;
+use objex::templates::geometry_template_routes;
 
 pub fn api_router(app_state: AppState) -> Router {
     // Users routes
     let users_routes = Router::new()
-        .route("/{id}", get(get_user))
+        .route("/", get(list_users).post(create_user))
+        .route("/me", get(get_me))
+        .route("/{id}", get(get_user).delete(delete_user))
         .route("/anon", get(list_anon_users).post(create_anon_user))
-        .route("/anon/{id}", get(get_anon_user));
+        .route("/anon/{id}", get(get_anon_user))
+        ;
 
     let worlds_routes = Router::new()
         .route("/", get(list_worlds_handler).post(create_world_handler))
@@ -124,7 +138,7 @@ pub fn api_router(app_state: AppState) -> Router {
             get(get_entity).delete(delete_entity),
         );
 
-    /* let events_routes = Router::new()
+     let events_routes = Router::new()
         .route("/", get(list_events).post(create_event))
         .route("/sim/{simulation_id}", get(list_events_for_sim))
         .route("/entity/{entity_id}", get(list_events_for_entity))
@@ -135,7 +149,7 @@ pub fn api_router(app_state: AppState) -> Router {
                 .patch(patch_event)
                 .delete(delete_event),
         );
-    */
+    
     let location_routes = location::location_routes();
 
     let property_routes = Router::new()
@@ -173,20 +187,29 @@ pub fn api_router(app_state: AppState) -> Router {
 
         .nest("/location", location_routes)
         .nest("/properties", property_routes)
-        .nest("/users", users_routes)
+        .nest(
+            "/users",
+            users_routes.layer(
+                middleware::from_fn_with_state(app_state.clone(), populate_user_from_auth),
+            ),
+        )
+
+
         .nest("/worlds", worlds_routes)
         //.nest("/simulations", simulations_routes)
         .nest("/entities", entities_routes)
+        .nest("/objex", objex_routes())
         .nest("/objex/materials", material_routes())
         .nest("/objex/geospec", geospec_routes())
-        .nest("/objex", template_routes())
-        .nest("/geometry/templates", template_routes())
-        //.nest("/events", events_routes)
+        
+        .nest("/geometry/templates", geometry_template_routes())
+        .nest("/events", events_routes)
         .nest("/time", time_routes)
         .nest("/pages", pages_routes)
         //.nest("/viewer", viewer_routes)
 
         .with_state(app_state)
+        
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

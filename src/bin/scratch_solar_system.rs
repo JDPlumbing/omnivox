@@ -1,18 +1,18 @@
 use omnivox::core::tdt::{SimDuration, SimTime};
 use omnivox::core::uvoxid::UvoxId;
 
-use omnivox::sim::world::state::World;
-use omnivox::sim::world::WorldState;
+use omnivox::engine::world::state::World;
+use omnivox::engine::world::state::WorldState;
 
 use chrono::{TimeZone, Duration as ChronoDuration};
-use omnivox::sim::systems::{
+use omnivox::engine::systems::{
     System,
     SolarRadiationSystem,
     SolarExposureSystem,
     SunDamageSystem,
 };
 
-use omnivox::sim::components::{
+use omnivox::engine::components::{
     SolarRadiation,
     SolarExposure,
     SunDamage,
@@ -22,7 +22,7 @@ use omnivox::core::physox::astronomy::solar::solar_uvox;
 use omnivox::core::objex::core::{Objex, MaterialLink};
 use omnivox::core::objex::geospec::shapes::Shape;
 
-use omnivox::sim::time::clock::SimClock;
+use omnivox::engine::time::clock::SimClock;
 use omnivox::core::id::entity_id::EntityId;
 use omnivox::core::id::world_id::WorldId;
 use omnivox::core::id::simulation_id::SimulationId;

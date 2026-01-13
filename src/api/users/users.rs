@@ -9,6 +9,7 @@ use serde_json::json;
 use crate::supabasic::users::{User, AnonUser, NewAnonUser};
 use crate::supabasic::orm::{fetch, list};
 use crate::shared::app_state::AppState;
+use serde::{Serialize, Deserialize};
 
 // ------------------------------------------------------------
 // GET /api/users/:id
@@ -121,3 +122,24 @@ pub async fn delete_anon_user(State(app): State<AppState>, Path(id): Path<Uuid>)
         }
     }
 }
+
+//----------------------------------------------------
+//GET /api/users/
+//--------------------------------------------------
+pub async fn list_users(State(app): State<AppState>) -> impl IntoResponse {
+    let result = app
+        .supa
+        .from("admin_users")
+        .select("*")
+        .execute();
+
+    match result.await {
+        Ok(val) => Json(val).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": format!("{e:?}") })),
+        )
+        .into_response(),
+    }
+}
+

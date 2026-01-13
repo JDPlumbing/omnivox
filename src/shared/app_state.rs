@@ -14,6 +14,7 @@ pub struct AppState {
     pub supa: Supabase,
 
     pub session_id: Option<Uuid>,
+    pub supabase_user_id: Option<Uuid>,
     pub user_owner_id: Option<UserId>,
     pub anon_owner_id: Option<UserId>,
 
@@ -33,6 +34,8 @@ impl AppState {
             supa,
 
             session_id: None,
+            supabase_user_id: None,
+
             user_owner_id: None,
             anon_owner_id: None,
 
@@ -48,6 +51,8 @@ impl AppState {
             supa,
 
             session_id: None,
+            supabase_user_id: None,
+
             user_owner_id: None,
             anon_owner_id: None,
 

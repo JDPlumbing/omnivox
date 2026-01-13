@@ -77,3 +77,14 @@ impl UserId {
         UserId::new(words, num)
     }
 }
+
+impl UserId {
+    pub fn from_uuid(uuid: uuid::Uuid) -> Self {
+        let bytes = uuid.as_bytes();
+
+        UserId {
+            words: [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4]],
+            num: bytes[5],
+        }
+    }
+}
