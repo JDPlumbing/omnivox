@@ -35,7 +35,13 @@ pub use worlds::{list_worlds_handler,
                 delete_world_handler, 
                 get_world_stats,
                 world_time_now,
-                set_world_epoch};
+                set_world_epoch,
+                sample_environment_handler,
+                world_relative_handler,
+            
+            
+            
+            };
 
 // --- Simulations API ---
 //mod simulations;
@@ -125,6 +131,9 @@ pub fn api_router(app_state: AppState) -> Router {
         .route("/{world_id}/stats", get(get_world_stats))
         .route("/{world_id}/time/now", get(world_time_now))
         .route("/{world_id}/epoch/set", post(set_world_epoch))
+        .route("/{world_id}/environment/sample", get(sample_environment_handler))
+        .route("/{from}/relative/{to}", get(world_relative_handler))
+
         
 ;
 

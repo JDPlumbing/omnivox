@@ -7,10 +7,14 @@ use crate::core::objex::{Objex};
 use crate::core::objex::geospec::Shape;
 use crate::core::objex::core::material::MaterialLink;
 use crate::core::id::{EntityId, WorldId};
-use crate::core::SimTime;
-use crate::engine::UvoxQuat;
+use crate::core::{SimTime, SimDuration };
+use crate::core::UvoxQuat;
 use crate::core::objex::matcat::materials::MatCatId;
 use crate::core::tdt::sim_time::deserialize_simtime;
+use crate::core::world::WorldEnvironment;
+use crate::core::env::EnvSnapshot;
+use crate::core::env::sample_environment;
+
 
 /// -------------------------------------------------------------------
 /// In-memory representation of a simulated entity
@@ -94,6 +98,15 @@ impl SimEntity {
     }
 
 }
+impl SimEntity {
+    pub fn environment(
+        &self,
+        world: &WorldEnvironment,
+        time: SimDuration,
+    ) -> EnvSnapshot {
+        sample_environment(world, &self.position, time)
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSimEntity {
@@ -123,3 +136,4 @@ impl CreateSimEntity {
         }
     }
 }
+

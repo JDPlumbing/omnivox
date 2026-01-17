@@ -1,48 +1,47 @@
-//! Simple atmospheric model
-//!
-//! Returns:
-//!   - density kg/m³ (approx)
-//!   - classification of altitude band
-
-use crate::core::env::bodies::EARTH;
+use crate::core::env::fields::{Field, FieldSample};
 use crate::core::uvoxid::UvoxId;
+use crate::core::tdt::SimDuration;
+use crate::core::medium::Medium;
+use crate::core::world::world_env_descriptor::{WorldSpace, AtmosphereModel};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AtmosphereLayer {
-    Surface,
-    Troposphere,
-    Stratosphere,
-    Mesosphere,
-    Thermosphere,
-    Exosphere,
-    Vacuum,
+pub struct AtmosphereField {
+    pub planet_radius_m: f64,
+    pub sea_level_density: f64,
+    pub scale_height_m: f64,
+    pub max_height_m: Option<f64>,
 }
 
-pub fn classify_layer(id: &UvoxId) -> AtmosphereLayer {
-    let r_m = id.r_um.meters();
-    let alt = r_m - EARTH.radius_m;
-
-    match alt {
-        x if x < 0.0 => AtmosphereLayer::Surface,
-        x if x < 12_000.0 => AtmosphereLayer::Troposphere,
-        x if x < 50_000.0 => AtmosphereLayer::Stratosphere,
-        x if x < 80_000.0 => AtmosphereLayer::Mesosphere,
-        x if x < 600_000.0 => AtmosphereLayer::Thermosphere,
-        x if x < 1_000_000.0 => AtmosphereLayer::Exosphere,
-        _ => AtmosphereLayer::Vacuum,
+impl AtmosphereField {
+    pub fn from_model(space: &WorldSpace, model: &AtmosphereModel) -> Self {
+        Self {
+            planet_radius_m: space.surface_radius_m,
+            sea_level_density: model.sea_level_density,
+            scale_height_m: model.scale_height_m,
+            max_height_m: model.max_height_m,
+        }
     }
 }
+impl Field for AtmosphereField {
+    fn sample(&self, id: &UvoxId, _time: SimDuration) -> FieldSample {
+        let r = id.r_um.meters();
+        let height_m = r - self.planet_radius_m;
 
-/// Crude density curve, still useful for drag simulation
-pub fn air_density(id: &UvoxId) -> f64 {
-    let r_m = id.r_um.meters();
-    let alt = r_m - EARTH.radius_m;
+        let density = if height_m < 0.0 {
+            // Below surface
+            0.0
+        } else if let Some(max_h) = self.max_height_m {
+            if height_m > max_h {
+                0.0
+            } else {
+                self.sea_level_density * (-height_m / self.scale_height_m).exp()
+            }
+        } else {
+            self.sea_level_density * (-height_m / self.scale_height_m).exp()
+        };
 
-    if alt <= 0.0 {
-        return 1.225; // sea level
+        FieldSample {
+            density: density,
+            ..Default::default()
+        }
     }
-
-    // Exponential falloff model ρ = ρ0 * exp(-h / H)
-    const SCALE_HEIGHT: f64 = 8500.0;
-    1.225 * (-alt / SCALE_HEIGHT).exp()
 }

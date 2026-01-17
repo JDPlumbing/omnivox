@@ -7,61 +7,33 @@ use std::collections::HashMap;
 use crate::supabasic::events::EventRow;
 use crate::supabasic::worlds::WorldRow;
 
-use crate::engine::clock::SimClock;
+use crate::core::tdt::sim_clock::SimClock;
 //use crate::engine::components::SimComponents;
 use crate::core::tdt::sim_time::SimTime;
 use crate::core::tdt::sim_duration::SimDuration;
 
-use crate::engine::entity::SimEntity;
+use crate::core::SimEntity;
 use crate::core::id::{WorldId, EntityId};
 
-/// -------------------------------------------------------------------
-/// Domain-level metadata about a world (NOT persisted directly)
-/// -------------------------------------------------------------------
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct World {
-    pub id: WorldId,
-    pub name: Option<String>,
-    pub description: Option<String>,
-    pub world_epoch: Option<SimTime>,
-}
+use crate::core::world::World;
+use crate::core::world::WorldEnvironment;
 
-impl World {
-    pub fn new(id: WorldId, name: Option<String>, description: Option<String>, epoch: Option<SimTime>) -> Self {
-        Self {
-            id,
-            name,
-            description,
-            world_epoch: epoch,
-        }
-    }
-}
 
-impl Default for World {
-    fn default() -> Self {
-        World {
-            id: WorldId::from(0),
-            name: Some("Test-Earth".into()),
-            description: None,
-            world_epoch: Some(SimTime::from_ns(0)),
-        }
-    }
-}
 
-/*
 /// -------------------------------------------------------------------
 /// In-memory simulation state for a running world
 /// -------------------------------------------------------------------
-#[derive(Debug)]
+
 pub struct WorldState {
     pub meta: World,
+    pub environment: WorldEnvironment,
     pub entities: HashMap<EntityId, SimEntity>,
     pub free_list: Vec<u32>,
     pub generations: Vec<u32>,
     pub sim_time: SimTime,
     pub sim_delta: SimDuration,
     pub clock: Option<SimClock>,
-    pub components: SimComponents,
+    //pub components: SimComponents,
 }
 impl WorldState {
     pub fn allocate_entity_id(&mut self) -> EntityId {
@@ -80,20 +52,21 @@ impl WorldState {
         self.free_list.push(id.index);
     }
 
-    pub fn new(meta: World) -> Self {
+    pub fn new(meta: World, environment: WorldEnvironment) -> Self {
         Self {
             meta,
+            environment,
             entities: HashMap::new(),
             free_list: Vec::new(),
             generations: Vec::new(),
             sim_time: SimTime::from_ns(0),
             sim_delta: SimDuration::from_ns(0),
             clock: None,
-            components: SimComponents::new(),
+            //components: SimComponents::new(),
         }
     }
 
-    pub fn from_entities(meta: World, entities: Vec<SimEntity>) -> Self {
+    pub fn from_entities(meta: World, environment: WorldEnvironment, entities: Vec<SimEntity>) -> Self {
         let mut map = HashMap::new();
         for ent in entities {
             map.insert(ent.id, ent);
@@ -101,6 +74,7 @@ impl WorldState {
 
         Self {
             meta,
+            environment,
             entities: map,
             free_list: Vec::new(),
             generations: Vec::new(),
@@ -108,14 +82,8 @@ impl WorldState {
             sim_time: SimTime::from_ns(0),
             sim_delta: SimDuration::from_ns(0),
             clock: None,
-            components: SimComponents::new(),
+            //components: SimComponents::new(),
         }
-    }
-}
-
-impl Default for WorldState {
-    fn default() -> Self {
-        WorldState::new(World::default())
     }
 }
 
@@ -135,4 +103,3 @@ impl From<WorldRow> for World {
     }
 }
 
-*/

@@ -288,6 +288,23 @@ impl UvoxId {
     }
 
 }
+use std::str::FromStr;
+
+impl FromStr for UvoxId {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // 1. Try hex
+        if let Some(id) = UvoxId::from_hex(s) {
+            return Ok(id);
+        }
+
+        // 2. Try other syntaxes later
+        // if let Some(id) = parse_lat_lon(s) { ... }
+
+        Err(format!("Invalid UvoxId string: {}", s))
+    }
+}
 
 // ------------------------------------------------------------
 // Operator overloads for delta math

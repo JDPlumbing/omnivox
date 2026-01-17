@@ -5,12 +5,14 @@ use axum::{
     Json,
 };
 use serde_json::json;
-
+use crate::core::world::presets::earth_v0;
+use serde_json::{ Value, to_value};
 use crate::supabasic::worlds::{WorldRow, NewWorldRow};
 use crate::supabasic::entity::EntityRow;
 use crate::shared::app_state::AppState;
 use crate::core::id::WorldId;
 use crate::core::sim_time::SimTime;
+
 
 /// DTO returned to clients
 #[derive(serde::Serialize)]
@@ -18,6 +20,7 @@ pub struct WorldDto {
     pub world_id: WorldId,
     pub name: Option<String>,
     pub description: Option<String>,
+    pub environment: Value,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -37,6 +40,11 @@ impl From<WorldRow> for WorldDto {
             world_id: w.world_id,
             name: w.name,
             description: w.description,
+            environment: w.environment
+            .as_ref()
+            .map(|env| serde_json::to_value(env).unwrap())
+            .unwrap_or(serde_json::Value::Null),
+
             created_at: w.created_at,
             updated_at: w.updated_at,
             deleted_at: w.deleted_at,
@@ -101,19 +109,28 @@ pub async fn get_world_handler(State(app): State<AppState>, Path(world_id): Path
 // ------------------------------------------------------------
 // POST /worlds
 // ------------------------------------------------------------
-pub async fn create_world_handler(State(app): State<AppState>, Json(payload): Json<NewWorldRow>) -> impl IntoResponse {
+
+pub async fn create_world_handler(
+    State(app): State<AppState>,
+    Json(mut payload): Json<NewWorldRow>,
+) -> impl IntoResponse {
+
+    // Inject default environment if client didn’t provide one
+    if payload.environment.is_null() {
+        payload.environment = to_value(earth_v0()).unwrap();
+    }
+
     match WorldRow::create(&app.supa, &payload).await {
         Ok(row) => {
             let dto = WorldDto::from(row);
             (StatusCode::CREATED, Json(dto)).into_response()
         }
         Err(e) => {
-            eprintln!("Error creating world: {:?}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "error creating world", "details": format!("{e:?}") })),
+                Json(json!({ "error": "error creating world" })),
             )
-                .into_response()
+            .into_response()
         }
     }
 }

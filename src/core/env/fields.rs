@@ -1,0 +1,57 @@
+use crate::core::tdt::SimDuration;
+use crate::core::uvoxid::UvoxId;
+use crate::core::env::medium::Medium;
+
+
+pub trait Field: Send + Sync {
+    fn sample(&self, id: &UvoxId, time: SimDuration) -> FieldSample;
+}
+
+
+#[derive(Debug, Clone)]
+pub struct FieldSample {
+    // Always-defined baseline
+    pub medium: Medium,        // Solid / Liquid / Gas / Vacuum
+    pub density: f64,          // kg/m³
+    pub pressure: f64,         // Pa
+    pub temperature: f64,      // K
+    pub gravity_radial: f64,   // m/s² (toward -r)
+
+    // Optional / additive influences
+    pub wind_radial: f64,      // m/s
+    pub resistance: f64,       // drag-ish scalar
+}
+
+impl Default for FieldSample {
+    fn default() -> Self {
+        Self {
+            medium: Medium::Vacuum,
+            density: 0.0,
+            pressure: 0.0,
+            temperature: 0.0,
+            gravity_radial: 0.0,
+            wind_radial: 0.0,
+            resistance: 0.0,
+        }
+    }
+}
+
+impl FieldSample {
+    pub fn merge(self, other: FieldSample) -> FieldSample {
+        FieldSample {
+            medium: if other.medium != Medium::Vacuum {
+                other.medium
+            } else {
+                self.medium
+            },
+
+            density: self.density + other.density,
+            pressure: self.pressure + other.pressure,
+            temperature: self.temperature + other.temperature,
+            gravity_radial: self.gravity_radial + other.gravity_radial,
+            wind_radial: self.wind_radial + other.wind_radial,
+            resistance: self.resistance + other.resistance,
+        }
+    }
+}
+

@@ -6,6 +6,9 @@ pub mod uvoxid;    // spatial ID system
 pub mod id;
 pub mod env;      // environmental models
 pub mod identity;
+pub mod world;
+pub mod entity;
+pub mod spatial;
 
 pub use id::*;
 pub use uvoxid::{UvoxId};
@@ -15,3 +18,6 @@ pub use tdt::*;
 pub use objex::*;
 pub use env::*;
 pub use identity::*;
+pub use world::World;
+pub use entity::{SimEntity, CreateSimEntity};
+pub use spatial::UvoxQuat;

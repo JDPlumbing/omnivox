@@ -8,11 +8,11 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::shared::app_state::AppState;
-use crate::engine::entity::SimEntity;
+use crate::core::SimEntity;
 use crate::supabasic::entity::EntityRow;
 //use crate::core::objex::Objex;
 use crate::core::id::world_id::WorldId;
-use crate::engine::entity::CreateSimEntity;
+use crate::core::CreateSimEntity;
 use crate::core::UvoxId;
 use crate::core::objex::Objex;
 use crate::core::id::EntityId;

@@ -8,6 +8,11 @@ use crate::supabasic::Supabase;
 use crate::core::UserId;
 use crate::core::objex::store::ObjexStore;
 use crate::core::objex::geospec::store::GeoSpecStore;
+use std::collections::HashMap;
+use crate::core::world::world_frame::WorldFrame;
+use crate::core::world::world_env_descriptor::WorldSpace;
+use crate::core::id::WorldId;
+
 
 #[derive(Clone)]
 pub struct AppState {
@@ -24,6 +29,9 @@ pub struct AppState {
 
     /// TEMPORARY in-memory Objex template store
     pub objex_store: Arc<RwLock<ObjexStore>>,
+
+    pub world_frames: HashMap<WorldId, WorldFrame>,
+    pub world_spaces: HashMap<WorldId, WorldSpace>,
 }
 
 impl AppState {
@@ -43,6 +51,8 @@ impl AppState {
             //viewer_registry: Arc::new(RwLock::new(ViewerRegistry::default())),
             geospec_store: Arc::new(RwLock::new(GeoSpecStore::new())),
             objex_store: Arc::new(RwLock::new(ObjexStore::new())),
+            world_frames: HashMap::new(),
+            world_spaces: HashMap::new(),
         })
     }
 
@@ -60,6 +70,8 @@ impl AppState {
             //viewer_registry: Arc::new(RwLock::new(ViewerRegistry::default())),
             geospec_store: Arc::new(RwLock::new(GeoSpecStore::new())),
             objex_store: Arc::new(RwLock::new(ObjexStore::new())),
+            world_frames: HashMap::new(),
+            world_spaces: HashMap::new(),
         }
     }
 

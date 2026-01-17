@@ -10,7 +10,7 @@ use uuid::Uuid;
 use reqwest::Client;
 use std::env;
 use crate::shared::app_state::AppState;
-use crate::shared::AuthContext;
+use crate::shared::{ AuthContext, AccountRole};
 use super::create::{CreateUserPayload, create_user_service};
 use axum::extract::Extension;
 
@@ -76,38 +76,40 @@ pub async fn delete_user(
 //--------------------------
 // GET ME
 //--------------------------
-
 pub async fn get_me(
     Extension(auth): Extension<AuthContext>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
 
-    // 1️⃣ Identities (already resolved by middleware)
+    // 1️⃣ Identity (resolved by middleware)
     let supa_user_id = auth.supabase_user_id;
     let user_id = auth.user_id;
 
-    // 2️⃣ Query user_properties via Supabase/PostgREST
-let result = app
-    .supa
-    .from("user_properties")
-    .select(
-        "role,property:properties(property_id,name,region:uvox_regions(min_r_um,min_lat_code,min_lon_code,max_r_um,max_lat_code,max_lon_code),world:worlds(world_id,name))"
-    )
-
-    .eq("user_id", &supa_user_id.to_string())
-    .maybe_single_typed::<serde_json::Value>()
-    .await;
-
-
+    // 2️⃣ Query property relationship
+    let result = app
+        .supa
+        .from("user_properties")
+        .select(
+            "role,property:properties(property_id,name,region:uvox_regions(min_r_um,min_lat_code,min_lon_code,max_r_um,max_lat_code,max_lon_code),world:worlds(world_id,name))"
+        )
+        .eq("user_id", &supa_user_id.to_string())
+        .maybe_single_typed::<serde_json::Value>()
+        .await;
 
     let row = match result {
         Ok(Some(r)) => r,
         Ok(None) => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(json!({ "error": "No property assigned" })),
-            )
-                .into_response();
+            // user exists, but has no property assignment
+            return Json(json!({
+                "user": {
+                    "id": user_id.to_string(),
+                    "account_role": "user"
+                },
+                "property": null,
+                "property_role": null,
+                "world": null
+            }))
+            .into_response();
         }
         Err(e) => {
             return (
@@ -118,21 +120,27 @@ let result = app
         }
     };
 
-    // 3️⃣ Shape response
-    let role = &row["role"];
+    // 3️⃣ Extract fields
+    let property_role = row["role"].as_str().unwrap_or("viewer");
     let property = &row["property"];
     let region = &property["region"];
     let world = &property["world"];
 
+    // 4️⃣ TEMP: account role logic
+    // (later this moves to a real table)
+    let account_role = match auth.account_role {
+        AccountRole::Root => "root",
+        AccountRole::User => "user",
+    };
+
+
+    // 5️⃣ Final contract response
     Json(json!({
         "user": {
-            "id": user_id.to_string()
+            "id": user_id.to_string(),
+            "account_role": account_role
         },
-        "role": role,
-        "world": {
-            "id": world["world_id"],
-            "name": world["name"]
-        },
+        "property_role": property_role,
         "property": {
             "id": property["property_id"],
             "name": property["name"],
@@ -148,6 +156,10 @@ let result = app
                     "lon_code": region["max_lon_code"]
                 }
             }
+        },
+        "world": {
+            "id": world["world_id"],
+            "name": world["name"]
         }
     }))
     .into_response()

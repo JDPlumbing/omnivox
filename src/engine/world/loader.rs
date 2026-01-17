@@ -5,10 +5,15 @@ use crate::supabasic::entity::EntityRow;
 use crate::core::id::WorldId;
 use crate::core::tdt::sim_time::SimTime;
 
-use crate::engine::entities::SimEntity;
-use crate::engine::world::state::{World, WorldState};
+use crate::core::SimEntity;
+use crate::engine::world::state::WorldState;
+use crate::core::world::World;
 
 use anyhow::Result;
+use crate::core::world::world_env_descriptor::WorldEnvDescriptor;
+use crate::core::world::WorldEnvironment;
+use crate::core::world::presets::earth_v0;
+
 
 /// ---------------------------------------------------------------------------
 /// Load a runtime WorldState from Supabase by typed WorldId.
@@ -22,7 +27,18 @@ pub async fn load_world(
     // 1. Load world metadata row
     //
     let meta_rec = WorldRow::get(supa, world_id).await?;
+    let env_desc = match &meta_rec.environment {
+    Some(desc) => desc.clone(),
+    None => {
+        log::warn!(
+            "World {} has no environment, defaulting to earth_v0",
+            world_id
+        );
+        earth_v0()
+    }
+};
 
+let world_env = WorldEnvironment::from_descriptor(&env_desc);
     //
     // Convert DB → runtime metadata World
     //
@@ -46,7 +62,7 @@ pub async fn load_world(
     //
     // 3. Convert each DB row into a SimEntity
     //
-    let mut state = WorldState::new(meta);
+    let mut state = WorldState::new(meta, world_env);
 
     for row in rows {
         match SimEntity::try_from(row) {

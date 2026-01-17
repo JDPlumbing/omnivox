@@ -3,10 +3,11 @@
 use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::orm::DbModel;
 use crate::core::id::WorldId;
-
+use serde_json::Value;
 
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
+use crate::core::world::world_env_descriptor::WorldEnvDescriptor;
 
 /// Mirrors the `worlds` table in Supabase.
 /// Contains ONLY persistent metadata.
@@ -15,6 +16,8 @@ pub struct WorldRow {
     pub world_id: WorldId,
     pub name: Option<String>,
     pub description: Option<String>,
+
+    pub environment: Option<WorldEnvDescriptor>,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -31,7 +34,7 @@ impl WorldRow {
     /// List all worlds
     pub async fn list(supa: &Supabase) -> Result<Vec<Self>, SupabasicError> {
         supa.from(Self::table())
-            .select("world_id,name,description,world_epoch,created_at,updated_at,deleted_at")
+            .select("world_id,name,description,environment,world_epoch,created_at,updated_at,deleted_at")
             .execute_typed::<Self>()
             .await
     }
@@ -39,7 +42,7 @@ impl WorldRow {
     /// Fetch world by world_id
     pub async fn fetch(supa: &Supabase, world_id: WorldId) -> Result<Self, SupabasicError> {
         supa.from(Self::table())
-            .select("world_id,name,description,world_epoch,created_at,updated_at,deleted_at")
+            .select("world_id,name,description,environment,world_epoch,created_at,updated_at,deleted_at")
             .eq("world_id", &world_id.to_string())
 
             .single_typed::<Self>()
@@ -56,7 +59,7 @@ impl WorldRow {
         let rows: Vec<Self> = supa
             .from(Self::table())
             .insert(payload)
-            .select("world_id,name,description,world_epoch,created_at,updated_at,deleted_at")
+            .select("world_id,name,description,environment,world_epoch,created_at,updated_at,deleted_at")
             .execute_typed()
             .await?;
 
@@ -73,4 +76,5 @@ pub struct NewWorldRow {
     pub name: Option<String>,
     pub description: Option<String>,
     pub world_epoch: Option<String>,  // raw i128 ns
+    pub environment: serde_json::Value,
 }

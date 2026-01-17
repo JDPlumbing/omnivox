@@ -8,7 +8,7 @@ use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::orm::DbModel;
 
 //use crate::core::uvoxid::UvoxId;
-use crate::engine::entity::SimEntity;
+use crate::core::SimEntity;
 use crate::core::SimTime;
 use crate::core::sim_time::{ deserialize_simtime, deserialize_simtime_opt } ;
 

@@ -6,6 +6,7 @@ pub mod sim_date;
 pub mod sim_display;
 pub mod sim_aggregate;
 pub mod sim_julian;
+pub mod sim_clock;
 
 pub use time_delta::TimeDelta;
 pub use sim_time::SimTime;
@@ -15,3 +16,4 @@ pub use sim_date::SimDate;
 pub use sim_display::*;
 pub use sim_aggregate::*;
 pub use sim_julian::*;
+pub use sim_clock::SimClock;
