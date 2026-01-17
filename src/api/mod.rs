@@ -38,8 +38,7 @@ pub use worlds::{list_worlds_handler,
                 set_world_epoch,
                 sample_environment_handler,
                 world_relative_handler,
-            
-            
+                world_origin_relative_handler,
             
             };
 
@@ -133,6 +132,7 @@ pub fn api_router(app_state: AppState) -> Router {
         .route("/{world_id}/epoch/set", post(set_world_epoch))
         .route("/{world_id}/environment/sample", get(sample_environment_handler))
         .route("/{from}/relative/{to}", get(world_relative_handler))
+        .route("/{from}/relative/{to}/origin", get(world_origin_relative_handler))
 
         
 ;

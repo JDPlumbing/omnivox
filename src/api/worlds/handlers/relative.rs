@@ -78,3 +78,36 @@ pub async fn world_relative_handler(
 
     Ok(Json(vec))
 }
+
+#[derive(serde::Deserialize)]
+pub struct TimeQuery {
+    pub time_ns: String,
+}
+
+pub async fn world_origin_relative_handler(
+    State(app): State<AppState>,
+    Path((from_world, to_world)): Path<(WorldId, WorldId)>,
+    Query(q): Query<TimeQuery>,
+) -> Result<impl IntoResponse, axum::http::StatusCode> {
+    let time = SimTime(
+        q.time_ns
+            .parse::<i128>()
+            .map_err(|_| axum::http::StatusCode::BAD_REQUEST)?
+    );
+
+    // Load frames
+    let frames = frame_presets();
+    let resolver = WorldResolver { frames: &frames };
+
+    // Compute origin → origin vector
+    let from_pose = resolver.world_pose(from_world, time);
+    let to_pose = resolver.world_pose(to_world, time);
+
+    let vec = [
+        to_pose.position_m[0] - from_pose.position_m[0],
+        to_pose.position_m[1] - from_pose.position_m[1],
+        to_pose.position_m[2] - from_pose.position_m[2],
+    ];
+
+    Ok(Json(vec))
+}

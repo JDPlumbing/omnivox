@@ -20,10 +20,13 @@ pub fn world_to_world_vector(
         from_space,
     );
 
-    let to_pos = resolver.world_origin(
+    let to_pose = resolver.world_pose(
         to_world,
         time,
     );
+
+    let to_pos = to_pose.position_m;
+
 
     [
         to_pos[0] - from_pos[0],
