@@ -1,40 +1,58 @@
-use crate::core::tdt::SimDuration;
 use crate::core::uvoxid::UvoxId;
+use crate::core::tdt::sim_duration::SimDuration;
 use crate::core::env::fields::{Field, FieldSample};
-
-/// Fields are merged in order.
-/// Later fields override earlier ones.
-/// WorldEnvironment.fields should be ordered from global → local.
+use crate::core::world::world_env_descriptor::{WorldEnvDescriptor, WorldSpace};
 
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct WorldEnvironment {
+    pub space: WorldSpace,
     pub fields: Vec<Arc<dyn Field>>,
 }
 
 impl WorldEnvironment {
-    pub fn sample(&self, id: &UvoxId, time: SimDuration) -> FieldSample {
-        let mut sample = self.fields.iter().fold(
-            FieldSample::default(),
-            |acc, field| acc.merge(field.sample(id, time)),
-        );
+    pub fn from_descriptor(desc: &WorldEnvDescriptor) -> Self {
+        let mut fields: Vec<Arc<dyn Field>> = Vec::new();
 
-        // Resolve pressure if possible
-        if sample.pressure != 0.0 {
-            if let (density, gravity_radial) =
-                (sample.density, sample.gravity_radial)
-            {
-                // Project gravity onto radial direction
-                let g_mag = gravity_radial;
-                // Simple hydrostatic approximation:
-                // P ≈ ρ * g * h
-                // Here h is implicitly encoded in density falloff,
-                // so we just ensure pressure trends correctly.
-                sample.pressure = sample.pressure * density * g_mag;
-            }
+        use crate::core::env::{
+            gravity::GravityField,
+            medium::MediumField,
+            atmosphere::AtmosphereField,
+        };
+
+        fields.push(Arc::new(
+            GravityField::from_model(&desc.space, &desc.gravity),
+        ));
+
+        fields.push(Arc::new(
+            MediumField::from_space(&desc.space, &desc.medium),
+        ));
+
+        if let Some(atm) = &desc.atmosphere {
+            fields.push(Arc::new(
+                AtmosphereField::from_model(&desc.space, atm),
+            ));
         }
 
-        sample
+        Self {
+            space: desc.space.clone(),
+            fields,
+        }
     }
+
+    pub fn sample(
+        &self,
+        uvox: &UvoxId,
+        time: SimDuration,
+    ) -> FieldSample {
+        let mut out = FieldSample::default();
+
+        for field in &self.fields {
+            out.merge(field.sample(uvox, time));
+        }
+
+        out
+    }
+
 }

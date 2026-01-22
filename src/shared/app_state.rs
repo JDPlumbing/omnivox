@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use crate::core::world::world_frame::WorldFrame;
 use crate::core::world::world_env_descriptor::WorldSpace;
 use crate::core::id::WorldId;
+use crate::core::{Observer, ObserverId};
 
 
 #[derive(Clone)]
@@ -32,6 +33,7 @@ pub struct AppState {
 
     pub world_frames: HashMap<WorldId, WorldFrame>,
     pub world_spaces: HashMap<WorldId, WorldSpace>,
+    pub observers: Arc<RwLock<HashMap<ObserverId, Observer>>>
 }
 
 impl AppState {
@@ -53,6 +55,7 @@ impl AppState {
             objex_store: Arc::new(RwLock::new(ObjexStore::new())),
             world_frames: HashMap::new(),
             world_spaces: HashMap::new(),
+            observers: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
@@ -72,6 +75,7 @@ impl AppState {
             objex_store: Arc::new(RwLock::new(ObjexStore::new())),
             world_frames: HashMap::new(),
             world_spaces: HashMap::new(),
+            observers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 

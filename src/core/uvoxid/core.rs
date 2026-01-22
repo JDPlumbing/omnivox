@@ -364,3 +364,33 @@ impl UvoxId {
         UvoxId::new(RUm(r_um), lat_code, lon_code)
     }
 }
+
+impl UvoxId {
+    /// True if this represents the world origin (r = 0)
+    pub fn is_origin(&self) -> bool {
+        self.r_um == RUm(0)
+    }
+
+    /// Unit direction vector from world center
+    pub fn unit_vector(&self) -> [f64; 3] {
+        let v = self.to_vec3();
+
+        let x = v[0] as f64;
+        let y = v[1] as f64;
+        let z = v[2] as f64;
+
+        let mag = (x*x + y*y + z*z).sqrt().max(1e-12);
+
+        [x / mag, y / mag, z / mag]
+    }
+
+
+
+    /// Radial distance from world center (meters)
+    pub fn radius_m(&self) -> f64 {
+        self.r_um.0 as f64 * 1e-6
+    }
+
+
+
+}

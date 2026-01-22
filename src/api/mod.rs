@@ -27,20 +27,7 @@ pub use users::{get_user,
 
 // --- Worlds API ---
 mod worlds;
-pub use worlds::{list_worlds_handler, 
-                get_world_handler,
-                create_world_handler, 
-                update_world_handler, 
-                patch_world_handler, 
-                delete_world_handler, 
-                get_world_stats,
-                world_time_now,
-                set_world_epoch,
-                sample_environment_handler,
-                world_relative_handler,
-                world_origin_relative_handler,
-            
-            };
+pub use worlds::*;
 
 // --- Simulations API ---
 //mod simulations;
@@ -92,7 +79,7 @@ pub use session::{init_session, session_status, set_session_world};
 
 // --- Pages API ---
 mod pages;
-pub use pages::{get_page, create_page, update_page, delete_page, list_pages};
+pub use pages::*;
 
 // --- Auth API ---
 mod auth;
@@ -108,6 +95,15 @@ use objex::materials::material_routes;
 use objex::geospec::geospec_routes;
 use objex::templates::geometry_template_routes;
 
+// -------- physics API -----
+mod physics;
+use physics::*;
+
+
+// -------observers API 
+mod observers;
+use observers::*;
+
 pub fn api_router(app_state: AppState) -> Router {
     // Users routes
     let users_routes = Router::new()
@@ -118,24 +114,25 @@ pub fn api_router(app_state: AppState) -> Router {
         .route("/anon/{id}", get(get_anon_user))
         ;
 
-    let worlds_routes = Router::new()
-        .route("/", get(list_worlds_handler).post(create_world_handler))
-        .route(
-            "/{world_id}",
-            get(get_world_handler)
-                .put(update_world_handler)
-                .patch(patch_world_handler)
-                .delete(delete_world_handler),
-        )
-        .route("/{world_id}/stats", get(get_world_stats))
-        .route("/{world_id}/time/now", get(world_time_now))
-        .route("/{world_id}/epoch/set", post(set_world_epoch))
-        .route("/{world_id}/environment/sample", get(sample_environment_handler))
-        .route("/{from}/relative/{to}", get(world_relative_handler))
-        .route("/{from}/relative/{to}/origin", get(world_origin_relative_handler))
+    let worlds_routes = worlds::world_routes();
 
+    let physics_routes = Router::new()
+        .route("/lunar/phase", get(lunar_phase_handler))
+        .route("/illumination", get(solar_illumination_handler))
+        .route("/seasons/check", get(seasons_check_handler))
+        .route("/tides", get(tidal_potential_handler))
+        .route("/tides/acceleration", get(tidal_acceleration_handler))
+        .route("/tides/curve", get(tides_curve_handler))
+        .route("/insolation/daily", get(daily_insolation_handler))
+        .route("/insolation/curve", get(insolation_curve_handler))
+        .route("/insolation/seasons", get(insolation_seasons_handler))
+        .route("/environmental_snapshot", get(environmental_snapshot_handler))
+        .route("/environmental_snapshot/curve", get(environmental_snapshot_curve_handler))
         
-;
+        
+        
+        ;
+
 
     //let simulations_routes = simulations::routes();
 
@@ -171,11 +168,7 @@ pub fn api_router(app_state: AppState) -> Router {
         )
         .route("/world/{world_id}", get(list_properties_for_world));
 
-    let pages_routes = Router::new()
-        .route("/", get(list_pages).post(create_page))
-        .route("/{slug}", get(get_page))
-        .route("/id/{id}", put(update_page))
-        .route("/{slug}", delete(delete_page));
+    let pages_routes = pages_routes();
 
     let auth_routes = Router::new()
         .route("/login", post(login))
@@ -184,7 +177,7 @@ pub fn api_router(app_state: AppState) -> Router {
 
     let time_routes = time::time_routes();
     //let viewer_routes = viewer::viewer_routes();
-
+    let observer_routes = observers::observer_routes();
 
     Router::new()
         .route("/ping", get(|| async { "pong" }))
@@ -210,12 +203,14 @@ pub fn api_router(app_state: AppState) -> Router {
         .nest("/objex", objex_routes())
         .nest("/objex/materials", material_routes())
         .nest("/objex/geospec", geospec_routes())
+        .nest("/physics", physics_routes)
         
         .nest("/geometry/templates", geometry_template_routes())
         .nest("/events", events_routes)
         .nest("/time", time_routes)
         .nest("/pages", pages_routes)
         //.nest("/viewer", viewer_routes)
+        .nest("/observers", observer_routes)
 
         .with_state(app_state)
         

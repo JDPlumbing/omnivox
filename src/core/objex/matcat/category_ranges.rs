@@ -571,7 +571,7 @@ pub fn generate_props_for_material(cat: u8, variant: u16, grade: u16) -> MatProp
     fn jitter(base: (f32, f32), bias: f32, tightness: f32, rng: &mut impl rand::Rng) -> f32 {
         let mid = (base.0 + base.1) / 2.0;
         let span = (base.1 - base.0) * tightness * 0.5;
-        let val = mid * (1.0 + bias) + rng.gen_range(-span..span);
+        let val = mid * (1.0 + bias) + rng.random_range(-span..span);
         val.clamp(base.0, base.1)
     }
 

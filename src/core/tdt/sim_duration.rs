@@ -203,3 +203,16 @@ impl SimDuration {
         self.as_seconds()
     }
 }
+
+
+impl SimDuration {
+    #[inline]
+    pub fn from_seconds_f64(sec: f64) -> Self {
+        Self((sec * 1_000_000_000.0) as i128)
+    }
+
+    #[inline]
+    pub fn days_f64(days: f64) -> Self {
+        Self::from_seconds_f64(days * 86_400.0)
+    }
+}

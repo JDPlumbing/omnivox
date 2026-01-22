@@ -37,21 +37,16 @@ impl Default for FieldSample {
 }
 
 impl FieldSample {
-    pub fn merge(self, other: FieldSample) -> FieldSample {
-        FieldSample {
-            medium: if other.medium != Medium::Vacuum {
-                other.medium
-            } else {
-                self.medium
-            },
-
-            density: self.density + other.density,
-            pressure: self.pressure + other.pressure,
-            temperature: self.temperature + other.temperature,
-            gravity_radial: self.gravity_radial + other.gravity_radial,
-            wind_radial: self.wind_radial + other.wind_radial,
-            resistance: self.resistance + other.resistance,
+    pub fn merge(&mut self, other: FieldSample) {
+        if other.medium != Medium::Vacuum {
+            self.medium = other.medium;
         }
+
+        self.density += other.density;
+        self.pressure += other.pressure;
+        self.temperature += other.temperature;
+        self.gravity_radial += other.gravity_radial;
+        self.wind_radial += other.wind_radial;
+        self.resistance += other.resistance;
     }
 }
-

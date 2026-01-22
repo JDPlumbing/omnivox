@@ -14,6 +14,9 @@ pub struct WorldFrame {
     /// None = root frame (e.g. Sun)
     pub parent: Option<WorldId>,
 
+    /// Physical radius of this body (meters)
+    pub physical_radius_m: Option<f64>,
+
     /// Computes this world's transform at a given time
     pub model: FrameModel,
 }
@@ -54,6 +57,14 @@ pub struct OrbitalParams {
     /// Axial tilt relative to orbital plane (radians)
     pub axial_tilt_rad: f64,
 
+    /// Angle placing longitude 0 in orbital plane at epoch
+    pub prime_meridian_at_epoch: f64,
+
+
+}
+#[derive(Debug)]
+pub enum AnchorError {
+    Singularity,
 }
 
 
@@ -172,12 +183,19 @@ impl FrameModel {
                     * (t_ns / params.rotation_period.0 as f64)
                     + params.rotation_phase_at_epoch;
 
-                let spin = Mat3::rotation_z(spin_theta);
+                // 1️⃣ Align longitude 0 at epoch (body-frame X axis)
+                let align = Mat3::rotation_z(params.prime_meridian_at_epoch);
 
-                // Axial tilt (constant)
+                // 2️⃣ Axial tilt (tilt the rotation axis)
                 let tilt = Mat3::rotation_x(params.axial_tilt_rad);
 
-                let orientation = spin * tilt;
+                // 3️⃣ Spin about the tilted axis
+                let spin = Mat3::rotation_z(spin_theta);
+
+                // IMPORTANT: order matters (rightmost applied first)
+                let orientation = spin * tilt * align;
+
+
 
                 FramePose {
                     position_m: [x, y, z],
@@ -193,7 +211,28 @@ impl FrameModel {
 pub struct WorldResolver<'a> {
     pub frames: &'a HashMap<WorldId, WorldFrame>,
 }
+impl<'a> WorldResolver<'a> {
 
+    pub fn uvox_local_offset_m(
+        &self,
+        uvox: &UvoxId,
+        space: &WorldSpace,
+    ) -> [f64; 3] {
+        let p = uvox.to_vec3();
+        let pos = [p[0] as f64, p[1] as f64, p[2] as f64];
+
+        let r = uvox.r_um.meters();
+        let surface = space.surface_radius_m;
+
+        let scale = (r - surface) / r.max(1.0);
+
+        [
+            pos[0] * scale,
+            pos[1] * scale,
+            pos[2] * scale,
+        ]
+    }
+}
 impl<'a> WorldResolver<'a> {
     pub fn world_pose(
         &self,
@@ -233,7 +272,7 @@ impl<'a> WorldResolver<'a> {
         space: &WorldSpace,
     ) -> [f64; 3] {
         let pose = self.world_pose(world_id, time);
-        let local = uvox_local_offset_m(uvox, space);
+        let local = self.uvox_local_offset_m(uvox, space);
         let rotated = pose.orientation * local;
 
         [
@@ -242,23 +281,39 @@ impl<'a> WorldResolver<'a> {
             pose.position_m[2] + rotated[2],
         ]
     }
+
+pub fn world_anchor_point(
+    &self,
+    world: WorldId,
+    uvox: &UvoxId,
+    time: SimTime,
+    _space: &WorldSpace,
+) -> Result<[f64; 3], AnchorError> {
+    if uvox.is_origin() {
+        return Err(AnchorError::Singularity);
+    }
+
+    // Planet pose (includes orbit + tilt + spin)
+    let pose = self.world_pose(world, time);
+
+    // Direction from planet center in planet-local coordinates
+    let dir_local = uvox.unit_vector();
+
+    // Radius from planet center (this is NOT altitude — you are correct)
+    let r = uvox.radius_m();
+
+    // Rotate local direction into world space
+    let offset_world = pose.orientation * [
+        dir_local[0] * r,
+        dir_local[1] * r,
+        dir_local[2] * r,
+    ];
+
+    Ok([
+        pose.position_m[0] + offset_world[0],
+        pose.position_m[1] + offset_world[1],
+        pose.position_m[2] + offset_world[2],
+    ])
 }
 
-pub fn uvox_local_offset_m(
-    uvox: &UvoxId,
-    space: &WorldSpace,
-) -> [f64; 3] {
-    let p = uvox.to_vec3();
-    let pos = [p[0] as f64, p[1] as f64, p[2] as f64];
-
-    let r = uvox.r_um.meters();
-    let surface = space.surface_radius_m;
-
-    let scale = (r - surface) / r.max(1.0);
-
-    [
-        pos[0] * scale,
-        pos[1] * scale,
-        pos[2] * scale,
-    ]
 }

@@ -9,6 +9,10 @@ pub mod identity;
 pub mod world;
 pub mod entity;
 pub mod spatial;
+pub mod physics;
+pub mod observer;
+pub mod math;
+
 
 pub use id::*;
 pub use uvoxid::{UvoxId};
@@ -21,3 +25,5 @@ pub use identity::*;
 pub use world::World;
 pub use entity::{SimEntity, CreateSimEntity};
 pub use spatial::UvoxQuat;
+pub use physics::*;
+pub use observer::*;

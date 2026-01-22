@@ -1,0 +1,101 @@
+mnivox-react$ curl -X POST http://localhost:8000/api/location/uvox/from_coords \
+  -H "Content-Type: application/json" \
+  -d '{
+    "lat": 0.0,
+    "lon": 0.0,
+    "elevation_m": 0
+  }'
+{"status":"ok","uvoxid":{"hex":"000005cb5d311e0000000000000000000000000000000000","lat_code":0,"lon_code":0,"r_um":6371000000000}}drippy@JDPlumbing:~/jdplumbincurl -X POST http://localhost:8000/api/location/uvox/from_coords \ocation/uvox/from_coords \
+  -H "Content-Type: application/json" \
+  -d '{
+    "lat": 89.9,
+    "lon": 0.0,
+    "elevation_m": 0
+  }'
+{"status":"ok","uvoxid":{"hex":"000005cb5d311e000000082d25c1ac000000000000000000","lat_code":8990000000000,"lon_code":0,"r_um":6371000000000}}drippy@JDPlumbing:~/jdplumbing-app/rust/omnivox-react$ curl -X POST hcurl -X POST http://localhost:8000/api/location/uvox/from_coords \
+  -H "Content-Type: application/json" \
+  -d '{
+    "lat": -89.9,
+    "lon": 0.0,
+    "elevation_m": 0
+  }'
+{"status":"ok","uvoxid":{"hex":"000005cb5d311e00fffff7d2da3e54000000000000000000","lat_code":-8990000000000,"lon_code":0,"r_um":6371000000000}}drippy@JDPlumbing:~/jdplumbing-app/rust/omnivox-react$ 
+
+
+
+# Equator
+curl "http://localhost:8000/api/physics/tides/acceleration/tangent?world=1&uvox=000005cb5d311e0000000000000000000000000000000000&time_ns=0"
+
+# North Pole
+curl "http://localhost:8000/api/physics/tides/acceleration/tangent?world=1&uvox=000005cb5d311e000000082d25c1ac000000000000000000&time_ns=0"
+
+# South Pole
+curl "http://localhost:8000/api/physics/tides/acceleration/tangent?world=1&uvox=000005cb5d311e00fffff7d2da3e54000000000000000000&time_ns=0"
+
+
+curl "http://localhost:8000/api/physics/tides/acceleration?world=1&uvox=000005cb5d311e0000000000000000000000000000000000&time_ns=0"
+
+curl "http://localhost:8000/api/physics/tides/acceleration?world=1&uvox=000005cb5d311e000000082d25c1ac000000000000000000&time_ns=0"
+
+
+curl "http://localhost:8000/api/physics/insolation/daily?world=1&uvox=000005cb5dc9b480000003b3eb32bc00fffff944e9ddaa00&time_ns=0"
+
+curl "http://localhost:8000/api/physics/insolation/curve?world=1&uvox=000005cb5dc9b480000003b3eb32bc00fffff944e9ddaa00&start_time_ns=0"
+
+curl "http://localhost:8000/api/physics/environmental_snapshot/curve?world=1&uvox=000005cb5dc9b480000003b3eb32bc00fffff944e9ddaa00&start_time_ns=0"
+
+
+curl "http://localhost:8000/api/physics/environmental_snapshot/curve?world=1&uvox=000005cb5dc9b480000003b3eb32bc00fffff944e9ddaa00&start_time_ns=0&duration_days=7&step_seconds=1800"
+
+
+curl -X POST http://localhost:8000/api/observers \
+  -H "Content-Type: application/json" \
+  -d '{"world":1,"uvox":"000005cb5d311e000000025d5c139000fffff82da80e1000"}'
+
+curl "http://localhost:8000/api/observers/1/environment?time_ns=21600000000000"
+
+
+curl "http://localhost:8000/api/observers/1/environment/curve?start_time_ns=0&step_ns=3600000000000&samples=24"
+
+curl "http://localhost:8000/api/observers/1/sun/angles?time_ns=0"
+curl "http://localhost:8000/api/observers/1/sun/angles?time_ns=21600000000000"
+curl "http://localhost:8000/api/observers/1/sun/angles?time_ns=43200000000000"
+curl "http://localhost:8000/api/observers/1/sun/angles?time_ns=64800000000000"
+curl "http://localhost:8000/api/observers/1/sun/angles?time_ns=86400000000000"
+
+
+
+florida uvox 000005cb5d311e000000025d5c139000fffff82da80e1000
+
+equator near prime meridian 000005cb5d311e0000000000000000000000000000000000
+
+curl -X POST http://localhost:8000/api/observers \
+  -H "Content-Type: application/json" \
+  -d '{"world":1,"uvox":"000005cb5d311e000000025d5c139000fffff82da80e1000"}'
+
+curl -X POST http://localhost:8000/api/observers \
+  -H "Content-Type: application/json" \
+  -d '{"world":1,"uvox":"000005cb5d311e0000000000000000000000000000000000"}'
+
+
+curl "http://localhost:8000/api/observers/2/sun/angles?time_ns=0"
+curl "http://localhost:8000/api/observers/1/sun/angles?time_ns=0"
+
+lon 90
+000005cb5d311e0000000000000000000000082f79cd9000
+lon -90
+000005cb5d311e000000000000000000fffff7d086327000
+
+
+lon 180 000005cb5d311e000000000000000000ffffefa10c64e000
+
+curl "http://localhost:8000/api/observers/2/camera/horizon?start_time_ns=0&end_time_ns=86400000000000&yaw_deg=0&pitch_deg=0"
+
+
+curl "http://localhost:8000/api/observers/1/camera/eclipse/timeline?time_start_ns=0&time_end_ns=3155760000000000&step_ns=3600000000000&yaw_deg=270&pitch_deg=0"
+
+
+curl "http://localhost:8000/api/observers/2/atmosphere/optics?time_ns=86200000000000&yaw_deg=180&pitch_deg=30"
+{"observer_id":1,"time_ns":0,"optical_depth":0.0,"transmittance":1.0,"sky_brightness":0.0}drippy@JDPlumbing:~/jdplumbing-app/rust/omnivox-react$ 
+
+curl "http://localhost:8000/api/observers/1/atmosphere/optics?time_ns=9990000000000&yaw_deg=180&pitch_deg=30

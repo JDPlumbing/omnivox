@@ -4,8 +4,8 @@ use uuid::Uuid;
 
 use crate::core::uvoxid::UvoxId;
 use crate::core::objex::{Objex};
-use crate::core::objex::geospec::Shape;
-use crate::core::objex::core::material::MaterialLink;
+//use crate::core::objex::geospec::Shape;
+//use crate::core::objex::core::material::MaterialLink;
 use crate::core::id::{EntityId, WorldId};
 use crate::core::{SimTime, SimDuration };
 use crate::core::UvoxQuat;

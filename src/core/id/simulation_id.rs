@@ -61,7 +61,7 @@ impl TryFrom<Uuid> for SimulationId {
 }
 
 use std::str::FromStr;
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow};
 
 // ------------------------------------------------------------
 // Display: WORLD-REGION-STARTNS-USER-BRANCH

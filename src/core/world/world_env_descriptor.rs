@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
-use crate::core::world::WorldEnvironment;
-use crate::core::env::fields::Field;
-use crate::core::env::gravity::GravityField;
-use crate::core::env::medium::MediumField;
-use crate::core::env::atmosphere::AtmosphereField;
+//use crate::core::world::WorldEnvironment;
+//use crate::core::env::fields::Field;
+//use crate::core::env::gravity::GravityField;
+//use crate::core::env::medium::MediumField;
+//use crate::core::env::atmosphere::AtmosphereField;
+use crate::core::UvoxId;
 
-use std::sync::Arc;
+//use std::sync::Arc;
 use crate::core::env::medium::Medium;
 
 /// How "up" is defined in this world.
@@ -103,24 +104,8 @@ pub struct WorldEnvDescriptor {
     pub pressure: Option<PressureModel>,
 }
 
-impl WorldEnvironment {
-    pub fn from_descriptor(desc: &WorldEnvDescriptor) -> Self {
-        let mut fields: Vec<Arc<dyn Field>> = Vec::new();
-
-        fields.push(Arc::new(
-            GravityField::from_model(&desc.space, &desc.gravity),
-        ));
-
-        fields.push(Arc::new(
-            MediumField::from_space(&desc.space, &desc.medium),
-        ));
-
-        if let Some(atm) = &desc.atmosphere {
-            fields.push(Arc::new(
-                AtmosphereField::from_model(&desc.space, atm),
-            ));
-        }
-
-        Self { fields }
+impl WorldSpace {
+    pub fn altitude_m(&self, uvox: &UvoxId) -> f64 {
+        uvox.radius_m() - self.surface_radius_m
     }
 }
