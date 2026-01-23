@@ -17,3 +17,26 @@ pub struct AtmosphereOpticsResponse {
     /// Perceptual-ish sky brightness
     pub sky_luminance: f64,
 }
+
+#[derive(Serialize)]
+pub struct AtmosphereSampleResponse {
+    pub observer_id: u64,
+    pub time_ns: i128,
+    pub altitude_m: f64,
+
+    pub density_kg_m3: f64,
+}
+
+
+#[derive(Serialize)]
+pub struct AtmosphereSweepSample {
+    pub altitude_m: f64,
+    pub density_kg_m3: f64,
+}
+
+#[derive(Serialize)]
+pub struct AtmosphereSweepResponse {
+    pub observer_id: u64,
+    pub time_ns: i128,
+    pub samples: Vec<AtmosphereSweepSample>,
+}

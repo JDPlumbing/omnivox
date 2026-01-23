@@ -9,7 +9,7 @@
 //!   - UvoxId position (Earth-centered)
 
 use crate::core::tdt::sim_time::SimTime;
-use crate::core::physox::astronomy::julian::simtime_to_julian;
+//use crate::core::physox::astronomy::julian::simtime_to_julian;
 use crate::core::physox::astronomy::convert::{Vec3, cartesian_to_uvox};
 use crate::core::uvoxid::UvoxId;
 

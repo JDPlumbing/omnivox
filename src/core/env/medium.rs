@@ -3,6 +3,8 @@ use crate::core::uvoxid::UvoxId;
 use crate::core::env::fields::{Field, FieldSample};
 use crate::core::world::world_env_descriptor::{WorldSpace, MediumModel};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use crate::core::env::land::height_field::LandHeightField;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Medium {
@@ -13,40 +15,69 @@ pub enum Medium {
 }
 
 
+
 #[derive(Debug, Clone)]
 pub struct MediumField {
-    pub surface_radius_m: f64,
-    pub sea_level_radius_m: f64,
+    pub space: WorldSpace,
+    pub land: Arc<dyn LandHeightField>,
     pub atmosphere_limit_m: f64,
 }
+
 impl Field for MediumField {
     fn sample(&self, id: &UvoxId, _time: SimDuration) -> FieldSample {
-        let r = id.r_um.meters();
+        let z = id.r_um.meters() - self.space.surface_radius_m;
+        let land_height = self.land.height_m(id);
 
-    let medium = if r < self.surface_radius_m {
-        Medium::Solid
-    } else if r < self.sea_level_radius_m {
-        Medium::Liquid
-    } else if r < self.atmosphere_limit_m {
-        Medium::Gas
-    } else {
-        Medium::Vacuum
-    };
-
+        let medium = if z < land_height {
+            Medium::Solid
+        } else if z < 0.0 {
+            Medium::Liquid
+        } else if z < self.atmosphere_limit_m {
+            Medium::Gas
+        } else {
+            Medium::Vacuum
+        };
 
         FieldSample {
-            medium: medium,
+            medium,
             ..Default::default()
         }
     }
 }
 
+
 impl MediumField {
-    pub fn from_space(space: &WorldSpace, model: &MediumModel) -> Self {
+    pub fn from_space(
+        space: &WorldSpace,
+        land: Arc<dyn LandHeightField>,
+        _model: &MediumModel,
+    ) -> Self {
         Self {
-            surface_radius_m: space.surface_radius_m,
-            sea_level_radius_m: space.surface_radius_m, // adjust later if needed
-            atmosphere_limit_m: space.surface_radius_m * 1.02, // placeholder
+            space: space.clone(),
+            land,
+            atmosphere_limit_m: space.surface_radius_m * 1.02,
         }
+    }
+}
+
+impl Medium {
+    #[inline]
+    pub fn is_vacuum(&self) -> bool {
+        matches!(self, Medium::Vacuum)
+    }
+
+    #[inline]
+    pub fn is_gas(&self) -> bool {
+        matches!(self, Medium::Gas)
+    }
+
+    #[inline]
+    pub fn is_liquid(&self) -> bool {
+        matches!(self, Medium::Liquid)
+    }
+
+    #[inline]
+    pub fn is_solid(&self) -> bool {
+        matches!(self, Medium::Solid)
     }
 }

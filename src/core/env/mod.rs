@@ -33,3 +33,9 @@ pub use temperature::*;
 pub use fields::{Field, FieldSample};
 pub use env_snapshot::{EnvSnapshot, sample_environment};
 pub use derived_env::DerivedEnv;
+
+pub mod chemistry;
+pub use chemistry::*;
+
+pub mod land;
+pub use land::*;

@@ -1,9 +1,9 @@
-mnivox-react$ curl -X POST http://localhost:8000/api/location/uvox/from_coords \
+ curl -X POST http://localhost:8000/api/location/uvox/from_coords \
   -H "Content-Type: application/json" \
   -d '{
     "lat": 0.0,
     "lon": 0.0,
-    "elevation_m": 0
+    "elevation_m": 10
   }'
 {"status":"ok","uvoxid":{"hex":"000005cb5d311e0000000000000000000000000000000000","lat_code":0,"lon_code":0,"r_um":6371000000000}}drippy@JDPlumbing:~/jdplumbincurl -X POST http://localhost:8000/api/location/uvox/from_coords \ocation/uvox/from_coords \
   -H "Content-Type: application/json" \
@@ -69,15 +69,34 @@ florida uvox 000005cb5d311e000000025d5c139000fffff82da80e1000
 
 equator near prime meridian 000005cb5d311e0000000000000000000000000000000000
 
+near florida on surface:
 curl -X POST http://localhost:8000/api/observers \
   -H "Content-Type: application/json" \
   -d '{"world":1,"uvox":"000005cb5d311e000000025d5c139000fffff82da80e1000"}'
 
+at surface/lat/lng=0,0:
 curl -X POST http://localhost:8000/api/observers \
   -H "Content-Type: application/json" \
   -d '{"world":1,"uvox":"000005cb5d311e0000000000000000000000000000000000"}'
 
+above surface(10km):
+curl -X POST http://localhost:8000/api/observers \
+  -H "Content-Type: application/json" \
+  -d '{"world":1,"uvox":"000005cdb13d020000000000000000000000000000000000"}'
 
+below surface: (10m)
+curl -X POST http://localhost:8000/api/observers \
+  -H "Content-Type: application/json" \
+  -d '{"world":1,"uvox":"000005cb5c98878000000000000000000000000000000000"}'
+
+above surface: (10m)
+curl -X POST http://localhost:8000/api/observers \
+  -H "Content-Type: application/json" \
+  -d '{"world":1,"uvox":"000005cb5dc9b48000000000000000000000000000000000"}'
+
+000005cb5c98878000000000000000000000000000000000
+
+000005cdb13d020000000000000000000000000000000000
 curl "http://localhost:8000/api/observers/2/sun/angles?time_ns=0"
 curl "http://localhost:8000/api/observers/1/sun/angles?time_ns=0"
 
@@ -99,3 +118,37 @@ curl "http://localhost:8000/api/observers/2/atmosphere/optics?time_ns=8620000000
 {"observer_id":1,"time_ns":0,"optical_depth":0.0,"transmittance":1.0,"sky_brightness":0.0}drippy@JDPlumbing:~/jdplumbing-app/rust/omnivox-react$ 
 
 curl "http://localhost:8000/api/observers/1/atmosphere/optics?time_ns=9990000000000&yaw_deg=180&pitch_deg=30
+
+
+curl "http://localhost:8000/api/observers/2/surface/energy?time_ns=66600000000000"
+
+
+rust/omnivox-react$ curl "http://localhost:8000/api/observers/1/sun/angles?time_ns=43200000000000"
+{"observer_id":2,"time_ns":66600000000000,"azimuth_deg":258.5196294268152,"elevation_deg":78.60169466543408}drippy@JDPludrippy@JDPlumbing:~/jdplumbing-app/rust/omnivox-react$ curl "http://localhost:8000/api/observers/2/sun/angles?time_ns=84600000000000"
+{"observer_id":2,"time_ns":84600000000000,"azimuth_deg":271.413700813468,"elevation_deg":3.894764521705737}drippy@JDPlumbing:~/jdplumbing-app/rust/omnivox-react$ 
+
+curl "http://localhost:8000/api/observers/1/atmosphere/sample?time_ns=0&altitude_m=0"
+curl "http://localhost:8000/api/observers/1/atmosphere/sample?time_ns=0&altitude_m=11000"
+curl "http://localhost:8000/api/observers/1/atmosphere/sample?time_ns=0&altitude_m=30000"
+curl "http://localhost:8000/api/observers/1/atmosphere/sample?time_ns=0&altitude_m=100000"
+
+# Sea level
+curl ".../atmosphere/sample?time_ns=0&altitude_m=0"
+
+# Commercial flight altitude
+curl ".../atmosphere/sample?time_ns=0&altitude_m=11000"
+
+# Stratosphere
+curl ".../atmosphere/sample?time_ns=0&altitude_m=30000"
+
+# Edge of atmosphere
+curl ".../atmosphere/sample?time_ns=0&altitude_m=100000"
+
+
+
+curl "http://localhost:8000/api/observers/1/pressure/sample"
+
+GET "http://localhost:8000/api/observers/1/pressure/sweep?start_alt_m=0&end_alt_m=100000&step_m=1000"
+
+
+curl "http://localhost:8000/api/observers/2/chemistry/atmosphere"

@@ -90,6 +90,14 @@ pub struct PressureModel {
     pub derive_from_density: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum LandModel {
+    Flat,
+    // Noise,
+    // EarthLike,
+}
+
+
 /// 🔑 This is the authoritative definition of a world's environment
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorldEnvDescriptor {
@@ -98,6 +106,7 @@ pub struct WorldEnvDescriptor {
     pub gravity: GravityModel,
     pub medium: MediumModel,
 
+    pub land: Option<LandModel>,
     // OPTIONAL — flavor
     pub atmosphere: Option<AtmosphereModel>,
     pub temperature: Option<TemperatureModel>,

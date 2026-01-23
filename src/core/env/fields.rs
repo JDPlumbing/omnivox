@@ -4,7 +4,18 @@ use crate::core::env::medium::Medium;
 
 
 pub trait Field: Send + Sync {
-    fn sample(&self, id: &UvoxId, time: SimDuration) -> FieldSample;
+    fn sample(&self, id: &UvoxId, time: SimDuration) -> FieldSample {
+        FieldSample::default()
+    }
+
+    fn derive(
+        &self,
+        _id: &UvoxId,
+        _time: SimDuration,
+        _env: &FieldSample,
+    ) -> FieldSample {
+        FieldSample::default()
+    }
 }
 
 

@@ -23,6 +23,15 @@ pub fn observer_routes() -> Router<AppState> {
         .route("/{id}/camera/eclipse", get(handlers::camera_eclipse_handler))
         .route("/{id}/camera/eclipse/timeline", get(handlers::camera_eclipse_timeline_handler))
         .route("/{id}/atmosphere/optics",get(handlers::atmosphere_optics_handler))
+        .route("/{id}/atmosphere/sample", get(handlers::atmosphere_sample_handler))
+        .route("/{id}/atmosphere/sweep", get(handlers::atmosphere_sweep_handler))
+        .route("/{id}/pressure/sample", get(handlers::pressure_sample_handler))
+        .route("/{id}/pressure/sweep", get(handlers::pressure_sweep_handler))
+        .route("/{id}/chemistry/atmosphere", get(handlers::chemistry_atmosphere::chemistry_atmosphere_handler))
+        .route("/{id}/chemistry/ocean", get(handlers::chemistry_ocean::chemistry_ocean_handler))
+
+
+
         .route("/{id}/surface/energy", get(handlers::surface_energy_handler))
 
 }

@@ -5,7 +5,7 @@ use crate::core::tdt::SimTime;
 use crate::core::uvoxid::UvoxId;
 use crate::core::world::world_frame::WorldResolver;
 use crate::core::world::world_env_descriptor::WorldSpace;
-use crate::core::physics::illumination::solar_illumination;
+//use crate::core::physics::illumination::solar_illumination;
 use crate::core::physics::frames::local_tangent_frame;
 use crate::core::math::vec3::{dot, normalize};
 
@@ -77,14 +77,14 @@ pub fn surface_solar_irradiance(
     // -----------------------------------------
     // Atmospheric attenuation (scalar)
     // -----------------------------------------
-    let attenuation = 1.0;
+    let attenuation = 1.0; //TODO: this is a placeholder until atmospheric values are working
     // -----------------------------------------
     // Energy terms
     // -----------------------------------------
     let direct = SOLAR_CONSTANT_W_M2 * cos_incidence;
 
     // Diffuse sky light not modeled yet
-    let diffuse = 0.0;
+    let diffuse = 0.0;// TODO: this is a placeholder until atmospheric values are working
 
     Ok(SurfaceIrradiance {
         direct_w_m2: direct,

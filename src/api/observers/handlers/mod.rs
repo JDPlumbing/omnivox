@@ -30,3 +30,20 @@ pub use atmosphere::*;
 
 pub mod surface_energy;
 pub use surface_energy::*;
+
+pub mod atmosphere_sample;
+pub use atmosphere_sample::*;
+
+
+pub mod atmosphere_sample_sweep;
+pub use atmosphere_sample_sweep::*;
+
+pub mod pressure_sample;
+pub use pressure_sample::*;
+pub mod pressure_sweep;
+pub use pressure_sweep::*;
+
+pub mod chemistry_atmosphere;
+pub use chemistry_atmosphere::*;
+
+pub mod chemistry_ocean;

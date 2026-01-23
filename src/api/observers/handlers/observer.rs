@@ -10,7 +10,7 @@ use crate::shared::app_state::AppState;
 use crate::api::observers::dtos::*;
 use crate::core::observer::{Observer, ObserverId};
 use crate::core::uvoxid::UvoxId;
-use crate::core::tdt::SimTime;
+use crate::core::tdt::{SimTime, SimDuration};
 
 static OBSERVER_SEQ: AtomicU64 = AtomicU64::new(1);
 

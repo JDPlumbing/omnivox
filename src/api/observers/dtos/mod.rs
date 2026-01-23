@@ -24,3 +24,8 @@ pub use atmosphere::*;
 
 pub mod surface_energy;
 pub use surface_energy::*;
+
+pub mod pressure;
+
+pub mod chemistry;
+pub mod chemistry_ocean;

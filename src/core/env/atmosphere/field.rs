@@ -4,6 +4,7 @@ use crate::core::tdt::SimDuration;
 //use crate::core::medium::Medium;
 use crate::core::world::world_env_descriptor::{WorldSpace, AtmosphereModel};
 
+#[derive(Clone)]
 pub struct AtmosphereField {
     pub planet_radius_m: f64,
     pub sea_level_density: f64,

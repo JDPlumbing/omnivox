@@ -1,7 +1,7 @@
 use crate::core::env::atmosphere::AtmosphereField;
-use crate::core::env::fields::Field;
-use crate::core::uvoxid::UvoxId;
-use crate::core::tdt::SimDuration;
+//use crate::core::env::fields::Field;
+//use crate::core::uvoxid::UvoxId;
+//use crate::core::tdt::SimDuration;
 use crate::core::math::vec3::{normalize, magnitude};
 
 /// Result of integrating atmosphere along a ray
