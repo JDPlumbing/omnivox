@@ -1,30 +1,32 @@
-// src/supabasic/entity.rs
-
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use uuid::Uuid;
+
 use crate::core::id::{EntityId, WorldId};
+use crate::core::SimTime;
+use crate::core::sim_time::{
+    deserialize_simtime,
+    deserialize_simtime_opt,
+};
+
 use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::orm::DbModel;
-
-//use crate::core::uvoxid::UvoxId;
-use crate::core::SimEntity;
-use crate::core::SimTime;
-use crate::core::sim_time::{ deserialize_simtime, deserialize_simtime_opt } ;
 
 
 /// ---------------------------------------------------------------------------
 /// Mirrors the `sim_entities` table in Supabase.
-/// objexs + uvoxid are stored **inline** as JSON.
+/// This is a *persistence DTO*, not a runtime entity.
 /// ---------------------------------------------------------------------------
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EntityRow {
+    /// Primary key (EntityId)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub row_id: Option<Uuid>,   // ← // DB identity ONLY
+    pub row_id: Option<Uuid>,
 
     pub world_id: WorldId,
 
-    pub template: Value,
+    /// Serialized components
+    //pub objex_template_id: Uuid,
     pub position: Value,
     pub orientation: Value,
 
@@ -37,73 +39,26 @@ pub struct EntityRow {
     pub metadata: Value,
 }
 
-
 impl DbModel for EntityRow {
     fn table() -> &'static str { "sim_entities" }
 }
 
 //---------------------------------------------------------------------------
-// Conversions
-// ---------------------------------------------------------------------------
-
-impl From<&SimEntity> for EntityRow {
-    fn from(e: &SimEntity) -> Self {
-        EntityRow {
-            
-            row_id: None, // ← let Postgres generate it
-
-            world_id: e.world_id,
-
-            template: serde_json::to_value(&e.template).unwrap(),
-            position: serde_json::to_value(&e.position).unwrap(),
-            orientation: serde_json::to_value(&e.orientation).unwrap(),
-
-            spawned_at: e.spawned_at,
-            despawned_at: e.despawned_at,
-
-            metadata: e.metadata.clone(),
-        }
-    }
-}
-impl TryFrom<EntityRow> for SimEntity {
-    type Error = serde_json::Error;
-
-    fn try_from(r: EntityRow) -> Result<Self, Self::Error> {
-        Ok(SimEntity {
-            id: EntityId::provisional(0), // or allocator.next()
-
-            world_id: r.world_id,
-
-            template: serde_json::from_value(r.template)?,
-            position: serde_json::from_value(r.position)?,
-            orientation: serde_json::from_value(r.orientation)?,
-
-            spawned_at: r.spawned_at,
-            despawned_at: r.despawned_at,
-
-            metadata: r.metadata,
-        })
-    }
-}
-
+// CRUD helpers
 //---------------------------------------------------------------------------
-// CRUD Helpers
-// ---------------------------------------------------------------------------
 
 impl EntityRow {
-    /// Insert SimEntity → DB
+    /// Insert a new entity row (DB assigns UUID)
     pub async fn insert(
         supa: &Supabase,
-        entity: &SimEntity,
+        row: &EntityRow,
     ) -> Result<Self, SupabasicError> {
 
-        // Insert expects a JSON array
-        let payload = serde_json::json!([EntityRow::from(entity)]);
+        let payload = serde_json::json!([row]);
 
         let raw = supa
             .from(Self::table())
             .insert_raw(payload)
-            
             .select("*")
             .execute()
             .await?;
@@ -117,14 +72,14 @@ impl EntityRow {
         Ok(rows.remove(0))
     }
 
-    /// Fetch 1 entity by UUID
-    pub async fn fetch(supa: &Supabase, id: Uuid)
-        -> Result<Self, SupabasicError>
-    {
+    /// Fetch a single entity by EntityId
+    pub async fn fetch(
+        supa: &Supabase,
+        id: EntityId,
+    ) -> Result<Self, SupabasicError> {
         supa.from(Self::table())
             .select("*")
             .eq("row_id", &id.to_string())
-
             .single_typed()
             .await
     }
@@ -134,51 +89,10 @@ impl EntityRow {
         supa: &Supabase,
         world_id: WorldId,
     ) -> Result<Vec<Self>, SupabasicError> {
-
         supa.from(Self::table())
             .select("*")
             .eq("world_id", &world_id.to_string())
             .execute_typed::<Self>()
             .await
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn entityrow_deserializes_from_supabase_json() {
-        let raw = json!({
-            "row_id": "e729c3cc-e51d-4e03-a5dd-08669f359e3c",
-            "world_id": 1,
-            "template": {
-                "shape": { "Box": { "width": 1.0, "height": 1.0, "length": 1.0 } },
-                "material": { "category": 26, "variant": 0, "grade": 0 }
-            },
-            "position": {
-                "r_um": 6371000200000,
-                "lat_code": 2616481420000,
-                "lon_code": -8029963860000
-            },
-            "orientation": {
-                "w": 1.0,
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-            },
-            "spawned_at": "1767396172552334663",
-            "despawned_at": null,
-            "metadata": { "editor": true }
-        });
-
-        let row: EntityRow =
-            serde_json::from_value(raw).expect("EntityRow should deserialize");
-
-        assert_eq!(row.world_id, 1.into());
-        assert_eq!(row.spawned_at.0, 1767396172552334663i128);
-        assert!(row.despawned_at.is_none());
     }
 }

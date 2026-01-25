@@ -1,105 +1,98 @@
+use std::collections::{HashMap, HashSet};
+use serde_json::Value;
 
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
-use std::collections::HashMap;
-
-use crate::supabasic::events::EventRow;
-use crate::supabasic::worlds::WorldRow;
-
+// Identity
+use crate::core::id::{EntityId, WorldId};
+//World metadata (NOT runtime logic)
+use crate::core::world::{World, WorldEnvironment};
+// Time ( value types )
 use crate::core::tdt::sim_clock::SimClock;
-//use crate::engine::components::SimComponents;
 use crate::core::tdt::sim_time::SimTime;
 use crate::core::tdt::sim_duration::SimDuration;
 
-use crate::core::SimEntity;
-use crate::core::id::{WorldId, EntityId};
+// Components
+use crate::core::components::orientation::Orientation;
+use crate::core::components::position::Position;
+use crate::core::components::lifecycle::Lifecycle;
+use crate::core::components::{ShapeRef, MaterialRef};
 
-use crate::core::world::World;
-use crate::core::world::WorldEnvironment;
 
 
 
 /// -------------------------------------------------------------------
-/// In-memory simulation state for a running world
+/// ECS-style in-memory simulation state for a running world
 /// -------------------------------------------------------------------
 
 pub struct WorldState {
+    // --- World ---
     pub meta: World,
     pub environment: WorldEnvironment,
-    pub entities: HashMap<EntityId, SimEntity>,
-    pub free_list: Vec<u32>,
-    pub generations: Vec<u32>,
+
+    // --- Entity registry ---
+    pub entities: HashSet<EntityId>,
+
+    // --- Components ---
+    pub world_membership: HashMap<EntityId, WorldId>,
+    pub positions: HashMap<EntityId, Position>,
+    pub orientations: HashMap<EntityId, Orientation>,
+    pub lifecycles: HashMap<EntityId, Lifecycle>,
+    pub metadata: HashMap<EntityId, Value>,
+
+    // --- Time ---
     pub sim_time: SimTime,
     pub sim_delta: SimDuration,
     pub clock: Option<SimClock>,
-    //pub components: SimComponents,
 }
+
+
 impl WorldState {
-    pub fn allocate_entity_id(&mut self) -> EntityId {
-        if let Some(index) = self.free_list.pop() {
-            let r#gen = self.generations[index as usize];
-            EntityId::new(index, r#gen)
-        } else {
-            let index = self.generations.len() as u32;
-            self.generations.push(0);
-            EntityId::new(index, 0)
-        }
-    }
-
-    pub fn free_entity_id(&mut self, id: EntityId) {
-        self.generations[id.index as usize] += 1;
-        self.free_list.push(id.index);
-    }
-
     pub fn new(meta: World, environment: WorldEnvironment) -> Self {
         Self {
             meta,
             environment,
-            entities: HashMap::new(),
-            free_list: Vec::new(),
-            generations: Vec::new(),
+
+            entities: HashSet::new(),
+
+            world_membership: HashMap::new(),
+            positions: HashMap::new(),
+            orientations: HashMap::new(),
+            //shapes: HashMap::new(),
+            //materials: HashMap::new(),
+            lifecycles: HashMap::new(),
+            metadata: HashMap::new(),
+
             sim_time: SimTime::from_ns(0),
             sim_delta: SimDuration::from_ns(0),
             clock: None,
-            //components: SimComponents::new(),
         }
     }
 
-    pub fn from_entities(meta: World, environment: WorldEnvironment, entities: Vec<SimEntity>) -> Self {
-        let mut map = HashMap::new();
-        for ent in entities {
-            map.insert(ent.id, ent);
-        }
+    /// Spawn a new entity and attach core components
+    pub fn spawn_entity(&mut self) -> EntityId {
+        let id = EntityId::new();
+        self.entities.insert(id);
+        id
+    }
 
-        Self {
-            meta,
-            environment,
-            entities: map,
-            free_list: Vec::new(),
-            generations: Vec::new(),
-            //events: Vec::new(),
-            sim_time: SimTime::from_ns(0),
-            sim_delta: SimDuration::from_ns(0),
-            clock: None,
-            //components: SimComponents::new(),
+    /// Despawn an entity (logical removal)
+    pub fn despawn_entity(&mut self, id: EntityId, t: SimTime) {
+        if let Some(lifecycle) = self.lifecycles.get_mut(&id) {
+            lifecycle.despawned_at = Some(t);
         }
     }
-}
 
+    /// Hard delete (use sparingly)
+    pub fn delete_entity(&mut self, id: EntityId) {
+        self.entities.remove(&id);
+        self.remove_all_components(id);
+    }
 
-impl From<WorldRow> for World {
-    fn from(rec: WorldRow) -> Self {
-        World {
-            id: rec.world_id,
-            name: rec.name,
-            description: rec.description,
-            world_epoch: rec.world_epoch
-                .as_ref()
-                .and_then(|s| s.parse::<i128>().ok())
-                .map(SimTime::from_ns),
-
-        }
+    /// Remove all components for an entity
+    fn remove_all_components(&mut self, id: EntityId) {
+        self.world_membership.remove(&id);
+        self.positions.remove(&id);
+        self.orientations.remove(&id);
+        self.lifecycles.remove(&id);
+        self.metadata.remove(&id);
     }
 }
-

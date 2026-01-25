@@ -4,7 +4,7 @@ use crate::supabasic::{Supabase, SupabasicError};
 use crate::supabasic::orm::DbModel;
 use crate::core::id::WorldId;
 use serde_json::Value;
-
+use anyhow::anyhow;
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 use crate::core::world::world_env_descriptor::WorldEnvDescriptor;
@@ -67,12 +67,23 @@ impl WorldRow {
             .next()
             .ok_or_else(|| SupabasicError::Other("empty insert response".into()))
     }
+
+    /// Delete a world by world_id
+    pub async fn delete(supa: &Supabase, world_id: WorldId) -> Result<(), SupabasicError> {
+        supa.from(Self::table())
+            .delete()
+            .eq("world_id", &world_id.to_string())
+            .execute()
+            .await?;
+
+        Ok(())
+    }
 }
 
 /// Payload for creating new worlds
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NewWorldRow {
-    pub world_id: WorldId,
+    
     pub name: Option<String>,
     pub description: Option<String>,
     pub world_epoch: Option<String>,  // raw i128 ns

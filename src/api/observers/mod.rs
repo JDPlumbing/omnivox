@@ -29,6 +29,7 @@ pub fn observer_routes() -> Router<AppState> {
         .route("/{id}/pressure/sweep", get(handlers::pressure_sweep_handler))
         .route("/{id}/chemistry/atmosphere", get(handlers::chemistry_atmosphere::chemistry_atmosphere_handler))
         .route("/{id}/chemistry/ocean", get(handlers::chemistry_ocean::chemistry_ocean_handler))
+        .route("/{id}/land/height", get(handlers::land_height::land_height_handler))
 
 
 

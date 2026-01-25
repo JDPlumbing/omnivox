@@ -6,7 +6,7 @@ use omnivox::api::api_router;
 use omnivox::shared::app_state::AppState;
 use tokio::net::TcpListener;
 use axum::middleware;
-use omnivox::shared::auth_middleware::populate_user_from_auth;
+use omnivox::shared::middleware::identity_middleware;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
     // Mount at /api
     let app = Router::new()
         .nest("/api", api)
-        
+        .layer(middleware::from_fn(identity_middleware))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

@@ -12,75 +12,13 @@ use crate::supabasic::entity::EntityRow;
 use crate::shared::app_state::AppState;
 use crate::core::id::WorldId;
 use crate::core::sim_time::SimTime;
+use crate::api::worlds::dto::world::{WorldDto, WorldUpdate};
 
 
-/// DTO returned to clients
-#[derive(serde::Serialize)]
-pub struct WorldDto {
-    pub world_id: WorldId,
-    pub name: Option<String>,
-    pub description: Option<String>,
-    pub environment: Value,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-    pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub entities: Vec<EntityRow>,
-    pub world_epoch: Option<String>,
-}
 
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct WorldUpdate {
-    pub name: Option<String>,
-    pub description: Option<String>,
-}
 
-impl From<WorldRow> for WorldDto {
-    fn from(w: WorldRow) -> Self {
-        Self {
-            world_id: w.world_id,
-            name: w.name,
-            description: w.description,
-            environment: w.environment
-            .as_ref()
-            .map(|env| serde_json::to_value(env).unwrap())
-            .unwrap_or(serde_json::Value::Null),
 
-            created_at: w.created_at,
-            updated_at: w.updated_at,
-            deleted_at: w.deleted_at,
-            entities: vec![],
-            world_epoch: w.world_epoch,
-        }
-    }
-}
 
-// ------------------------------------------------------------
-// GET /worlds
-// ------------------------------------------------------------
-pub async fn list_worlds_handler(State(app): State<AppState>) -> impl IntoResponse {
-    match WorldRow::list(&app.supa).await {
-        Ok(rows) => {
-            let mut result = Vec::new();
-            for row in rows {
-                let ents = EntityRow::list_for_world(&app.supa, row.world_id)
-                    .await
-                    .unwrap_or_default();
-                let mut dto = WorldDto::from(row);
-                dto.entities = ents;
-                result.push(dto);
-            }
-            Json(result).into_response()
-        }
-        Err(e) => {
-            eprintln!("Error listing worlds: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "error listing worlds", "details": format!("{e:?}") })),
-            )
-                .into_response()
-        }
-    }
-}
 
 // ------------------------------------------------------------
 // GET /worlds/{world_id}

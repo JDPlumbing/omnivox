@@ -7,6 +7,9 @@ use crate::core::env::chemistry::OceanChemistry;
 use std::sync::Arc;
 use crate::core::env::land::models::flat::FlatLand;
 use crate::core::env::land::height_field::LandHeightField;
+use crate::core::env::land::models::noise::NoiseLand;
+use crate::core::land_height_field::LandHeightEnvField;
+
 
 
 
@@ -30,8 +33,10 @@ impl WorldEnvironment {
     // Land (world-level state)
     // ----------------------------------
     let land: Arc<dyn LandHeightField> = match &desc.land {
+        Some(LandModel::Noise) => Arc::new(NoiseLand::earth_like()),
         Some(LandModel::Flat) | None => Arc::new(FlatLand),
     };
+    fields.push(Arc::new(LandHeightEnvField { land: land.clone() }));
 
     // ----------------------------------
     // Gravity

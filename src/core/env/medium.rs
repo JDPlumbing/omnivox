@@ -22,11 +22,20 @@ pub struct MediumField {
     pub land: Arc<dyn LandHeightField>,
     pub atmosphere_limit_m: f64,
 }
-
 impl Field for MediumField {
-    fn sample(&self, id: &UvoxId, _time: SimDuration) -> FieldSample {
+    fn sample(&self, _id: &UvoxId, _time: SimDuration) -> FieldSample {
+        // Medium depends on land height → derived phase
+        FieldSample::default()
+    }
+
+    fn derive(
+        &self,
+        id: &UvoxId,
+        _time: SimDuration,
+        env: &FieldSample,
+    ) -> FieldSample {
         let z = id.r_um.meters() - self.space.surface_radius_m;
-        let land_height = self.land.height_m(id);
+        let land_height = env.land_height_m;
 
         let medium = if z < land_height {
             Medium::Solid
@@ -44,6 +53,7 @@ impl Field for MediumField {
         }
     }
 }
+
 
 
 impl MediumField {

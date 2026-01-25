@@ -93,7 +93,7 @@ pub struct PressureModel {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LandModel {
     Flat,
-    // Noise,
+    Noise,
     // EarthLike,
 }
 

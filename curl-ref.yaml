@@ -1,9 +1,9 @@
  curl -X POST http://localhost:8000/api/location/uvox/from_coords \
   -H "Content-Type: application/json" \
   -d '{
-    "lat": 0.0,
-    "lon": 0.0,
-    "elevation_m": 10
+    "lat": 28.0,
+    "lon": 87.0,
+    "elevation_m": 0
   }'
 {"status":"ok","uvoxid":{"hex":"000005cb5d311e0000000000000000000000000000000000","lat_code":0,"lon_code":0,"r_um":6371000000000}}drippy@JDPlumbing:~/jdplumbincurl -X POST http://localhost:8000/api/location/uvox/from_coords \ocation/uvox/from_coords \
   -H "Content-Type: application/json" \
@@ -50,7 +50,7 @@ curl "http://localhost:8000/api/physics/environmental_snapshot/curve?world=1&uvo
 
 curl -X POST http://localhost:8000/api/observers \
   -H "Content-Type: application/json" \
-  -d '{"world":1,"uvox":"000005cb5d311e000000025d5c139000fffff82da80e1000"}'
+  -d '{"world":1,"uvox":"000005cb5d311e0000000417bce6c800fffff51608434000"}'
 
 curl "http://localhost:8000/api/observers/1/environment?time_ns=21600000000000"
 

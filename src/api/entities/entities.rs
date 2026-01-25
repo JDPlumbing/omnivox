@@ -8,59 +8,50 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::shared::app_state::AppState;
-use crate::core::SimEntity;
 use crate::supabasic::entity::EntityRow;
-//use crate::core::objex::Objex;
 use crate::core::id::world_id::WorldId;
-use crate::core::CreateSimEntity;
-use crate::core::UvoxId;
-use crate::core::objex::Objex;
-use crate::core::id::EntityId;
+use crate::supabasic::orm::DbModel;
+use crate::core::EntityId;
 
 // ------------------------------------------------------------
 // POST /api/entities
-// Create a new SimEntity
+// Create entities (DB-backed, EntityRow only)
 // ------------------------------------------------------------
-/*
-pub async fn create_entity(
-    State(app): State<AppState>,
-    Json(entity): Json<SimEntity>,
-) -> impl IntoResponse {
-    let objex_id = Uuid::new_v4(); // optional: if you later add objex table
+#[derive(Debug, serde::Deserialize)]
+pub struct CreateEntity {
+    pub world_id: WorldId,
 
-    match EntityRow::insert(&app.supa, &entity).await {
-        Ok(rec) => Json(json!({ "row_id": rec.row_id })).into_response(),
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("{e:?}") })),
-        )
-            .into_response(),
-    }
+    pub template: serde_json::Value,
+    pub position: serde_json::Value,
+    pub orientation: serde_json::Value,
+
+    pub spawned_at: crate::core::SimTime,
+    pub metadata: serde_json::Value,
 }
-*/
+
 pub async fn create_entities(
     State(app): State<AppState>,
-    Json(payload): Json<Vec<CreateSimEntity>>,
+    Json(payload): Json<Vec<CreateEntity>>,
 ) -> impl IntoResponse {
     let mut created = Vec::new();
 
     for req in payload {
-        let entity = SimEntity {
-            id: EntityId::provisional(0),
-           // TODO: EntityId allocation must move to engine allocator
-            // This provisional ID is replaced after DB insert
-
+        let row = EntityRow {
+            row_id: None, // let DB generate UUID
             world_id: req.world_id,
-            template: req.template,
+
+           // objex_template_id: req.template,
             position: req.position,
             orientation: req.orientation,
+
             spawned_at: req.spawned_at,
             despawned_at: None,
+
             metadata: req.metadata,
         };
 
-        match EntityRow::insert(&app.supa, &entity).await {
-            Ok(row) => created.push(row),
+        match EntityRow::insert(&app.supa, &row).await {
+            Ok(inserted) => created.push(inserted),
             Err(e) => {
                 return (
                     StatusCode::BAD_REQUEST,
@@ -81,7 +72,7 @@ pub async fn get_entity(
     State(app): State<AppState>,
     Path(entity_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    match EntityRow::fetch(&app.supa, entity_id).await {
+    match EntityRow::fetch(&app.supa, EntityId(entity_id)).await {
         Ok(rec) => Json(rec).into_response(),
         Err(e) => (
             StatusCode::NOT_FOUND,
@@ -94,10 +85,12 @@ pub async fn get_entity(
 // ------------------------------------------------------------
 // GET /api/entities
 // ------------------------------------------------------------
-pub async fn list_entities(State(app): State<AppState>) -> impl IntoResponse {
+pub async fn list_entities(
+    State(app): State<AppState>,
+) -> impl IntoResponse {
     let rows = app
         .supa
-        .from("sim_entities")
+        .from(EntityRow::table())
         .select("*")
         .execute();
 
@@ -137,9 +130,9 @@ pub async fn delete_entity(
 ) -> impl IntoResponse {
     match app
         .supa
-        .from("sim_entities")
+        .from(EntityRow::table())
         .delete()
-        .eq("entity_id", &entity_id.to_string())
+        .eq("row_id", &entity_id.to_string())
         .execute()
         .await
     {

@@ -2,22 +2,14 @@ use axum::{ Router};
 use axum::routing::{ get, post };
 use crate::shared::AppState;
 
-
-
-pub mod time_now;
-pub use time_now::world_time_now;
-
-pub mod worlds;
-pub use worlds::*;
-
-pub mod set_epoch;
-pub use set_epoch::*;
-
-pub mod dto;
-pub use dto::*;
+pub mod dtos;
 
 pub mod handlers;
-pub use handlers::*;
+
+pub mod payloads;
+
+
+
 
 
 
@@ -26,20 +18,20 @@ pub use handlers::*;
 
 pub fn world_routes() -> Router<AppState> {
     Router::new()
-                .route("/", get(list_worlds_handler).post(create_world_handler))
+                .route("/", get(handlers::list::list_worlds_handler).post(handlers::create::create_world_handler))
         .route(
             "/{world_id}",
-            get(get_world_handler)
-                .put(update_world_handler)
-                .patch(patch_world_handler)
-                .delete(delete_world_handler),
+            get(handlers::get::get_world_handler)
+                .put(handlers::update::update_world_handler)
+                //.patch(handlers::patch::patch_world_handler)
+                .delete(handlers::delete::delete_world_handler),
         )
-        .route("/{world_id}/stats", get(get_world_stats))
-        .route("/{world_id}/time/now", get(world_time_now))
-        .route("/{world_id}/epoch/set", post(set_world_epoch))
-        .route("/{world_id}/environment/sample", get(sample_environment_handler))
-        .route("/{from}/relative/{to}", get(world_relative_handler))
-        .route("/{from}/relative/{to}/origin", get(world_origin_relative_handler))
+        .route("/{world_id}/stats", get(handlers::stats::get_world_stats_handler))
+        .route("/{world_id}/time/now", get(handlers::time_now::world_time_now_handler))
+        .route("/{world_id}/epoch/set", post(handlers::set_epoch::set_world_epoch_handler))
+        .route("/{world_id}/environment/sample", get(handlers::environment::sample_environment_handler))
+        .route("/{from}/relative/{to}", get(handlers::relative::world_relative_handler))
+        .route("/{from}/relative/{to}/origin", get(handlers::relative::world_origin_relative_handler))
 
 
 }

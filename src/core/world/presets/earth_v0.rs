@@ -18,7 +18,7 @@ pub fn earth_v0() -> WorldEnvDescriptor {
             // Above surface defaults to gas
             default: Medium::Gas,
         },
-        land: Some(LandModel::Flat),
+        land: Some(LandModel::Noise),
 
         atmosphere: Some(AtmosphereModel {
             sea_level_density: 1.225,

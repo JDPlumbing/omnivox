@@ -31,6 +31,7 @@ pub struct FieldSample {
     // Optional / additive influences
     pub wind_radial: f64,      // m/s
     pub resistance: f64,       // drag-ish scalar
+    pub land_height_m: f64,
 }
 
 impl Default for FieldSample {
@@ -43,6 +44,7 @@ impl Default for FieldSample {
             gravity_radial: 0.0,
             wind_radial: 0.0,
             resistance: 0.0,
+            land_height_m: 0.0,
         }
     }
 }
