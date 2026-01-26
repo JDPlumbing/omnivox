@@ -1,47 +1,52 @@
 // shared/session/session_context.rs
-use crate::core::{UserId, WorldId};
+use crate::core::{UserId, WorldId, SpatialAnchor};
 use uuid::Uuid;
 use serde::{Serialize};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SessionContext {
-    /// Authenticated user, if any
+    /// Authenticated user (only when logged in)
     pub user_id: Option<UserId>,
 
     /// Currently selected world context
     pub world_id: Option<WorldId>,
+
+    /// Session-level spatial anchor (pre-entity)
+    pub spatial_anchor: Option<SpatialAnchor>,
 
     /// Currently selected property context
     pub property_id: Option<Uuid>,
 
     /// Whether this is an anonymous session
     pub is_anon: bool,
+
+    /// Backing anon identity (only for anon sessions)
     pub anon_owner_id: Option<Uuid>,
 }
 
 impl SessionContext {
-    pub fn anonymous(
-        engine_user_id: UserId,
-        anon_owner_id: Uuid,
-    ) -> Self {
+    /// Pure anonymous session (no auth identity)
+    pub fn anonymous(anon_owner_id: Uuid) -> Self {
         Self {
-            user_id: Some(engine_user_id),
+            user_id: None,
             world_id: None,
+            spatial_anchor: None,
             property_id: None,
             is_anon: true,
             anon_owner_id: Some(anon_owner_id),
         }
     }
 
-    pub fn authenticated(
-        user_id: UserId,
-    ) -> Self {
+    /// Authenticated session (no spatial/world context yet)
+    pub fn authenticated(user_id: UserId) -> Self {
         Self {
             user_id: Some(user_id),
             world_id: None,
+            spatial_anchor: None,
             property_id: None,
             is_anon: false,
             anon_owner_id: None,
         }
     }
 }
+

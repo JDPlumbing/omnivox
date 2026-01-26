@@ -16,6 +16,11 @@ pub async fn init_session(
         .and_then(|s| Uuid::parse_str(s).ok())
     {
         if let Ok(Some(session)) = app.session_source.resume(sid).await {
+            // 🔒 Ensure world context exists
+            if let Err(e) = app.world_engine.ensure_world(sid).await {
+                return Json(json!({ "error": e.to_string() })).into_response();
+            }
+
             return Json(json!({
                 "status": "ok",
                 "session_id": sid,
@@ -28,13 +33,20 @@ pub async fn init_session(
 
     // 2️⃣ Create new anonymous session
     match app.session_source.create_anonymous().await {
-        Ok((sid, session)) => Json(json!({
-            "status": "ok",
-            "session_id": sid,
-            "session": session,
-            "reused": false
-        }))
-        .into_response(),
+        Ok((sid, session)) => {
+            // 🔒 Auto-assign default world (Earth)
+            if let Err(e) = app.world_engine.ensure_world(sid).await {
+                return Json(json!({ "error": e.to_string() })).into_response();
+            }
+
+            Json(json!({
+                "status": "ok",
+                "session_id": sid,
+                "session": session,
+                "reused": false
+            }))
+            .into_response()
+        }
 
         Err(e) => Json(json!({
             "error": e.to_string()

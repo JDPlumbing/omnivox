@@ -10,3 +10,13 @@ pub struct Address {
     pub postal_code: Option<String>,
     pub country: Option<String>,
 }
+
+
+#[derive(Debug, Clone)]
+pub struct CreateAddress {
+    pub street_address: String,
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub postal_code: Option<String>,
+    pub country: Option<String>,
+}

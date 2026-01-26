@@ -35,7 +35,7 @@ pub async fn set_session_world(
     // --- Activate world runtime ---
     if let Err(_) = app
         .world_engine
-        .enter_world(user_id, world_id)
+        .enter_world(session_id, world_id)
         .await
     {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();

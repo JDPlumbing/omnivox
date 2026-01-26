@@ -4,6 +4,7 @@ use crate::shared::app_state::AppState;
 pub mod address;
 pub mod geocode;
 pub mod uvox;
+pub mod anchor;
 
 pub fn location_routes() -> Router<AppState> {
     Router::new()
@@ -21,6 +22,7 @@ pub fn location_routes() -> Router<AppState> {
         .route("/address/{id}/resolve", 
             post(geocode::resolve_address)
         )
+        .route("/anchor/address", post(anchor::resolve_address_anchor))
 
         // Uvox converters
         .route("/uvox/from_coords", post(uvox::coords_to_uvox))

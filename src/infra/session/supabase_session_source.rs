@@ -10,6 +10,7 @@ use crate::shared::session::{
     session_source::SessionSource,
 };
 use crate::core::WorldId;
+use crate::core::spatial::SpatialAnchor;
 
 pub struct SupabaseSessionSource {
     supa: Supabase,
@@ -38,7 +39,7 @@ impl SessionSource for SupabaseSessionSource {
     let row = self
         .supa
         .from("anon_sessions")
-        .select("engine_user_id, anon_owner_id, world_id")
+        .select("engine_user_id, anon_owner_id, world_id, spatial_anchor")
         .eq("session_id", &session_id.to_string())
         .maybe_single_typed::<serde_json::Value>()
         .await?;
@@ -69,6 +70,9 @@ impl SessionSource for SupabaseSessionSource {
         Some(id) => !self.anon_user_source.is_upgraded(id).await?,
         None => false,
     };
+    let spatial_anchor = row
+        .get("spatial_anchor")
+        .and_then(|v| serde_json::from_value(v.clone()).ok());
 
     Ok(Some(SessionContext {
         user_id,
@@ -76,6 +80,7 @@ impl SessionSource for SupabaseSessionSource {
         property_id: None,
         is_anon,
         anon_owner_id,
+        spatial_anchor,
     }))
 }
 
@@ -120,6 +125,7 @@ impl SessionSource for SupabaseSessionSource {
                 property_id: None,
                 is_anon: true,
                 anon_owner_id: Some(anon_owner_id),
+                spatial_anchor: None,
             },
 
         ))
@@ -150,7 +156,7 @@ async fn get_session(
     let row = self
         .supa
         .from("anon_sessions")
-        .select("engine_user_id, anon_owner_id, world_id")
+        .select("engine_user_id, anon_owner_id, world_id, spatial_anchor")
 
         .eq("session_id", &session_id.to_string())
         .maybe_single_typed::<serde_json::Value>()
@@ -180,6 +186,9 @@ async fn get_session(
         Some(id) => !self.anon_user_source.is_upgraded(id).await?,
         None => false,
     };
+    let spatial_anchor = row
+        .get("spatial_anchor")
+        .and_then(|v| serde_json::from_value(v.clone()).ok());
 
     Ok(Some(SessionContext {
         user_id,
@@ -187,6 +196,7 @@ async fn get_session(
         property_id: None,
         is_anon,
         anon_owner_id,
+        spatial_anchor,
     }))
 
 }
@@ -208,5 +218,21 @@ async fn upgrade_to_user(
     Ok(())
 }
 
+async fn set_spatial_anchor(
+    &self,
+    session_id: Uuid,
+    anchor: SpatialAnchor,
+) -> Result<()> {
+    self.supa
+        .from("anon_sessions")
+        .update(serde_json::json!({
+            "spatial_anchor": anchor
+        }))
+        .eq("session_id", &session_id.to_string())
+        .execute()
+        .await?;
+
+    Ok(())
+}
 
 }

@@ -24,9 +24,10 @@ pub use env::*;
 
 pub use world::World;
 pub use entity::Entity;
-pub use spatial::UvoxQuat;
+pub use spatial::*;
 pub use physics::*;
 pub use observer::*;
 pub use components::*;
 pub mod property;
 pub use property::*;    
+

@@ -74,13 +74,19 @@ http://localhost:8000/api/auth/signup \
 
 curl -X POST \
   -H "Content-Type: application/json" \
-  -H "x-session-id: 8c0652de-7e47-460d-ba0f-74edfd1a06a4" \
+  -H "x-session-id: 1ac61a6c-ee15-4989-b52b-1312dac02051" \
   http://localhost:8000/api/auth/signup \
   -d '{
-    "email": "test6@example.com",
+    "email": "finaltest@example.com",
     "password": "password",
-    "display_name": "Test6 User"
+    "display_name": "final test User"
   }'
-curl -i \
-  -H "x-session-id: 8c0652de-7e47-460d-ba0f-74edfd1a06a4" \
+curl \
+  -H "x-session-id: 52861b28-347a-49da-b06a-5b1583fdf88b" \
   http://localhost:8000/api/session/status
+
+
+
+
+
+{"reused":false,"session":{"anon_owner_id":"8aa215bf-9218-4f1b-af63-78f25fc71333","is_anon":true,"property_id":null,"user_id":"7dcca10d-0090-4de5-97d8-691b8ed97427","world_id":null},"session_id":"1ac61a6c-ee15-4989-b52b-1312dac02051","status":"ok"}drippy@JDPlumbing:~/jdplumbing-app/rust/omnivox-react$ 

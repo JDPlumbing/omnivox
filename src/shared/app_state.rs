@@ -30,6 +30,7 @@ use crate::shared::location::address_source::AddressSource;
 use crate::supabasic::Supabase;
 use crate::engine::user::user_engine::UserEngine;
 use crate::engine::world::WorldEngine;
+use crate::engine::location::location_engine::LocationEngine;
 use crate::engine::property_engine::PropertyEngine;
 
 #[derive(Clone)]
@@ -49,6 +50,7 @@ pub struct AppState {
     pub address_source: Arc<dyn AddressSource + Send + Sync>,
     pub user_engine: Arc<UserEngine>,
     pub world_engine: Arc<WorldEngine>,
+    pub location_engine: Arc<LocationEngine>,
 
     pub property_engine: Arc<PropertyEngine>,
     // ---- In-memory world states ----
@@ -113,7 +115,14 @@ impl AppState {
 
     let world_engine = Arc::new(WorldEngine {
         world_source: world_source.clone(),
+        session_source: session_source.clone(),
         worlds: Arc::new(RwLock::new(HashMap::new())),
+    });
+
+    let location_engine = Arc::new(LocationEngine {
+        
+       
+        location_source: location_source.clone(),
     });
 
     let property_engine = Arc::new(PropertyEngine {
@@ -136,6 +145,7 @@ impl AppState {
 
         user_engine,
         world_engine,
+        location_engine,
         property_engine,
 
         worlds: Arc::new(RwLock::new(HashMap::new())),
