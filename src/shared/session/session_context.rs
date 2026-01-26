@@ -16,26 +16,32 @@ pub struct SessionContext {
 
     /// Whether this is an anonymous session
     pub is_anon: bool,
+    pub anon_owner_id: Option<Uuid>,
 }
 
 impl SessionContext {
-    /// Anonymous session with no selected context
-    pub fn anonymous() -> Self {
+    pub fn anonymous(
+        engine_user_id: UserId,
+        anon_owner_id: Uuid,
+    ) -> Self {
         Self {
-            user_id: None,
+            user_id: Some(engine_user_id),
             world_id: None,
             property_id: None,
             is_anon: true,
+            anon_owner_id: Some(anon_owner_id),
         }
     }
 
-    /// Authenticated session with no selected world/property yet
-    pub fn authenticated(user_id: UserId) -> Self {
+    pub fn authenticated(
+        user_id: UserId,
+    ) -> Self {
         Self {
             user_id: Some(user_id),
             world_id: None,
             property_id: None,
             is_anon: false,
+            anon_owner_id: None,
         }
     }
 }

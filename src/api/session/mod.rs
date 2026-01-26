@@ -11,7 +11,7 @@ pub use world::set_session_world;
 
 pub fn session_routes() -> Router<AppState> {
     Router::new()
-        .route("/session/init", get(init_session))
-        .route("/session/status", get(session_status))
-        .route("/session/world", post(set_session_world))
+        .route("/init", get(init_session))
+        .route("/status", get(session_status))
+        .route("/world/{world_id}", post(set_session_world))
 }

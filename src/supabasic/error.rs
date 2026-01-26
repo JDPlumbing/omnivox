@@ -11,6 +11,8 @@ pub enum SupabasicError {
 
     #[error("Other error: {0}")]
     Other(String),
+    #[error("Missing environment variable: {0}")]
+    MissingEnv(&'static str),
 }
 
 pub type Result<T> = std::result::Result<T, SupabasicError>;

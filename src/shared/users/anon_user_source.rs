@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use anyhow::Result;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
+use crate::core::UserId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnonUserRecord {
@@ -31,4 +32,16 @@ pub trait AnonUserSource: Send + Sync {
         &self,
         id: Uuid,
     ) -> Result<()>;
-}
+
+
+        async fn mark_upgraded(
+            &self,
+            anon_user_id: Uuid,
+            real_user_id: UserId,
+        ) -> Result<()>;
+
+        async fn is_upgraded(
+            &self,
+            anon_user_id: Uuid,
+        ) -> Result<bool>;
+    }

@@ -2,7 +2,7 @@
 use async_trait::async_trait;
 use anyhow::Result;
 use uuid::Uuid;
-
+use serde_json::Value;
 use crate::supabasic::Supabase;
 use crate::core::UserId;
 use crate::shared::users::user_source::{UserSource, UserRecord};
@@ -66,4 +66,38 @@ impl UserSource for SupabaseUserSource {
 
         Ok(users)
     }
+async fn create_user(
+    &self,
+    user_id: UserId,
+    display_name: String,
+) -> Result<()> {
+
+    // 1️⃣ Check if user already exists
+    let existing = self
+        .supa
+        .from("users")
+        .select("id")
+        .eq("id", &user_id.to_string())
+        .maybe_single_typed::<serde_json::Value>()
+        .await?;
+
+    if existing.is_some() {
+        // User already exists → idempotent success
+        return Ok(());
+    }
+
+    // 2️⃣ Insert new user
+    self.supa
+        .from("users")
+        .insert(serde_json::json!({
+            "id": &user_id.to_string(),
+            "display_name": display_name,
+            "role": "customer",
+        }))
+        .execute()
+        .await?;
+
+    Ok(())
+}
+
 }

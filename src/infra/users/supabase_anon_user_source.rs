@@ -2,6 +2,7 @@
 use async_trait::async_trait;
 use anyhow::Result;
 use uuid::Uuid;
+use crate::core::UserId;
 
 use crate::supabasic::Supabase;
 use crate::shared::users::anon_user_source::{
@@ -111,4 +112,35 @@ impl AnonUserSource for SupabaseAnonUserSource {
 
         Ok(())
     }
+
+    async fn mark_upgraded(
+        &self,
+        anon_user_id: Uuid,
+        real_user_id: UserId,
+    ) -> Result<()> {
+        self.supa
+            .from("anon_users")
+            .update(serde_json::json!({
+                "upgraded_to_user_id": real_user_id.to_string(),
+                "upgraded_at": chrono::Utc::now(),
+            }))
+            .eq("id", &anon_user_id.to_string())
+            .execute()
+            .await?;
+
+        Ok(())
+    }
+
+    async fn is_upgraded(&self, anon_user_id: Uuid) -> Result<bool> {
+    let row = self
+        .supa
+        .from("anon_users")
+        .select("upgraded_to_user_id")
+        .eq("id", &anon_user_id.to_string())
+        .single_typed::<serde_json::Value>()
+        .await?;
+
+    Ok(row.get("upgraded_to_user_id").is_some())
+}
+
 }

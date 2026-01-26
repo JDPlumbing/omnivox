@@ -17,6 +17,9 @@ use crate::core::world::world_env_descriptor::WorldSpace;
 use crate::shared::world_sources::WorldSource;
 use crate::shared::world_sources::json::JsonWorldSource;
 use crate::shared::world_sources::SupabaseWorldSource;
+
+use crate::shared::identity::auth_source::AuthSource;
+use crate::shared::identity::identity_source::IdentitySource;
 use crate::shared::users::user_source::UserSource;
 use crate::shared::users::anon_user_source::AnonUserSource;
 use crate::shared::session::session_source::SessionSource;
@@ -25,12 +28,18 @@ use crate::shared::properties::property_source::PropertySource;
 use crate::shared::location::location_source::LocationSource;
 use crate::shared::location::address_source::AddressSource;
 use crate::supabasic::Supabase;
+use crate::engine::user::user_engine::UserEngine;
+use crate::engine::world::WorldEngine;
 use crate::engine::property_engine::PropertyEngine;
 
 #[derive(Clone)]
 pub struct AppState {
     // ---- World loading (persistence boundary) ----
     pub world_source: Arc<dyn WorldSource + Send + Sync>,
+
+    pub auth_source: Arc<dyn AuthSource + Send + Sync>,
+    pub identity_source: Arc<dyn IdentitySource + Send + Sync>,
+
     pub user_source: Arc<dyn UserSource + Send + Sync>,
     pub anon_user_source: Arc<dyn AnonUserSource + Send + Sync>,
     pub session_source: Arc<dyn SessionSource + Send + Sync>,
@@ -38,9 +47,10 @@ pub struct AppState {
     pub property_source: Arc<dyn PropertySource + Send + Sync>, 
     pub location_source: Arc<dyn LocationSource + Send + Sync>,
     pub address_source: Arc<dyn AddressSource + Send + Sync>,
+    pub user_engine: Arc<UserEngine>,
+    pub world_engine: Arc<WorldEngine>,
+
     pub property_engine: Arc<PropertyEngine>,
-
-
     // ---- In-memory world states ----
     pub worlds: Arc<RwLock<HashMap<WorldId, Arc<WorldState>>>>,
 
@@ -67,6 +77,11 @@ impl AppState {
         } else {
             Arc::new(SupabaseWorldSource { supa })
         };
+    let auth_source =
+        Arc::new(crate::infra::identity::supabase_auth_source::SupabaseAuthSource::new_from_env()?);
+    
+    let identity_source =
+        Arc::new(crate::infra::identity::supabase_identity_source::SupabaseIdentitySource::new_from_env()?);
 
     let user_source =
         Arc::new(crate::infra::users::supabase_user_source::SupabaseUserSource::new_from_env()?);
@@ -88,6 +103,18 @@ impl AppState {
 
     let address_source =
         Arc::new(crate::infra::location::supabase_address_source::SupabaseAddressSource::new_from_env()?);
+    let user_engine = Arc::new(UserEngine {
+        session_source: session_source.clone(),
+        auth_source: auth_source.clone(),
+        user_source: user_source.clone(),
+        anon_user_source: anon_user_source.clone(),
+    });
+
+
+    let world_engine = Arc::new(WorldEngine {
+        world_source: world_source.clone(),
+        worlds: Arc::new(RwLock::new(HashMap::new())),
+    });
 
     let property_engine = Arc::new(PropertyEngine {
         property_source: property_source.clone(),
@@ -97,6 +124,8 @@ impl AppState {
 
     Ok(Self {
         world_source,
+        auth_source,
+        identity_source,
         user_source,
         anon_user_source,
         session_source,
@@ -104,6 +133,9 @@ impl AppState {
         property_source,
         location_source,
         address_source,
+
+        user_engine,
+        world_engine,
         property_engine,
 
         worlds: Arc::new(RwLock::new(HashMap::new())),

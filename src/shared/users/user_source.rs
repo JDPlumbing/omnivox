@@ -16,4 +16,6 @@ pub trait UserSource: Send + Sync {
     async fn get_user(&self, user_id: UserId) -> Result<Option<UserRecord>>;
 
     async fn list_users(&self) -> Result<Vec<UserRecord>>;
+
+    async fn create_user(&self, user_id: UserId, display_name: String) -> Result<()>;
 }

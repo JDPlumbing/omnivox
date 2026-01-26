@@ -2,19 +2,26 @@ use serde::de::DeserializeOwned;
 use reqwest::Client;
 use serde_json::{json, Value};
 use crate::supabasic::error::{Result, SupabasicError};
+use serde::Deserialize;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct Supabase {
     url: String,
-    api_key: String,
+    anon_key: String,
+    service_role_key: String,
     http: Client,
 }
 
+
+
+
 impl Supabase {
-    pub fn new(url: &str, api_key: &str) -> Self {
+    pub fn new(url: &str, anon_key: &str, service_role_key: &str) -> Self {
         Supabase {
             url: url.to_string(),
-            api_key: api_key.to_string(),
+            anon_key: anon_key.to_string(),
+            service_role_key: service_role_key.to_string(),
             http: Client::new(),
         }
     }
@@ -25,10 +32,15 @@ impl Supabase {
 
     pub fn new_from_env() -> Result<Self> {
         let url = std::env::var("SUPABASE_URL")
-            .map_err(|_| SupabasicError::Other("SUPABASE_URL must be set".into()))?;
-        let api_key = std::env::var("SUPABASE_KEY")
-            .map_err(|_| SupabasicError::Other("SUPABASE_KEY must be set".into()))?;
-        Ok(Supabase::new(&url, &api_key))
+            .map_err(|_| SupabasicError::MissingEnv("SUPABASE_URL"))?;
+
+        let anon_key = std::env::var("SUPABASE_ANON_KEY")
+            .map_err(|_| SupabasicError::MissingEnv("SUPABASE_ANON_KEY"))?;
+
+        let service_role_key = std::env::var("SUPABASE_SERVICE_ROLE_KEY")
+            .map_err(|_| SupabasicError::MissingEnv("SUPABASE_SERVICE_ROLE_KEY"))?;
+
+        Ok(Supabase::new(&url, &anon_key, &service_role_key))
     }
 
 pub async fn get_user_from_jwt(
@@ -40,7 +52,7 @@ pub async fn get_user_from_jwt(
     let res = self
         .http
         .get(url)
-        .header("apikey", &self.api_key) // ✅ use existing field
+        .header("apikey", &self.anon_key) // ✅ use existing field
         .bearer_auth(token)
         .send()
         .await
@@ -62,7 +74,7 @@ pub async fn get_user_from_jwt(
         let res = self
             .http               // ✅ not client
             .post(url)
-            .header("apikey", &self.api_key)
+            .header("apikey", &self.anon_key)
             .json(&params)
             .send()
             .await?
@@ -72,6 +84,84 @@ pub async fn get_user_from_jwt(
     }
 
 
+}
+#[derive(Debug, Deserialize)]
+pub struct SupabaseAuthUser {
+    pub id: Uuid,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SupabaseAuthResponse {
+    pub user: Option<SupabaseAuthUser>,
+}
+
+impl Supabase {
+    pub async fn auth_signup(
+        &self,
+        email: &str,
+        password: &str,
+    ) -> Result<AuthResponse> {
+        let url = format!(
+            "{}/auth/v1/signup",
+            self.url
+        );
+
+        let client = Client::new();
+
+    let resp = client
+        .post(&url)
+        .header("apikey", &self.service_role_key)
+        .header("Authorization", format!("Bearer {}", self.service_role_key))
+        .header("Content-Type", "application/json")
+        .json(&serde_json::json!({
+            "email": email,
+            "password": password,
+            "redirect_to": "http://localhost:8000/api/auth/confirm"
+        }))
+        .send()
+        .await
+        .map_err(|e| SupabasicError::Other(e.to_string()))?;
+
+
+        if !resp.status().is_success() {
+            let text = resp.text().await.unwrap_or_default();
+            return Err(SupabasicError::Other(format!(
+                "Supabase auth signup failed: {}",
+                text
+            )));
+        }
+
+        let parsed: SupabaseAuthResponse = resp
+            .json()
+            .await
+            .map_err(|e| SupabasicError::Other(e.to_string()))?;
+
+        let user_id = parsed
+            .user
+            .map(|u| u.id)
+            .ok_or_else(|| {
+                SupabasicError::Other("No user returned from Supabase".into())
+            })?;
+
+        Ok(AuthResponse {
+            user_id: Some(user_id),
+        })
+    }
+
+
+
+    pub async fn auth_login(
+        &self,
+        email: &str,
+        password: &str,
+    ) -> Result<AuthResponse> {
+        todo!("Supabase auth login not implemented yet");
+    }
+
+
+}
+pub struct AuthResponse {
+    pub user_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -277,8 +367,8 @@ impl QueryBuilder {
         };
 
         let res = req
-            .header("apikey", &self.client.api_key)
-            .header("Authorization", format!("Bearer {}", &self.client.api_key))
+            .header("apikey", &self.client.anon_key)
+            .header("Authorization", format!("Bearer {}", &self.client.service_role_key))
             .header("Content-Type", "application/json")
             .header(
                 "Prefer",
