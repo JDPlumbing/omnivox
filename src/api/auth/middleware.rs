@@ -6,14 +6,13 @@ use axum::{
     Json,
 };
 use reqwest::StatusCode;
-use uuid::Uuid;
 
-use crate::supabasic::Supabase;
 use crate::shared::identity::{
-    auth_context::{AuthContext, AccountRole},
+    auth_context::AuthContext,
     request_context::RequestContext,
+    identity_source::IdentitySource,
 };
-use crate::core::UserId;
+use crate::infra::identity::supabase_identity_source::SupabaseIdentitySource;
 
 pub async fn identity_middleware(
     mut req: Request<Body>,
@@ -37,8 +36,8 @@ pub async fn identity_middleware(
     // --------------------------------------------------
     // Authenticated request
     // --------------------------------------------------
-    let supa = match Supabase::new_from_env() {
-        Ok(s) => s,
+    let identity_source = match SupabaseIdentitySource::new_from_env() {
+        Ok(src) => src,
         Err(_) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -50,8 +49,8 @@ pub async fn identity_middleware(
         }
     };
 
-    let user = match supa.get_user_from_jwt(token.to_string()).await {
-        Ok(u) => u,
+    let resolved = match identity_source.resolve_from_token(token).await {
+        Ok(id) => id,
         Err(_) => {
             return (
                 StatusCode::UNAUTHORIZED,
@@ -63,36 +62,18 @@ pub async fn identity_middleware(
         }
     };
 
-    let supabase_user_id = Uuid::parse_str(
-        user["id"]
-            .as_str()
-            .expect("Supabase user id missing"),
-    )
-    .expect("Invalid Supabase UUID");
-
-    let user_id = UserId::from_uuid(supabase_user_id);
-
-    let account_role = if std::env::var("ROOT_USER_ID")
-        .map(|v| v == supabase_user_id.to_string())
-        .unwrap_or(false)
-    {
-        AccountRole::Root
-    } else {
-        AccountRole::User
-    };
 
     // --------------------------------------------------
-    // Attach request-scoped identity
+    // Attach request-scoped identity (CLEAN)
     // --------------------------------------------------
-    req.extensions_mut().insert(AuthContext {
-        supabase_user_id,
-        user_id,
-        account_role,
-    });
+req.extensions_mut().insert(AuthContext {
+    user_id: resolved.user_id,
+    role: resolved.role,
+});
 
-    req.extensions_mut().insert(
-        RequestContext::authenticated(None, user_id)
-    );
+req.extensions_mut()
+    .insert(RequestContext::authenticated(None, resolved.user_id));
+
 
     next.run(req).await
 }

@@ -6,7 +6,7 @@ use omnivox::api::api_router;
 use omnivox::shared::app_state::AppState;
 use tokio::net::TcpListener;
 use axum::middleware;
-use omnivox::shared::middleware::identity_middleware;
+use omnivox::api::auth::middleware::identity_middleware;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

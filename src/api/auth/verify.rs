@@ -1,23 +1,38 @@
-use axum::{extract::State, http::HeaderMap, response::IntoResponse, Json};
+use axum::{
+    extract::State,
+    http::HeaderMap,
+    response::IntoResponse,
+    Json,
+};
 use serde_json::json;
 use crate::shared::app_state::AppState;
+use crate::supabasic::Supabase;
 
 pub async fn verify_session(
-    State(state): State<AppState>,
+    State(_state): State<AppState>, // unused for now, but keeps signature consistent
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    // Extract Bearer token
     let Some(auth_header) = headers.get("authorization") else {
-        return Json(json!({ "valid": false, "error": "missing authorization header" })).into_response();
+        return Json(json!({
+            "valid": false,
+            "error": "missing authorization header"
+        })).into_response();
     };
 
     let auth_value = auth_header.to_str().unwrap_or_default();
     let token = auth_value.strip_prefix("Bearer ").unwrap_or(auth_value);
 
-    // Try to verify using Supabase client
-    let result = state.supa.get_user_from_jwt(token.to_string()).await;
+    let supa = match Supabase::new_from_env() {
+        Ok(s) => s,
+        Err(_) => {
+            return Json(json!({
+                "valid": false,
+                "error": "auth backend unavailable"
+            })).into_response();
+        }
+    };
 
-    match result {
+    match supa.get_user_from_jwt(token.to_string()).await {
         Ok(user) => Json(json!({
             "valid": true,
             "user": user

@@ -17,12 +17,17 @@ use crate::core::world::world_env_descriptor::WorldSpace;
 use crate::shared::world_sources::WorldSource;
 use crate::shared::world_sources::json::JsonWorldSource;
 use crate::shared::world_sources::SupabaseWorldSource;
+use crate::shared::users::user_source::UserSource;
+use crate::shared::users::anon_user_source::AnonUserSource;
+
 use crate::supabasic::Supabase;
+
 #[derive(Clone)]
 pub struct AppState {
     // ---- World loading (persistence boundary) ----
     pub world_source: Arc<dyn WorldSource + Send + Sync>,
-
+    pub user_source: Arc<dyn UserSource + Send + Sync>,
+    pub anon_user_source: Arc<dyn AnonUserSource + Send + Sync>,
     // ---- Runtime worlds (ECS) ----
     pub worlds: Arc<RwLock<HashMap<WorldId, Arc<WorldState>>>>,
 
@@ -53,7 +58,8 @@ impl AppState {
 
         Ok(Self {
             world_source,
-
+            user_source: Arc::new(crate::infra::users::supabase_user_source::SupabaseUserSource::new_from_env()?),
+            anon_user_source: Arc::new(crate::infra::users::supabase_anon_user_source::SupabaseAnonUserSource::new_from_env()?),
             worlds: Arc::new(RwLock::new(HashMap::new())),
             world_frames: Arc::new(HashMap::new()),
             world_spaces: Arc::new(HashMap::new()),

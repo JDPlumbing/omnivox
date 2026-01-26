@@ -5,7 +5,6 @@ use crate::core::UserId;
 pub struct RequestContext {
     pub session_id: Option<Uuid>,
     pub user_id: Option<UserId>,
-    pub owner_id: Option<UserId>,
     pub is_anon: bool,
 }
 
@@ -14,7 +13,7 @@ impl RequestContext {
         Self {
             session_id,
             user_id: None,
-            owner_id: None,
+            
             is_anon: true,
         }
     }
@@ -26,7 +25,7 @@ impl RequestContext {
         Self {
             session_id,
             user_id: Some(user_id),
-            owner_id: Some(user_id),
+            
             is_anon: false,
         }
     }
