@@ -22,6 +22,8 @@ use crate::shared::users::anon_user_source::AnonUserSource;
 use crate::shared::session::session_source::SessionSource;
 use crate::shared::ownership::ownership_source::OwnershipSource;
 use crate::shared::properties::property_source::PropertySource;
+use crate::shared::location::location_source::LocationSource;
+use crate::shared::location::address_source::AddressSource;
 use crate::supabasic::Supabase;
 
 #[derive(Clone)]
@@ -33,6 +35,10 @@ pub struct AppState {
     pub session_source: Arc<dyn SessionSource + Send + Sync>,
     pub ownership_source: Arc<dyn OwnershipSource + Send + Sync>,
     pub property_source: Arc<dyn PropertySource + Send + Sync>, 
+    pub location_source: Arc<dyn LocationSource + Send + Sync>,
+    pub address_source: Arc<dyn AddressSource + Send + Sync>,
+
+
     // ---- In-memory world states ----
     pub worlds: Arc<RwLock<HashMap<WorldId, Arc<WorldState>>>>,
 
@@ -68,6 +74,8 @@ impl AppState {
             session_source: Arc::new(crate::infra::session::supabase_session_source::SupabaseSessionSource::new_from_env()?),
             ownership_source: Arc::new(crate::infra::ownership::supabase_ownership_source::SupabaseOwnershipSource::new_from_env()?),
             property_source: Arc::new(crate::infra::properties::supabase_property_source::SupabasePropertySource::new_from_env()?),
+            location_source: Arc::new(crate::infra::location::supabase_location_source::SupabaseLocationSource::new_from_env()?),
+            address_source: Arc::new(crate::infra::location::supabase_address_source::SupabaseAddressSource::new_from_env()?),
             worlds: Arc::new(RwLock::new(HashMap::new())),
             world_frames: Arc::new(HashMap::new()),
             world_spaces: Arc::new(HashMap::new()),

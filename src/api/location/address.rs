@@ -5,14 +5,14 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use serde_json::{json, Value};
+use serde_json::{json};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::supabasic::addresses::AddressRow;
 //use crate::sim::address::Address;
 use crate::shared::app_state::AppState;
-use crate::api::geocode:: {resolve_address};
+
 
 
 /// Data model for creating a new address
@@ -42,194 +42,126 @@ pub struct AddressUpdate {
 // ========================================================
 // GET /address
 // ========================================================
-pub async fn list_addresses(State(app): State<AppState>) -> impl IntoResponse {
-    let result = app
-        .supa
-        .from("addresses")
-        .select("id, street_address, city, state, postal_code, country")
-        .execute_typed::<AddressRow>()
-        .await;
-
-    match result {
+pub async fn list_addresses(
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    match state.address_source.list().await {
         Ok(rows) => Json(rows).into_response(),
-        Err(e) => {
-            eprintln!("Error listing addresses: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "error listing addresses" })),
-            )
-                .into_response()
-        }
-    }
-}
-
-// ========================================================
-// GET /address/{id}
-// ========================================================
-pub async fn get_address(State(app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
-    let result = app
-        .supa
-        .from("addresses")
-        .select("id, street_address, city, state, postal_code, country")
-        .eq("id", &id.to_string())
-        .single_typed::<AddressRow>()
-        .await;
-
-    match result {
-        Ok(row) => Json(row).into_response(),
         Err(e) => (
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": format!("not found: {e:?}") })),
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": e.to_string() })),
         )
             .into_response(),
     }
 }
+
+
+// ========================================================
+// GET /address/{id}
+// ========================================================
+pub async fn get_address(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    match state.address_source.get(id).await {
+        Ok(Some(addr)) => Json(addr).into_response(),
+        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}
+
 
 // ========================================================
 // POST /address
 // ========================================================
 pub async fn create_address(
-    State(app): State<AppState>,
-    Json(addr): Json<NewAddress>,
+    State(state): State<AppState>,
+    Json(input): Json<NewAddress>,
 ) -> impl IntoResponse {
-    // Normalize address
-    let street = addr.street_address.trim().to_lowercase();
-    let city = addr.city.clone().unwrap_or_default().trim().to_lowercase();
-    let state = addr.state.clone().unwrap_or_default().trim().to_lowercase();
-    let postal = addr.postal_code.clone().unwrap_or_default().trim().to_lowercase();
-    let country = addr.country.clone().unwrap_or("US".to_string()).trim().to_lowercase();
-
-    // Step 1️⃣: Check if it already exists
-    let existing_result = app
-        .supa
-        .from("addresses")
-        .select("id, street_address, city, state, postal_code, country")
-        .eq("street_address", &street)
-        .eq("city", &city)
-        .eq("state", &state)
-        .eq("postal_code", &postal)
-        .eq("country", &country)
-        .execute_typed::<AddressRow>()
-        .await;
-
-    if let Ok(rows) = &existing_result {
-        if !rows.is_empty() {
-            let found = &rows[0];
-            eprintln!("♻️ Found existing address {:?}", found);
-            return Json(json!({
-                "status": "ok",
-                "existing": true,
-                "inserted": found
-            }))
-            .into_response();
-        }
-    }
-
-    // Step 2️⃣: Create if not found
     let record = AddressRow {
         id: None,
-        street_address: Some(street.clone()),
-        city: Some(city),
-        state: Some(state),
-        postal_code: Some(postal),
-        country: Some(country),
+        street_address: Some(input.street_address.trim().to_lowercase()),
+        city: input.city.map(|c| c.trim().to_lowercase()),
+        state: input.state.map(|s| s.trim().to_lowercase()),
+        postal_code: input.postal_code.map(|p| p.trim().to_lowercase()),
+        country: Some(input.country.unwrap_or("us".into()).trim().to_lowercase()),
     };
 
-    let result = AddressRow::create(&app.supa, &record).await;
-
-    match result {
-        Ok(inserted) => Json(json!({ "status": "ok", "existing": false, "inserted": inserted })).into_response(),
+    match state.address_source.create(record).await {
+        Ok(inserted) => Json(inserted).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("Insert failed: {e:?}") })),
+            Json(json!({ "error": e.to_string() })),
         )
             .into_response(),
     }
 }
-
 
 
 // ========================================================
 // PUT /address/{id}
 // ========================================================
 pub async fn update_address(
-    State(app): State<AppState>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(update): Json<AddressUpdate>,
 ) -> impl IntoResponse {
     let payload = serde_json::to_value(&update).unwrap();
 
-    let result = app
-        .supa
-        .from("addresses")
-        .eq("id", &id.to_string())
-        .update(payload)
-        .select("*")
-        .execute_typed::<AddressRow>()
-        .await;
-
-    match result {
-        Ok(mut updated) => {
-            if updated.is_empty() {
-                return (StatusCode::NOT_FOUND, "No row updated").into_response();
-            }
-            Json(json!({ "updated": updated.remove(0) })).into_response()
-        }
+    match state.address_source.update(id, payload).await {
+        Ok(updated) => Json(updated).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("Update failed: {e:?}") })),
+            Json(json!({ "error": e.to_string() })),
         )
             .into_response(),
     }
 }
+
 
 // ========================================================
 // PATCH /address/{id}
 // ========================================================
 pub async fn patch_address(
-    State(app): State<AppState>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
-    Json(payload): Json<Value>,
+    Json(payload): Json<serde_json::Value>,
 ) -> impl IntoResponse {
     if payload.as_object().map(|m| m.is_empty()).unwrap_or(true) {
-        return (StatusCode::BAD_REQUEST, "Empty patch payload").into_response();
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Empty patch payload" })),
+        )
+            .into_response();
     }
 
-    match app
-        .supa
-        .from("addresses")
-        .eq("id", &id.to_string())
-        .update(json!(payload))
-        .select("*")
-        .execute_typed::<AddressRow>()
-        .await
-    {
-        Ok(rows) => Json(json!({ "patched": rows })).into_response(),
+    match state.address_source.update(id, payload).await {
+        Ok(updated) => Json(json!({ "patched": updated })).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("Patch failed: {e:?}") })),
+            Json(json!({ "error": e.to_string() })),
         )
             .into_response(),
     }
 }
 
+
 // ========================================================
 // DELETE /address/{id}
 // ========================================================
-pub async fn delete_address(State(app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
-    let result = app
-        .supa
-        .from("addresses")
-        .eq("id", &id.to_string())
-        .delete()
-        .execute()
-        .await;
-
-    match result {
+pub async fn delete_address(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    match state.address_source.delete(id).await {
         Ok(_) => Json(json!({ "status": "deleted", "id": id })).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("Delete failed: {e:?}") })),
+            Json(json!({ "error": e.to_string() })),
         )
             .into_response(),
     }

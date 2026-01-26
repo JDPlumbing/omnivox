@@ -14,3 +14,5 @@ pub mod permissions;
 pub use permissions::*;
 pub mod properties;
 pub use properties::*;
+pub mod location;
+pub use location::*;

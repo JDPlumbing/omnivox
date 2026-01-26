@@ -19,8 +19,15 @@ pub mod users;
 pub mod session;
 // --- Properties API ---
 mod properties;
+// --- Address API ---
+mod location;
 // --- Worlds API ---
 pub mod worlds;
+
+
+
+
+
 
 // --- Simulations API ---
 //mod simulations;
@@ -33,10 +40,6 @@ pub mod worlds;
 
 // --- Events API ---
 //mod events;
-
-
-// --- Address API ---
-//mod location;
 
 
 
@@ -67,6 +70,8 @@ use objex::templates::geometry_template_routes;
 //use observers::*;
 
 pub fn api_router(app_state: AppState) -> Router {
+    // Time routes
+    let time_routes = time::time_routes();
     // Auth routes
     let auth_routes = auth::auth_routes();
     // Users routes
@@ -75,8 +80,8 @@ pub fn api_router(app_state: AppState) -> Router {
     let session_routes = session::session_routes();
     // Properties routes
     let property_routes = properties::property_routes();
-    // Time routes
-    let time_routes = time::time_routes();
+    // Location routes
+    let location_routes = location::location_routes();
     // Worlds routes
     let worlds_routes = worlds::world_routes();
 
@@ -93,7 +98,7 @@ pub fn api_router(app_state: AppState) -> Router {
 
     //let events_routes = events::events_routes();
 
-//    let location_routes = location::location_routes();
+//    
 
   //  
 
@@ -111,13 +116,15 @@ pub fn api_router(app_state: AppState) -> Router {
         .nest("/auth", auth_routes)
         .nest("/users", users_routes)
         .nest("/session", session_routes)
+        .nest("/properties", property_routes)
+        .nest("/location", location_routes)
         .nest("/worlds", worlds_routes)
 
 
 
 
-        //.nest("/location", location_routes)
-        //.nest("/properties", property_routes)
+        //
+        //
 
         
         //.nest("/simulations", simulations_routes)
