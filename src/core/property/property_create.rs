@@ -3,7 +3,7 @@ use crate::core::{UserId, WorldId};
 use crate::core::UvoxId;
 
 pub struct CreateProperty {
-    pub owner_id: UserId,
+    
     pub world_id: WorldId,
 
     // Domain fields (NOT API DTO)

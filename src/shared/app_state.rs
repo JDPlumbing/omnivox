@@ -25,6 +25,7 @@ use crate::shared::properties::property_source::PropertySource;
 use crate::shared::location::location_source::LocationSource;
 use crate::shared::location::address_source::AddressSource;
 use crate::supabasic::Supabase;
+use crate::engine::property_engine::PropertyEngine;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -37,6 +38,7 @@ pub struct AppState {
     pub property_source: Arc<dyn PropertySource + Send + Sync>, 
     pub location_source: Arc<dyn LocationSource + Send + Sync>,
     pub address_source: Arc<dyn AddressSource + Send + Sync>,
+    pub property_engine: Arc<PropertyEngine>,
 
 
     // ---- In-memory world states ----
@@ -57,33 +59,62 @@ pub struct AppState {
 
 impl AppState {
     pub fn new_from_env() -> anyhow::Result<Self> {
-        let supa = Supabase::new_from_env()?;
+    let supa = Supabase::new_from_env()?;
 
-        let world_source: Arc<dyn WorldSource> =
-            if std::env::var("WORLD_SOURCE").as_deref() == Ok("json") {
-                Arc::new(JsonWorldSource::from_dir("data/worlds")?)
-            } else {
-                Arc::new(SupabaseWorldSource { supa })
-            };
+    let world_source: Arc<dyn WorldSource> =
+        if std::env::var("WORLD_SOURCE").as_deref() == Ok("json") {
+            Arc::new(JsonWorldSource::from_dir("data/worlds")?)
+        } else {
+            Arc::new(SupabaseWorldSource { supa })
+        };
 
+    let user_source =
+        Arc::new(crate::infra::users::supabase_user_source::SupabaseUserSource::new_from_env()?);
 
-        Ok(Self {
-            world_source,
-            user_source: Arc::new(crate::infra::users::supabase_user_source::SupabaseUserSource::new_from_env()?),
-            anon_user_source: Arc::new(crate::infra::users::supabase_anon_user_source::SupabaseAnonUserSource::new_from_env()?),
-            session_source: Arc::new(crate::infra::session::supabase_session_source::SupabaseSessionSource::new_from_env()?),
-            ownership_source: Arc::new(crate::infra::ownership::supabase_ownership_source::SupabaseOwnershipSource::new_from_env()?),
-            property_source: Arc::new(crate::infra::properties::supabase_property_source::SupabasePropertySource::new_from_env()?),
-            location_source: Arc::new(crate::infra::location::supabase_location_source::SupabaseLocationSource::new_from_env()?),
-            address_source: Arc::new(crate::infra::location::supabase_address_source::SupabaseAddressSource::new_from_env()?),
-            worlds: Arc::new(RwLock::new(HashMap::new())),
-            world_frames: Arc::new(HashMap::new()),
-            world_spaces: Arc::new(HashMap::new()),
+    let anon_user_source =
+        Arc::new(crate::infra::users::supabase_anon_user_source::SupabaseAnonUserSource::new_from_env()?);
 
-            geospec_store: Arc::new(RwLock::new(GeoSpecStore::new())),
-            objex_store: Arc::new(RwLock::new(ObjexStore::new())),
+    let session_source =
+        Arc::new(crate::infra::session::supabase_session_source::SupabaseSessionSource::new_from_env()?);
 
-            observers: Arc::new(RwLock::new(HashMap::new())),
-        })
-    }
+    let ownership_source =
+        Arc::new(crate::infra::ownership::supabase_ownership_source::SupabaseOwnershipSource::new_from_env()?);
+
+    let property_source =
+        Arc::new(crate::infra::properties::supabase_property_source::SupabasePropertySource::new_from_env()?);
+
+    let location_source =
+        Arc::new(crate::infra::location::supabase_location_source::SupabaseLocationSource::new_from_env()?);
+
+    let address_source =
+        Arc::new(crate::infra::location::supabase_address_source::SupabaseAddressSource::new_from_env()?);
+
+    let property_engine = Arc::new(PropertyEngine {
+        property_source: property_source.clone(),
+        location_source: location_source.clone(),
+        ownership_source: ownership_source.clone(),
+    });
+
+    Ok(Self {
+        world_source,
+        user_source,
+        anon_user_source,
+        session_source,
+        ownership_source,
+        property_source,
+        location_source,
+        address_source,
+        property_engine,
+
+        worlds: Arc::new(RwLock::new(HashMap::new())),
+        world_frames: Arc::new(HashMap::new()),
+        world_spaces: Arc::new(HashMap::new()),
+
+        geospec_store: Arc::new(RwLock::new(GeoSpecStore::new())),
+        objex_store: Arc::new(RwLock::new(ObjexStore::new())),
+
+        observers: Arc::new(RwLock::new(HashMap::new())),
+    })
+}
+    
 }

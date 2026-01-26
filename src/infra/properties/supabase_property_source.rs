@@ -41,15 +41,17 @@ impl PropertySource for SupabasePropertySource {
         &self,
         user_id: UserId,
     ) -> Result<Vec<PropertySummary>> {
+
+        // Step 1: get ownership rows
         let rows = self
             .supa
-            .from("properties")
-            .select("property_id, world_id, user_owner_id")
-            .eq("user_owner_id", &user_id.to_string())
+            .from("user_properties")
+            .select("property_id, world_id, role")
+            .eq("user_id", &user_id.to_string())
             .execute()
             .await?;
 
-        let rows: Vec<Value> = serde_json::from_value(rows)?;
+        let rows: Vec<serde_json::Value> = serde_json::from_value(rows)?;
 
         Ok(rows
             .into_iter()
@@ -62,6 +64,7 @@ impl PropertySource for SupabasePropertySource {
             })
             .collect())
     }
+
 
     async fn get(
         &self,
@@ -132,7 +135,7 @@ impl PropertySource for SupabasePropertySource {
 
     async fn create(
         &self,
-        cmd: CreateProperty,
+        cmd: &CreateProperty,
     ) -> Result<Property> {
         let record: PropertyRecord = cmd.into();
 

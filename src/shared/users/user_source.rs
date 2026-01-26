@@ -6,10 +6,10 @@ use crate::core::UserId;
 #[derive(Debug, Clone)]
 pub struct UserRecord {
     pub id: UserId,
-    pub email: Option<String>,
     pub display_name: Option<String>,
     pub role: Option<String>,
 }
+
 
 #[async_trait]
 pub trait UserSource: Send + Sync {

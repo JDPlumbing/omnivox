@@ -30,14 +30,13 @@ impl UserSource for SupabaseUserSource {
         let row = self
             .supa
             .from("users")
-            .select("id,email,display_name,role")
+            .select("id,display_name,role")
             .eq("id", &id)
             .maybe_single_typed::<serde_json::Value>()
             .await?;
 
         Ok(row.map(|r| UserRecord {
             id: user_id,
-            email: r["email"].as_str().map(str::to_string),
             display_name: r["display_name"].as_str().map(str::to_string),
             role: r["role"].as_str().map(str::to_string),
         }))
@@ -47,7 +46,7 @@ impl UserSource for SupabaseUserSource {
         let rows = self
             .supa
             .from("users")
-            .select("id,email,display_name,role")
+            .select("id,display_name,role")
             .execute()
             .await?;
 
@@ -59,7 +58,6 @@ impl UserSource for SupabaseUserSource {
                 let id = r["id"].as_str()?;
                 Some(UserRecord {
                     id: UserId::from_uuid(Uuid::parse_str(id).ok()?),
-                    email: r["email"].as_str().map(str::to_string),
                     display_name: r["display_name"].as_str().map(str::to_string),
                     role: r["role"].as_str().map(str::to_string),
                 })

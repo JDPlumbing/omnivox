@@ -28,10 +28,13 @@ pub trait PropertySource: Send + Sync {
     async fn list_all(&self) -> Result<Vec<Property>>;
     // ---- Commands ----
 
+
     async fn create(
         &self,
-        input: CreateProperty,
+        input: &CreateProperty,
     ) -> Result<Property>;
+
+
 
     async fn delete(&self, property_id: Uuid) -> Result<()>;
     async fn update(&self, cmd: UpdateProperty) -> Result<Property>;

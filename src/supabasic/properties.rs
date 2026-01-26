@@ -259,28 +259,30 @@ impl PropertyRecord {
 use crate::core::CreateProperty;
 
 
-impl From<CreateProperty> for PropertyRecord {
-    fn from(cmd: CreateProperty) -> Self {
-        PropertyRecord {
-            property_id: None,
-
-            user_owner_id: Some(cmd.owner_id.0),
+impl From<&CreateProperty> for PropertyRecord {
+    fn from(cmd: &CreateProperty) -> Self {
+        Self {
+            // Core identity / linkage
             world_id: cmd.world_id,
-
             address_id: cmd.address_id,
-            name: cmd.name,
+            user_owner_id: None, // ❗ ownership is handled elsewhere now
 
-            anchor_uvox: serde_json::to_value(cmd.anchor_uvox)
-                .expect("anchor uvox must serialize"),
+            // Domain → Infra projection
+            name: cmd.name.clone(),
+            anchor_uvox: serde_json::to_value(&cmd.anchor_uvox)
+                .expect("UvoxId serialization must not fail"),
 
-            square_feet: cmd.square_feet,
-            bedrooms: cmd.bedrooms,
-            bathrooms: cmd.bathrooms,
+            square_feet: cmd.square_feet.map(|v| v as i64),
+            bedrooms: cmd.bedrooms.map(|v| v as i64),
+            bathrooms: cmd.bathrooms.map(|v| v as i64),
 
+            // Everything else is infra-level optional/default
             ..Default::default()
         }
     }
 }
+
+
 
 use crate::core::UpdateProperty;
 

@@ -20,4 +20,11 @@ pub trait OwnershipSource: Send + Sync {
         &self,
         user_id: UserId,
     ) -> Result<OwnershipContext>;
+    async fn create_owner(
+        &self,
+        user_id: UserId,
+        property_id: Uuid,
+        world_id: WorldId,
+    ) -> Result<()>;
+
 }

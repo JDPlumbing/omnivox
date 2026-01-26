@@ -1,0 +1,10 @@
+curl -X POST "$https://flclmktnzzfqfjjghczc.supabase.co/auth/v1/token?grant_type=password" \
+  -H "Content-Type: application/json" \
+  -H "apikey: $eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsY2xta3RuenpmcWZqamdoY3pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzk1NDMsImV4cCI6MjA2OTY1NTU0M30.7s-N4m81q3UXjgYW51ZT-L3SoQfTC8gj3TdI5pv7cVE" \
+  -d '{
+    "email": "you@example.com",
+    "password": "your-password"
+  }'
+
+
+curl http://localhost:8000/api/users/me -H "Authorization: $JWT"

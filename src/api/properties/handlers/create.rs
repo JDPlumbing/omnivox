@@ -17,26 +17,24 @@ pub async fn create_property(
     Path(world_id): Path<WorldId>,
     Json(input): Json<PropertyInput>,
 ) -> impl IntoResponse {
+    // Build intent ONLY (no authority)
     let cmd = CreateProperty {
-        owner_id: auth.user_id,
         world_id,
-
         address_id: input.address_id,
         name: input.name,
         anchor_uvox: input.anchor.uvox,
-
         square_feet: input.square_feet,
         bedrooms: input.bedrooms,
         bathrooms: input.bathrooms,
     };
 
-    match state.property_source.create(cmd).await {
-        Ok(property) => (
-            StatusCode::CREATED,
-            Json(property),
-        )
-            .into_response(),
-
+    // Pass actor explicitly to the Engine
+    match state
+        .property_engine
+        .create_property(auth.user_id, cmd)
+        .await
+    {
+        Ok(property) => (StatusCode::CREATED, Json(property)).into_response(),
         Err(e) => (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": e.to_string() })),

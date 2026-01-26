@@ -63,4 +63,23 @@ impl OwnershipSource for SupabaseOwnershipSource {
             })
         }
     }
+    async fn create_owner(
+        &self,
+        user_id: UserId,
+        property_id: Uuid,
+        world_id: WorldId,
+    ) -> Result<()> {
+        let new_record = serde_json::json!({
+            "user_id": user_id.to_string(),
+            "property_id": property_id.to_string(),
+            "world_id": world_id.0,
+            "role": "owner",
+        });
+        self.supa
+            .from("user_properties")
+            .insert(&new_record)
+            .execute()
+            .await?;
+        Ok(())
+}
 }
