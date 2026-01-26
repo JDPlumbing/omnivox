@@ -6,7 +6,7 @@ pub struct AuthContext {
     pub role: AccountRole,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AccountRole {
     Root,
     User,

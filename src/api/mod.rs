@@ -8,20 +8,19 @@ use axum::http::Method;
 use crate::shared::app_state::AppState;
 use axum::middleware;
 use crate::api::auth::middleware::identity_middleware;
-// --- Auth API ---
-pub mod auth;
 
 // --- Time API ---
 pub mod time;
-pub use time::{time_routes};
-// --- Worlds API ---
-pub mod worlds;
-pub use worlds::{world_routes};
-
+// --- Auth API ---
+pub mod auth;
 // --- Users API ---
 pub mod users;
-pub use users::users_routes;
-
+// --- Session API ---
+pub mod session;
+// --- Properties API ---
+mod properties;
+// --- Worlds API ---
+pub mod worlds;
 
 // --- Simulations API ---
 //mod simulations;
@@ -40,10 +39,6 @@ pub use users::users_routes;
 //mod location;
 
 
-// --- Properties API ---
-//mod properties;
-// --- Session API ---
-//mod session;
 
 
 // --- Pages API ---
@@ -76,6 +71,10 @@ pub fn api_router(app_state: AppState) -> Router {
     let auth_routes = auth::auth_routes();
     // Users routes
     let users_routes = users::users_routes();
+    // Session routes
+    let session_routes = session::session_routes();
+    // Properties routes
+    let property_routes = properties::property_routes();
     // Time routes
     let time_routes = time::time_routes();
     // Worlds routes
@@ -96,7 +95,7 @@ pub fn api_router(app_state: AppState) -> Router {
 
 //    let location_routes = location::location_routes();
 
-  //  let property_routes = properties::property_routes();
+  //  
 
     //let pages_routes = pages::pages_routes();
 
@@ -108,13 +107,13 @@ pub fn api_router(app_state: AppState) -> Router {
 
     Router::new()
         .route("/ping", get(|| async { "pong" }))
-        .nest("/auth", auth_routes)
         .nest("/time", time_routes)
-        .nest("/worlds", worlds_routes)
+        .nest("/auth", auth_routes)
         .nest("/users", users_routes)
-        //.route("/session/init", get(init_session))
-        //.route("/session/status", get(session_status))
-        //.route("/session/world", post(set_session_world))
+        .nest("/session", session_routes)
+        .nest("/worlds", worlds_routes)
+
+
 
 
         //.nest("/location", location_routes)

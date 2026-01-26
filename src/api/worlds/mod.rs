@@ -10,12 +10,6 @@ pub mod payloads;
 
 
 
-
-
-
-
-
-
 pub fn world_routes() -> Router<AppState> {
     Router::new()
                 .route("/", get(handlers::list::list_worlds_handler).post(handlers::create::create_world_handler))
@@ -32,6 +26,6 @@ pub fn world_routes() -> Router<AppState> {
         .route("/{world_id}/environment/sample", get(handlers::environment::sample_environment_handler))
         .route("/{from}/relative/{to}", get(handlers::relative::world_relative_handler))
         .route("/{from}/relative/{to}/origin", get(handlers::relative::world_origin_relative_handler))
-
+        .route("/{world_id}/properties", get(handlers::properties::list_world_properties))
 
 }

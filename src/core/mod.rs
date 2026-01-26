@@ -28,3 +28,5 @@ pub use spatial::UvoxQuat;
 pub use physics::*;
 pub use observer::*;
 pub use components::*;
+pub mod property;
+pub use property::*;    

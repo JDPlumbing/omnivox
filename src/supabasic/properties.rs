@@ -116,7 +116,7 @@ pub struct Metadata {
 // Main PropertyRecord
 // ------------------------
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct PropertyRecord {
     // Core identity
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -253,5 +253,48 @@ impl PropertyRecord {
             .execute()
             .await?;
         Ok(())
+    }
+}
+
+use crate::core::CreateProperty;
+
+
+impl From<CreateProperty> for PropertyRecord {
+    fn from(cmd: CreateProperty) -> Self {
+        PropertyRecord {
+            property_id: None,
+
+            user_owner_id: Some(cmd.owner_id.0),
+            world_id: cmd.world_id,
+
+            address_id: cmd.address_id,
+            name: cmd.name,
+
+            anchor_uvox: serde_json::to_value(cmd.anchor_uvox)
+                .expect("anchor uvox must serialize"),
+
+            square_feet: cmd.square_feet,
+            bedrooms: cmd.bedrooms,
+            bathrooms: cmd.bathrooms,
+
+            ..Default::default()
+        }
+    }
+}
+
+use crate::core::UpdateProperty;
+
+impl From<UpdateProperty> for PropertyRecord {
+    fn from(cmd: UpdateProperty) -> Self {
+        PropertyRecord {
+            property_id: Some(cmd.property_id),
+            name: cmd.name,
+            square_feet: cmd.square_feet,
+            bedrooms: cmd.bedrooms,
+            bathrooms: cmd.bathrooms,
+
+            // only fields that are mutable go here
+            ..Default::default()
+        }
     }
 }

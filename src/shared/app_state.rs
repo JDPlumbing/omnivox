@@ -19,7 +19,9 @@ use crate::shared::world_sources::json::JsonWorldSource;
 use crate::shared::world_sources::SupabaseWorldSource;
 use crate::shared::users::user_source::UserSource;
 use crate::shared::users::anon_user_source::AnonUserSource;
-
+use crate::shared::session::session_source::SessionSource;
+use crate::shared::ownership::ownership_source::OwnershipSource;
+use crate::shared::properties::property_source::PropertySource;
 use crate::supabasic::Supabase;
 
 #[derive(Clone)]
@@ -28,7 +30,10 @@ pub struct AppState {
     pub world_source: Arc<dyn WorldSource + Send + Sync>,
     pub user_source: Arc<dyn UserSource + Send + Sync>,
     pub anon_user_source: Arc<dyn AnonUserSource + Send + Sync>,
-    // ---- Runtime worlds (ECS) ----
+    pub session_source: Arc<dyn SessionSource + Send + Sync>,
+    pub ownership_source: Arc<dyn OwnershipSource + Send + Sync>,
+    pub property_source: Arc<dyn PropertySource + Send + Sync>, 
+    // ---- In-memory world states ----
     pub worlds: Arc<RwLock<HashMap<WorldId, Arc<WorldState>>>>,
 
     // ---- Immutable world metadata ----
@@ -60,6 +65,9 @@ impl AppState {
             world_source,
             user_source: Arc::new(crate::infra::users::supabase_user_source::SupabaseUserSource::new_from_env()?),
             anon_user_source: Arc::new(crate::infra::users::supabase_anon_user_source::SupabaseAnonUserSource::new_from_env()?),
+            session_source: Arc::new(crate::infra::session::supabase_session_source::SupabaseSessionSource::new_from_env()?),
+            ownership_source: Arc::new(crate::infra::ownership::supabase_ownership_source::SupabaseOwnershipSource::new_from_env()?),
+            property_source: Arc::new(crate::infra::properties::supabase_property_source::SupabasePropertySource::new_from_env()?),
             worlds: Arc::new(RwLock::new(HashMap::new())),
             world_frames: Arc::new(HashMap::new()),
             world_spaces: Arc::new(HashMap::new()),

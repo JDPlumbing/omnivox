@@ -108,86 +108,13 @@ impl From<PropertyInput> for PropertyRecord {
     }
 }
 
-//
-// ──────────────────────────────────────────────────────────────
-//   ROUTE HANDLERS (AppState-aware)
-// ──────────────────────────────────────────────────────────────
-//
-
-pub async fn list_properties(State(app): State<AppState>) -> impl IntoResponse {
-    match PropertyRecord::list(&app.supa).await {
-        Ok(records) => Json(records).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": format!("{e:?}") })),
-        )
-            .into_response(),
-    }
-}
-
-pub async fn list_properties_for_world(State(app): State<AppState>, Path(world_id): Path<i64>) -> impl IntoResponse {
-    match app.supa
-        .from("properties")
-        .select("*")
-        .eq("world_id", &world_id.to_string())
-        .execute_typed::<PropertyRecord>()
-        .await {
-            Ok(rows) => Json(rows).into_response(),
-            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Fetch failed: {e:?}")).into_response()
-    }
-}
 
 
-pub async fn get_property(State(app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
-    match PropertyRecord::get(&app.supa, id).await {
-        Ok(record) => Json(record).into_response(),
-        Err(e) => (
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": format!("{e:?}") })),
-        )
-            .into_response(),
-    }
-}
 
-pub async fn create_property(
-    State(app): State<AppState>,
-    Json(req): Json<PropertyInput>,
-) -> impl IntoResponse {
-    match PropertyRecord::create(&app.supa, &req.into()).await {
-        Ok(created) => (StatusCode::CREATED, Json(created)).into_response(),
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("{e:?}") })),
-        )
-            .into_response(),
-    }
-}
 
-pub async fn update_property(
-    State(app): State<AppState>,
-    Path(id): Path<Uuid>,
-    Json(req): Json<PropertyInput>,
-) -> impl IntoResponse {
-    match PropertyRecord::update(&app.supa, id, &req.into()).await {
-        Ok(updated) => Json(updated).into_response(),
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("{e:?}") })),
-        )
-            .into_response(),
-    }
-}
 
-pub async fn delete_property(State(app): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
-    match PropertyRecord::delete(&app.supa, id).await {
-        Ok(_) => (StatusCode::OK, Json(json!({ "deleted": id }))).into_response(),
-        Err(e) => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("{e:?}") })),
-        )
-            .into_response(),
-    }
-}
+
+
 
 //TODO make this for entities instead of objex
 /*

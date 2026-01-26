@@ -10,9 +10,9 @@ use reqwest::StatusCode;
 use crate::shared::identity::{
     auth_context::AuthContext,
     request_context::RequestContext,
-    identity_source::IdentitySource,
 };
 use crate::infra::identity::supabase_identity_source::SupabaseIdentitySource;
+use crate::shared::identity::identity_source::IdentitySource;
 
 pub async fn identity_middleware(
     mut req: Request<Body>,
@@ -62,18 +62,16 @@ pub async fn identity_middleware(
         }
     };
 
-
     // --------------------------------------------------
-    // Attach request-scoped identity (CLEAN)
+    // Attach request-scoped identity ONLY
     // --------------------------------------------------
-req.extensions_mut().insert(AuthContext {
-    user_id: resolved.user_id,
-    role: resolved.role,
-});
+    req.extensions_mut().insert(AuthContext {
+        user_id: resolved.user_id,
+        role: resolved.role,
+    });
 
-req.extensions_mut()
-    .insert(RequestContext::authenticated(None, resolved.user_id));
-
+    req.extensions_mut()
+        .insert(RequestContext::authenticated(None, resolved.user_id));
 
     next.run(req).await
 }
