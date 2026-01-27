@@ -1,21 +1,16 @@
 use axum::Router;
-use axum::routing::{get, post};
-use crate::shared::app_state::AppState; 
-pub mod entities;
-pub use entities::*;
-pub mod runtime;
+use axum::routing::{post, get, put, delete};
+use crate::shared::app_state::AppState;
 
-
-
+pub mod handlers;
+pub mod dtos;
+pub mod payloads;
 
 pub fn entities_routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(list_entities).post(create_entities))
-        .route("/world/{world_id}", get(list_entities_for_world))
-        .route(
-            "/{entity_id}",
-            get(get_entity).delete(delete_entity),
-        )
-        .route("/spawn_with_position/world/{world_id}", post(runtime::spawn_entity_with_position))
-
-    }
+        .route("/time", post(handlers::create_time::create_time_entity))
+        .route("/note", post(handlers::create_note::create_note_entity))
+        .route("/{id}", get(handlers::get_entity::get_entity))
+        .route("/{id}/world", put(handlers::set_world::set_entity_world))
+	.route("/{id}/position", put(handlers::set_position::set_entity_position))
+}

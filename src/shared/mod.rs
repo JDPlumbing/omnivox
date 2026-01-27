@@ -16,3 +16,5 @@ pub mod properties;
 pub use properties::*;
 pub mod location;
 pub use location::*;
+pub mod entities;
+pub use entities::*;

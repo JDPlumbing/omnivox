@@ -1,5 +1,4 @@
-use crate::core::UvoxQuat;
+use crate::core::Quat;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Orientation(pub UvoxQuat);
-
+pub struct Orientation(pub Quat);

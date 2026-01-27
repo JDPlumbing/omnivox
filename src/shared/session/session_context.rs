@@ -1,5 +1,5 @@
 // shared/session/session_context.rs
-use crate::core::{UserId, WorldId, SpatialAnchor};
+use crate::core::{UserId, WorldId, SpatialAnchor, SpatialHorizon};
 use uuid::Uuid;
 use serde::{Serialize};
 
@@ -13,6 +13,8 @@ pub struct SessionContext {
 
     /// Session-level spatial anchor (pre-entity)
     pub spatial_anchor: Option<SpatialAnchor>,
+
+    pub spatial_horizon: Option<SpatialHorizon>,
 
     /// Currently selected property context
     pub property_id: Option<Uuid>,
@@ -31,6 +33,7 @@ impl SessionContext {
             user_id: None,
             world_id: None,
             spatial_anchor: None,
+            spatial_horizon: None,
             property_id: None,
             is_anon: true,
             anon_owner_id: Some(anon_owner_id),
@@ -43,6 +46,7 @@ impl SessionContext {
             user_id: Some(user_id),
             world_id: None,
             spatial_anchor: None,
+            spatial_horizon: None,
             property_id: None,
             is_anon: false,
             anon_owner_id: None,

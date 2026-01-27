@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use anyhow::Result;
 
-use crate::core::{WorldId, SpatialAnchor, UvoxId};
+use crate::core::{WorldId, SpatialAnchor, UvoxId, SpatialHorizon};
 use crate::shared::location::location_source::LocationSource;
 
 pub struct LocationEngine {
@@ -39,4 +39,13 @@ impl LocationEngine {
             address_id: None,
         }
     }
+
+pub fn spatial_horizon_around_anchor(
+    &self,
+    anchor: &SpatialAnchor,
+    radius_um: i64,
+) -> SpatialHorizon {
+    SpatialHorizon::around_anchor(anchor, radius_um)
+}
+
 }

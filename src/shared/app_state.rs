@@ -27,6 +27,9 @@ use crate::shared::ownership::ownership_source::OwnershipSource;
 use crate::shared::properties::property_source::PropertySource;
 use crate::shared::location::location_source::LocationSource;
 use crate::shared::location::address_source::AddressSource;
+use crate::shared::EntityStore;
+
+
 use crate::supabasic::Supabase;
 use crate::engine::user::user_engine::UserEngine;
 use crate::engine::world::WorldEngine;
@@ -48,6 +51,8 @@ pub struct AppState {
     pub property_source: Arc<dyn PropertySource + Send + Sync>, 
     pub location_source: Arc<dyn LocationSource + Send + Sync>,
     pub address_source: Arc<dyn AddressSource + Send + Sync>,
+    pub entity_store: Arc<RwLock<EntityStore>>,
+
     pub user_engine: Arc<UserEngine>,
     pub world_engine: Arc<WorldEngine>,
     pub location_engine: Arc<LocationEngine>,
@@ -111,7 +116,7 @@ impl AppState {
         user_source: user_source.clone(),
         anon_user_source: anon_user_source.clone(),
     });
-
+    let entity_store = Arc::new(RwLock::new(EntityStore::new()));
 
     let world_engine = Arc::new(WorldEngine {
         world_source: world_source.clone(),
@@ -142,7 +147,7 @@ impl AppState {
         property_source,
         location_source,
         address_source,
-
+        entity_store,
         user_engine,
         world_engine,
         location_engine,
@@ -151,6 +156,8 @@ impl AppState {
         worlds: Arc::new(RwLock::new(HashMap::new())),
         world_frames: Arc::new(HashMap::new()),
         world_spaces: Arc::new(HashMap::new()),
+        
+
 
         geospec_store: Arc::new(RwLock::new(GeoSpecStore::new())),
         objex_store: Arc::new(RwLock::new(ObjexStore::new())),

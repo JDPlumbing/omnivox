@@ -1,1 +1,1 @@
-use crate::core::id::UvoxRegionId;
+use crate::core::UvoxRegionId;

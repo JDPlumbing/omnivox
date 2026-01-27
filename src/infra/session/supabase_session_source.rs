@@ -11,6 +11,7 @@ use crate::shared::session::{
 };
 use crate::core::WorldId;
 use crate::core::spatial::SpatialAnchor;
+use crate::core::SpatialHorizon;
 
 pub struct SupabaseSessionSource {
     supa: Supabase,
@@ -39,7 +40,7 @@ impl SessionSource for SupabaseSessionSource {
     let row = self
         .supa
         .from("anon_sessions")
-        .select("engine_user_id, anon_owner_id, world_id, spatial_anchor")
+        .select("engine_user_id, anon_owner_id, world_id, spatial_anchor, spatial_horizon")
         .eq("session_id", &session_id.to_string())
         .maybe_single_typed::<serde_json::Value>()
         .await?;
@@ -74,6 +75,10 @@ impl SessionSource for SupabaseSessionSource {
         .get("spatial_anchor")
         .and_then(|v| serde_json::from_value(v.clone()).ok());
 
+    let spatial_horizon = row
+        .get("spatial_horizon")
+        .and_then(|v| serde_json::from_value(v.clone()).ok());
+
     Ok(Some(SessionContext {
         user_id,
         world_id,
@@ -81,6 +86,7 @@ impl SessionSource for SupabaseSessionSource {
         is_anon,
         anon_owner_id,
         spatial_anchor,
+        spatial_horizon,
     }))
 }
 
@@ -126,6 +132,7 @@ impl SessionSource for SupabaseSessionSource {
                 is_anon: true,
                 anon_owner_id: Some(anon_owner_id),
                 spatial_anchor: None,
+                spatial_horizon: None,
             },
 
         ))
@@ -156,7 +163,7 @@ async fn get_session(
     let row = self
         .supa
         .from("anon_sessions")
-        .select("engine_user_id, anon_owner_id, world_id, spatial_anchor")
+        .select("engine_user_id, anon_owner_id, world_id, spatial_anchor, spatial_horizon")
 
         .eq("session_id", &session_id.to_string())
         .maybe_single_typed::<serde_json::Value>()
@@ -190,6 +197,10 @@ async fn get_session(
         .get("spatial_anchor")
         .and_then(|v| serde_json::from_value(v.clone()).ok());
 
+    let spatial_horizon = row
+        .get("spatial_horizon")
+        .and_then(|v| serde_json::from_value(v.clone()).ok());
+
     Ok(Some(SessionContext {
         user_id,
         world_id,
@@ -197,6 +208,7 @@ async fn get_session(
         is_anon,
         anon_owner_id,
         spatial_anchor,
+        spatial_horizon,
     }))
 
 }
@@ -234,5 +246,22 @@ async fn set_spatial_anchor(
 
     Ok(())
 }
+async fn set_spatial_horizon(
+    &self,
+    session_id: Uuid,
+    horizon: SpatialHorizon,
+) -> Result<()> {
+    self.supa
+        .from("anon_sessions")
+        .update(serde_json::json!({
+            "spatial_horizon": serde_json::to_value(horizon)?
+        }))
+        .eq("session_id", &session_id.to_string())
+        .execute()
+        .await?;
+
+    Ok(())
+}
+
 
 }

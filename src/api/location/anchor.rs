@@ -75,7 +75,7 @@ pub async fn resolve_address_anchor(
         Err(e) => return (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
     };
 
-    // 5️⃣ Attach to session
+    // 5️⃣ Attach anchor
     if let Err(e) = app.session_source
         .set_spatial_anchor(session_id, anchor.clone())
         .await
@@ -83,5 +83,18 @@ pub async fn resolve_address_anchor(
         return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response();
     }
 
+    // 6️⃣ Create horizon
+    let horizon = app.location_engine
+        .spatial_horizon_around_anchor(&anchor, 100_000_000);
+
+    // 7️⃣ Attach horizon
+    if let Err(e) = app.session_source
+        .set_spatial_horizon(session_id, horizon.clone())
+        .await
+    {
+        return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response();
+    }
+
+    // 8️⃣ Respond
     Json(anchor).into_response()
 }

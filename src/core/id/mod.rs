@@ -3,7 +3,6 @@ pub mod entity_id;
 
 
 
-pub mod uvox_region_id;
 
 pub mod world_id;
 pub mod simulation_id;
@@ -11,7 +10,7 @@ pub mod simulation_id;
 pub use entity_id::EntityId;
 
 
-pub use uvox_region_id::UvoxRegionId;
+
 
 pub use world_id::WorldId;
 pub use simulation_id::SimulationId;

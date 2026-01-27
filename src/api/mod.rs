@@ -23,6 +23,8 @@ mod properties;
 mod location;
 // --- Worlds API ---
 pub mod worlds;
+// --- Entities API (NEW, replaces objex API) ---
+mod entities;
 
 
 
@@ -33,9 +35,7 @@ pub mod worlds;
 //mod simulations;
 //pub use simulations::{list_simulations, get_simulation, create_simulation};
 
-// --- Entities API (NEW, replaces objex API) ---
-//mod entities;
-//pub use entities::*;
+
 
 
 // --- Events API ---
@@ -84,29 +84,13 @@ pub fn api_router(app_state: AppState) -> Router {
     let location_routes = location::location_routes();
     // Worlds routes
     let worlds_routes = worlds::world_routes();
-
-
-
-    //
-
+    // Entities routes
+    let entities_routes = entities::entities_routes();
     //let physics_routes = physics::physics_routes();
-
-
     //let simulations_routes = simulations::routes();
-
-    //let entities_routes = entities::entities_routes();
-
-    //let events_routes = events::events_routes();
-
-//    
-
-  //  
-
-    //let pages_routes = pages::pages_routes();
-
     //
-
-  
+    //let events_routes = events::events_routes();
+    //let pages_routes = pages::pages_routes();
     //let viewer_routes = viewer::viewer_routes();
     //let observer_routes = observers::observer_routes();
 
@@ -119,14 +103,7 @@ pub fn api_router(app_state: AppState) -> Router {
         .nest("/properties", property_routes)
         .nest("/location", location_routes)
         .nest("/worlds", worlds_routes)
-
-
-
-
-        //
-        //
-
-        
+        .nest("/entities", entities_routes)
         //.nest("/simulations", simulations_routes)
         //.nest("/entities", entities_routes)
         //.nest("/objex", objex_routes())

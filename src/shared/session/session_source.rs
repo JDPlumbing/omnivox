@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::core::{WorldId, UserId};
 use crate::shared::session::session_context::SessionContext;
 use crate::core::spatial::SpatialAnchor;
+use crate::core::SpatialHorizon;
 
 #[async_trait]
 pub trait SessionSource: Send + Sync {
@@ -40,4 +41,9 @@ pub trait SessionSource: Send + Sync {
         anchor: SpatialAnchor,
     ) -> Result<()>;
 
+    async fn set_spatial_horizon(
+        &self,
+        session_id: Uuid,
+        horizon: SpatialHorizon,
+    ) -> Result<()>;
 }

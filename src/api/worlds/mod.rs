@@ -27,5 +27,5 @@ pub fn world_routes() -> Router<AppState> {
         .route("/{from}/relative/{to}", get(handlers::relative::world_relative_handler))
         .route("/{from}/relative/{to}/origin", get(handlers::relative::world_origin_relative_handler))
         .route("/{world_id}/properties", get(handlers::properties::list_world_properties))
-
+        .route("/{world_id}/entities", get(handlers::list_entities::list_entities_in_world))
 }

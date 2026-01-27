@@ -394,3 +394,17 @@ impl UvoxId {
 
 
 }
+impl UvoxId {
+    /// Approximate local distance in micrometers (valid for small regions)
+    pub fn approx_distance_um(&self, other: &UvoxId) -> i64 {
+        let dr = (self.r_um.0 - other.r_um.0).abs();
+
+        let dlat = (self.lat_code.0 - other.lat_code.0).abs();
+        let dlon = (self.lon_code.0 - other.lon_code.0).abs();
+
+        // Weight angular deltas by radius (very rough but stable)
+        let r = self.r_um.0;
+
+        dr + (r * dlat / 1_000_000) + (r * dlon / 1_000_000)
+    }
+}

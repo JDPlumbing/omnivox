@@ -1,2 +1,2 @@
 pub mod quat;
-pub use quat::UvoxQuat;
+pub use quat::Quat;
