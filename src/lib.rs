@@ -5,3 +5,4 @@ pub mod api;      // web API (Axum)
 pub mod shared; // shared utilities and state
 pub mod infra;   // infrastructure components (e.g., database, identity sources)
 pub mod app;     // application bootstrap and configuration
+pub mod tests;   // integration tests

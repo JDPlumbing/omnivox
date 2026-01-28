@@ -38,6 +38,3 @@ glam = "0.30.9"
 log = "0.4.29"
 
 
-[[bin]]
-name = "scratch"
-path = "src/dev/scratch.rs"

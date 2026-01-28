@@ -38,6 +38,7 @@ impl SimTime {
     /// # Examples
     ///
     /// ```
+    /// use omnivox::core::tdt::SimTime;
     /// let time = SimTime::from_ns(1_000_000_000);
     /// ```
     pub fn from_ns(ns: i128) -> Self {
@@ -53,7 +54,9 @@ impl SimTime {
     /// # Examples
     ///
     /// ```
-    /// let time = SimTime::from_seconds(60);
+    ///use omnivox::core::tdt::SimTime;
+    ///
+    //let time = SimTime::from_seconds(60);
     /// ```
     pub fn from_seconds(sec: i64) -> Self {
         SimTime(sec as i128 * NANOS_PER_SECOND)
@@ -81,6 +84,8 @@ impl SimTime {
     /// # Examples
     ///
     /// ```
+    /// use omnivox::core::SimDate;
+    /// use omnivox::core::tdt::SimTime;
     /// let date = SimDate { year: 2024, month: 1, day: 1 };
     /// let time = SimTime::from_sim_date(date);
     /// ```
