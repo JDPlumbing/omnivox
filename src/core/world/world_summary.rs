@@ -1,7 +1,6 @@
 
 use crate::core::world::world_definition::WorldDefinition;
 use crate::core::id::WorldId;
-use crate::core::tdt::sim_time::SimTime;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

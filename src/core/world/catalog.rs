@@ -1,6 +1,5 @@
 // src/core/world/catalog.rs
 
-use crate::core::id::WorldId;
 use crate::core::tdt::sim_time::SimTime;
 use serde::{Serialize, Deserialize};
 

@@ -82,37 +82,3 @@ pub fn rfc3339_from_simtime(t: SimTime) -> String {
         .to_rfc3339_opts(SecondsFormat::Millis, true)
 }
 
-/// ---------------------------------------------------------------------------
-/// Event block aggregator
-/// ---------------------------------------------------------------------------
-/// Groups multiple ChronoEvents under a single displayed timestamp.
-/// This is the thing you described as “month buckets”, “group by major unit”.
-/// ---------------------------------------------------------------------------
-pub fn format_event_block(
-    events: &[ChronoEvent],
-    fmt: TimeFormat
-) -> serde_json::Value {
-
-    let time_string = if let Some(e0) = events.first() {
-        format_simtime(e0.t, fmt)
-    } else {
-        "<no-time>".to_string()
-    };
-
-    let ev_list: Vec<_> = events
-        .iter()
-        .map(|e| json!({
-            "entity_id": e.entity_id,
-            "world_id":  e.world_id,
-            "kind":      e.kind,
-            "payload":   e.payload,
-            "t_raw":     e.t.as_ns(),           // always included
-            "t_display": format_simtime(e.t, fmt),
-        }))
-        .collect();
-
-    json!({
-        "time": time_string,
-        "events": ev_list
-    })
-}

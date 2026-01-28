@@ -1,0 +1,32 @@
+[{
+  "world_id": 3,
+  "name": "Moon",
+  "description": "Earth's Moon",
+  "world_epoch": "-62168428837000000037",
+  "environment": {
+    "space": {
+      "up_model": "Radial",
+      "surface_radius_m": 1737400
+    },
+    "medium": {
+      "default": "Vacuum"
+    },
+    "gravity": {
+      "kind": "Radial",
+      "strength": 1.62
+    },
+    "pressure": {
+      "derive_from_density": false
+    },
+    "atmosphere": {
+      "max_height_m": 0,
+      "scale_height_m": 0,
+      "sea_level_density": 0.0
+    },
+    "temperature": {
+      "surface_temp_k": 220.0,
+      "lapse_rate_k_per_m": 0.0
+    }
+  }
+}
+]

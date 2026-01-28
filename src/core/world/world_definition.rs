@@ -1,4 +1,4 @@
-use crate::core::{WorldId, SimTime, world::WorldEnvDescriptor};
+use crate::core::{WorldId, world::WorldEnvDescriptor};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]

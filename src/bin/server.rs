@@ -1,28 +1,26 @@
-#![cfg_attr(debug_assertions, allow(warnings))]
-
-use axum::Router;
+use axum::{Router, Extension, middleware};
 use tower_http::cors::{Any, CorsLayer};
 use omnivox::api::api_router;
 use omnivox::shared::app_state::AppState;
 use tokio::net::TcpListener;
-use axum::middleware;
-use omnivox::api::auth::middleware::identity_middleware;
+use omnivox::api::identity_middleware;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
     dotenvy::dotenv().ok();
 
-    // Build shared state ONCE
-    let app_state = AppState::new_from_env()?;
+    let app_state = AppState::from_env()?;
 
-    // Build the API router (it already has .with_state)
-    let api = api_router(app_state);
+    let api = api_router(app_state.clone());
 
-    // Mount at /api
     let app = Router::new()
-        .nest("/api", api)
+        // 1️⃣ middleware declared FIRST (runs second)
         .layer(middleware::from_fn(identity_middleware))
+        // 2️⃣ Extension declared LAST (runs first)
+        .layer(Extension(app_state.clone()))
+        // 3️⃣ then routes
+        .nest("/api", api)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -30,12 +28,9 @@ async fn main() -> anyhow::Result<()> {
                 .allow_headers(Any),
         );
 
-
-    // Start server
     let listener = TcpListener::bind("0.0.0.0:8000").await?;
     println!("🚀 Listening on http://localhost:8000");
 
     axum::serve(listener, app).await?;
-
     Ok(())
 }

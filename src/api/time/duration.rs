@@ -1,18 +1,26 @@
-use axum::{Json, extract::Query};
+use axum::{
+    extract::{Query, State},
+    Json,
+};
 use serde::Deserialize;
-use crate::core::tdt::sim_duration::SimDuration;
+
+use crate::shared::app_state::AppState;
 
 #[derive(Deserialize)]
 pub struct DurationQuery {
-    pub ns: String,   // <-- STRING
+    pub ns: String,
 }
 
-pub async fn duration_human_handler(Query(q): Query<DurationQuery>) -> Json<serde_json::Value> {
+pub async fn duration_human_handler(
+    State(app): State<AppState>,
+    Query(q): Query<DurationQuery>,
+) -> Json<serde_json::Value> {
     let ns: i128 = q.ns.parse().unwrap_or(0);
-    let dur = SimDuration::from_ns(ns);
+
+    let result = app.time_engine.human_duration(ns);
 
     Json(serde_json::json!({
-        "human": dur.to_string_human(),
-        "ns": ns.to_string()
+        "human": result.human,
+        "ns": result.ns.to_string(),
     }))
 }

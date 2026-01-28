@@ -18,8 +18,10 @@ use crate::infra::inmemory::anon_users::InMemoryAnonUserSource;
 use crate::infra::inmemory::auth::InMemoryAuthSource;
 use crate::infra::inmemory::world_state::InMemoryWorldStateSource;
 use crate::engine::world::loader::WorldLoader;
+use crate::engine::time::time_engine::TimeEngine;
 
 pub fn build_app_state_from_env() -> anyhow::Result<AppState> {
+    let time_engine = Arc::new(TimeEngine::default());
     // --- World ---
     let world_catalog: Arc<dyn WorldCatalog> =
         Arc::new(JsonWorldCatalog::from_dir("data/worlds")?);
@@ -42,6 +44,7 @@ pub fn build_app_state_from_env() -> anyhow::Result<AppState> {
     // --- Engines ---
     let user_engine = Arc::new(UserEngine::new(
         auth_source.clone(),
+        identity_source.clone(),   // 👈 NEW
         user_source.clone(),
         anon_user_source.clone(),
         session_source.clone(),
@@ -65,6 +68,7 @@ pub fn build_app_state_from_env() -> anyhow::Result<AppState> {
     ));
 
     Ok(AppState::new(
+        time_engine,
         world_catalog,
         world_state_source,
 

@@ -1,26 +1,29 @@
 use axum::{
     routing::{get, post, put, patch, delete},
     Router,
+    http::Method,
+    Extension,
+    middleware,
 };
 use tower_http::cors::{Any, CorsLayer};
-use axum::http::Method;
 
 use crate::shared::app_state::AppState;
-use axum::middleware;
-use crate::api::auth::middleware::identity_middleware;
+
 
 // --- Time API ---
 mod time;
 // --- Auth API ---
 mod auth;
+pub use auth::middleware::identity_middleware;
+
 // --- Users API ---
-mod users;
+//mod users;
 // --- Session API ---
-mod session;
+//mod session;
 // --- Properties API ---
-mod properties;
+//mod properties;
 // --- Address API ---
-mod location;
+//mod location;
 // --- Worlds API ---
 //pub mod worlds;
 // --- Entities API (NEW, replaces objex API) ---
@@ -75,13 +78,13 @@ pub fn api_router(app_state: AppState) -> Router {
     // Auth routes
     let auth_routes = auth::auth_routes();
     // Users routes
-    let users_routes = users::users_routes();
+    //let users_routes = users::users_routes();
     // Session routes
-    let session_routes = session::session_routes();
+    //let session_routes = session::session_routes();
     // Properties routes
-    let property_routes = properties::property_routes();
+    //let property_routes = properties::property_routes();
     // Location routes
-    let location_routes = location::location_routes();
+    //let location_routes = location::location_routes();
     // Worlds routes
     //let worlds_routes = worlds::world_routes();
     // Entities routes
@@ -98,10 +101,10 @@ pub fn api_router(app_state: AppState) -> Router {
         .route("/ping", get(|| async { "pong" }))
         .nest("/time", time_routes)
         .nest("/auth", auth_routes)
-        .nest("/users", users_routes)
-        .nest("/session", session_routes)
-        .nest("/properties", property_routes)
-        .nest("/location", location_routes)
+        //.nest("/users", users_routes)
+        //.nest("/session", session_routes)
+        //.nest("/properties", property_routes)
+        //.nest("/location", location_routes)
         //.nest("/worlds", worlds_routes)
        // .nest("/entities", entities_routes)
         //.nest("/simulations", simulations_routes)
@@ -117,7 +120,7 @@ pub fn api_router(app_state: AppState) -> Router {
         //.nest("/pages", pages_routes)
         //.nest("/viewer", viewer_routes)
       // .nest("/observers", observer_routes)
-
+        
         .with_state(app_state)
         
         .layer(

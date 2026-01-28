@@ -1,4 +1,4 @@
-{
+[{
   "world_id": 1,
   "name": "Earth",
   "description": "Default Earth for Public Users",
@@ -29,3 +29,4 @@
     }
   }
 }
+]

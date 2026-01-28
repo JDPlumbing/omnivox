@@ -3,75 +3,66 @@ use axum::{
     http::Request,
     middleware::Next,
     response::IntoResponse,
-    Json,
 };
-use reqwest::StatusCode;
+use uuid::Uuid;
 
-use crate::shared::identity::{
-    auth_context::AuthContext,
-    request_context::RequestContext,
-};
-use crate::infra::identity::supabase_identity_source::SupabaseIdentitySource;
-use crate::shared::identity::identity_source::IdentitySource;
+use crate::shared::app_state::AppState;
+use crate::shared::identity::request_context::RequestContext;
 
 pub async fn identity_middleware(
     mut req: Request<Body>,
     next: Next,
 ) -> impl IntoResponse {
-    let auth_header = req
-        .headers()
-        .get("Authorization")
-        .and_then(|h| h.to_str().ok());
+    let state = req
+        .extensions()
+        .get::<AppState>()
+        .expect("AppState missing from request");
 
-    // --------------------------------------------------
-    // Anonymous request
-    // --------------------------------------------------
-    let Some(token) = auth_header.and_then(|h| h.strip_prefix("Bearer ")) else {
+    // ----------------------------------------
+    // Extract session ID (optional)
+    // ----------------------------------------
+    let session_id = req
+        .headers()
+        .get("x-session-id")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    // ----------------------------------------
+    // No session → anonymous
+    // ----------------------------------------
+    let Some(session_id) = session_id else {
         req.extensions_mut()
             .insert(RequestContext::anonymous(None));
-
         return next.run(req).await;
     };
 
-    // --------------------------------------------------
-    // Authenticated request
-    // --------------------------------------------------
-    let identity_source = match SupabaseIdentitySource::new_from_env() {
-        Ok(src) => src,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({
-                    "error": "Auth backend unavailable"
-                })),
-            )
-                .into_response();
+    // ----------------------------------------
+    // Load session
+    // ----------------------------------------
+    let session = match state
+        .session_source
+        .get_session(session_id)
+        .await
+    {
+        Ok(Some(s)) => s,
+        _ => {
+            // Invalid session → treat as anonymous
+            req.extensions_mut()
+                .insert(RequestContext::anonymous(Some(session_id)));
+            return next.run(req).await;
         }
     };
 
-    let resolved = match identity_source.resolve_from_token(token).await {
-        Ok(id) => id,
-        Err(_) => {
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "error": "Invalid token"
-                })),
-            )
-                .into_response();
-        }
+    // ----------------------------------------
+    // Authenticated vs anon
+    // ----------------------------------------
+    let ctx = if let Some(user_id) = session.user_id {
+        RequestContext::authenticated(Some(session_id), user_id)
+    } else {
+        RequestContext::anonymous(Some(session_id))
     };
 
-    // --------------------------------------------------
-    // Attach request-scoped identity ONLY
-    // --------------------------------------------------
-    req.extensions_mut().insert(AuthContext {
-        user_id: resolved.user_id,
-        role: resolved.role,
-    });
-
-    req.extensions_mut()
-        .insert(RequestContext::authenticated(None, resolved.user_id));
+    req.extensions_mut().insert(ctx);
 
     next.run(req).await
 }

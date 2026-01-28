@@ -13,9 +13,11 @@ use crate::engine::user::user_engine::UserEngine;
 use crate::engine::world::world_engine::WorldEngine;
 use crate::engine::location::location_engine::LocationEngine;
 use crate::engine::property::property_engine::PropertyEngine;
+use crate::engine::time::time_engine::TimeEngine;
 
 #[derive(Clone)]
 pub struct AppState {
+    pub time_engine: Arc<TimeEngine>,
     // ---- World persistence ----
     pub world_catalog: Arc<dyn WorldCatalog + Send + Sync>,
     pub world_state_source: Arc<dyn WorldStateSource + Send + Sync>,
@@ -43,6 +45,7 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(
+        time_engine: Arc<TimeEngine>,
         world_catalog: Arc<dyn WorldCatalog + Send + Sync>,
         world_state_source: Arc<dyn WorldStateSource + Send + Sync>,
 
@@ -62,6 +65,7 @@ impl AppState {
         property_engine: Arc<PropertyEngine>,
     ) -> Self {
         Self {
+            time_engine,
             world_catalog,
             world_state_source,
 

@@ -1,7 +1,8 @@
-{
+[{
   "world_id": 0,
   "name": "The Sun",
   "description": "Center of the Solar System",
   "world_epoch": "-144218232000000000000000000",
   "environment": null
 }
+]
