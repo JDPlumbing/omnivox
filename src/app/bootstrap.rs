@@ -19,9 +19,19 @@ use crate::infra::inmemory::auth::InMemoryAuthSource;
 use crate::infra::inmemory::world_state::InMemoryWorldStateSource;
 use crate::engine::world::loader::WorldLoader;
 use crate::engine::time::time_engine::TimeEngine;
+use crate::shared::identity::auth_source::AuthSource;
+use crate::shared::identity::identity_source::IdentitySource;
+use crate::shared::users::user_source::UserSource;
+use crate::shared::users::anon_user_source::AnonUserSource;
+use crate::shared::session::session_source::SessionSource;
+use crate::infra::dev::auth::DevAuthSource;
+use crate::infra::dev::identity::DevIdentitySource;
+use crate::shared::identity::auth_context::AccountRole;
+
 
 pub fn build_app_state_from_env() -> anyhow::Result<AppState> {
     let time_engine = Arc::new(TimeEngine::default());
+
     // --- World ---
     let world_catalog: Arc<dyn WorldCatalog> =
         Arc::new(JsonWorldCatalog::from_dir("data/worlds")?);
@@ -29,14 +39,47 @@ pub fn build_app_state_from_env() -> anyhow::Result<AppState> {
     let world_state_source: Arc<dyn WorldStateSource> =
         Arc::new(InMemoryWorldStateSource::default());
 
-    // --- In-memory domain sources ---
-    let auth_source = Arc::new(InMemoryAuthSource::default());
-    let identity_source = Arc::new(InMemoryIdentitySource::default());
-    let user_source = Arc::new(InMemoryUserSource::default());
-    let anon_user_source = Arc::new(InMemoryAnonUserSource::default());
-    let session_source = Arc::new(InMemorySessionSource::default());
 
-    //let ownership_source = Arc::new(InMemoryOwnershipSource::default());
+// Define once, up front
+let dev_user_id = crate::core::UserId::from_uuid(
+    uuid::uuid!("00000000-0000-0000-0000-000000000001")
+);
+
+let (
+    auth_source,
+    identity_source,
+    user_source,
+    anon_user_source,
+    session_source,
+): (
+    Arc<dyn AuthSource + Send + Sync>,
+    Arc<dyn IdentitySource + Send + Sync>,
+    Arc<dyn UserSource + Send + Sync>,
+    Arc<dyn AnonUserSource + Send + Sync>,
+    Arc<dyn SessionSource + Send + Sync>,
+) = if cfg!(debug_assertions) {
+    // 🔧 DEV MODE
+    (
+        Arc::new(DevAuthSource::new(dev_user_id)),
+        Arc::new(DevIdentitySource::new(dev_user_id, AccountRole::Root)),
+        Arc::new(InMemoryUserSource::default()),
+        Arc::new(InMemoryAnonUserSource::default()),
+        Arc::new(InMemorySessionSource::default()),
+    )
+} else {
+    // 🔐 NORMAL MODE
+    (
+        Arc::new(InMemoryAuthSource::default()),
+        Arc::new(InMemoryIdentitySource::default()),
+        Arc::new(InMemoryUserSource::default()),
+        Arc::new(InMemoryAnonUserSource::default()),
+        Arc::new(InMemorySessionSource::default()),
+    )
+};
+
+
+
+    // --- Other domain sources ---
     let property_source = Arc::new(InMemoryPropertySource::default());
     let location_source = Arc::new(InMemoryLocationSource::default());
     let address_source = Arc::new(InMemoryAddressSource::default());
@@ -44,7 +87,7 @@ pub fn build_app_state_from_env() -> anyhow::Result<AppState> {
     // --- Engines ---
     let user_engine = Arc::new(UserEngine::new(
         auth_source.clone(),
-        identity_source.clone(),   // 👈 NEW
+        identity_source.clone(),
         user_source.clone(),
         anon_user_source.clone(),
         session_source.clone(),
@@ -57,13 +100,11 @@ pub fn build_app_state_from_env() -> anyhow::Result<AppState> {
 
     let world_engine = Arc::new(WorldEngine::new(loader));
 
-
     let location_engine =
         Arc::new(LocationEngine::new(location_source.clone()));
 
     let property_engine = Arc::new(PropertyEngine::new(
         property_source.clone(),
-        
         location_source.clone(),
     ));
 
@@ -78,7 +119,6 @@ pub fn build_app_state_from_env() -> anyhow::Result<AppState> {
         anon_user_source,
         session_source,
 
-        
         property_source,
         location_source,
         address_source,

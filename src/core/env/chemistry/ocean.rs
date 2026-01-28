@@ -23,7 +23,7 @@ impl OceanChemistry {
     }
 }
 impl OceanChemistry {
-    pub fn sample(&self, env: &FieldSample) -> OceanChemistrySample {
+    pub fn sample(&self, _env: &FieldSample) -> OceanChemistrySample {
         // Simple linear density model for now
         let density = 1000.0 + self.salinity_psu * 0.7;
 

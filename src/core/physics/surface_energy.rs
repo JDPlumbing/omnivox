@@ -77,7 +77,7 @@ pub fn surface_solar_irradiance(
     // -----------------------------------------
     // Atmospheric attenuation (scalar)
     // -----------------------------------------
-    let attenuation = 1.0; //TODO: this is a placeholder until atmospheric values are working
+    let _attenuation = 1.0; //TODO: this is a placeholder until atmospheric values are working
     // -----------------------------------------
     // Energy terms
     // -----------------------------------------

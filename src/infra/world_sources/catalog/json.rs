@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use anyhow::{Result, bail, anyhow};
+use anyhow::{Result, bail};
 use async_trait::async_trait;
 
 use crate::core::id::WorldId;
@@ -38,9 +38,9 @@ impl JsonWorldCatalog {
         Ok(Self { root, worlds })
     }
 
-    fn find(&self, world_id: WorldId) -> Option<&WorldDefinition> {
-        self.worlds.iter().find(|w| w.world_id == world_id)
-    }
+    //fn find(&self, world_id: WorldId) -> Option<&WorldDefinition> {
+    //    self.worlds.iter().find(|w| w.world_id == world_id)
+    //}
 
     fn definition_path(&self, world_id: WorldId) -> std::path::PathBuf {
         self.root.join(format!("world_{}.json", world_id))

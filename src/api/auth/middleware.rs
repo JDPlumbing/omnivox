@@ -1,68 +1,41 @@
 use axum::{
     body::Body,
+    extract::State,
     http::Request,
     middleware::Next,
-    response::IntoResponse,
+    response::Response,
 };
-use uuid::Uuid;
 
 use crate::shared::app_state::AppState;
-use crate::shared::identity::request_context::RequestContext;
+use crate::shared::identity::{
+    auth_context::{AuthContext, AccountRole},
+    request_context::RequestContext,
+};
 
 pub async fn identity_middleware(
+    State(_app_state): State<AppState>,
     mut req: Request<Body>,
     next: Next,
-) -> impl IntoResponse {
-    let state = req
-        .extensions()
-        .get::<AppState>()
-        .expect("AppState missing from request");
+) -> Response {
+    // 🔥 DEV MODE: always authenticated
+    if cfg!(debug_assertions) {
+        let user_id = crate::core::UserId::from_uuid(
+            uuid::uuid!("00000000-0000-0000-0000-000000000001")
+        );
 
-    // ----------------------------------------
-    // Extract session ID (optional)
-    // ----------------------------------------
-    let session_id = req
-        .headers()
-        .get("x-session-id")
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| Uuid::parse_str(s).ok());
+        req.extensions_mut().insert(AuthContext {
+            user_id,
+            role: AccountRole::Root,
+        });
 
-    // ----------------------------------------
-    // No session → anonymous
-    // ----------------------------------------
-    let Some(session_id) = session_id else {
-        req.extensions_mut()
-            .insert(RequestContext::anonymous(None));
+        req.extensions_mut().insert(
+            RequestContext::authenticated(None, user_id)
+        );
+
         return next.run(req).await;
-    };
+    }
 
-    // ----------------------------------------
-    // Load session
-    // ----------------------------------------
-    let session = match state
-        .session_source
-        .get_session(session_id)
-        .await
-    {
-        Ok(Some(s)) => s,
-        _ => {
-            // Invalid session → treat as anonymous
-            req.extensions_mut()
-                .insert(RequestContext::anonymous(Some(session_id)));
-            return next.run(req).await;
-        }
-    };
-
-    // ----------------------------------------
-    // Authenticated vs anon
-    // ----------------------------------------
-    let ctx = if let Some(user_id) = session.user_id {
-        RequestContext::authenticated(Some(session_id), user_id)
-    } else {
-        RequestContext::anonymous(Some(session_id))
-    };
-
-    req.extensions_mut().insert(ctx);
-
+    // prod fallback
+    req.extensions_mut().insert(RequestContext::anonymous(None));
     next.run(req).await
 }

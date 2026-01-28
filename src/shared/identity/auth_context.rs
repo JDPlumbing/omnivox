@@ -1,4 +1,5 @@
 use crate::core::UserId;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
 pub struct AuthContext {
@@ -6,7 +7,7 @@ pub struct AuthContext {
     pub role: AccountRole,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AccountRole {
     Root,
     User,

@@ -8,7 +8,7 @@ use std::sync::Arc;
 use crate::core::env::land::models::flat::FlatLand;
 use crate::core::env::land::height_field::LandHeightField;
 use crate::core::env::land::models::noise::NoiseLand;
-use crate::core::land_height_field::LandHeightEnvField;
+use crate::core::env::land_height_field::LandHeightEnvField;
 
 
 

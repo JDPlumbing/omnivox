@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use anyhow::Result;
 
 use crate::core::id::WorldId;
-use crate::engine::world::state::WorldState;
+
 use crate::core::entity::EntityStore;
 use crate::core::tdt::sim_time::SimTime;
 

@@ -101,46 +101,44 @@ impl UserEngine {
 
         Ok(user_id)
     }
-    pub async fn login(
-        &self,
-        session_id: Uuid,
-        email: String,
-        password: String,
-    ) -> Result<UserId> {
-        // 1️⃣ Load session
-        let session = self
-            .session_source
-            .get_session(session_id)
-            .await?
-            .ok_or_else(|| anyhow!("Session not found"))?;
 
-        if !session.is_anon {
-            bail!("Session already associated with a real user");
-        }
 
-        // 2️⃣ Verify credentials (auth)
-        let user_id = self
-            .auth_source
-            .login(email.clone(), password)
-            .await?;
+pub async fn login(
+    &self,
+    session_id: Uuid,
+    email: String,
+    password: String,
+) -> Result<UserId> {
+    let session = self
+        .session_source
+        .get_session(session_id)
+        .await?
+        .ok_or_else(|| anyhow!("Session not found"))?;
 
-        // 3️⃣ Resolve identity mapping
-        let (mapped_user_id, _role) = self
-            .identity_source
-            .lookup_by_external_id(&email)
-            .await?
-            .ok_or_else(|| anyhow!("Identity mapping not found"))?;
-
-        if mapped_user_id != user_id {
-            bail!("Auth identity mismatch");
-        }
-
-        // 4️⃣ Upgrade session identity
-        self.session_source
-            .upgrade_to_user(session_id, user_id)
-            .await?;
-
-        Ok(user_id)
+    // 🔧 DEV MODE: allow re-login / already-authenticated sessions
+    if !session.is_anon {
+        return Ok(session.user_id.ok_or_else(|| anyhow!("User missing"))?);
     }
+
+    let user_id = self.auth_source.login(email.clone(), password).await?;
+
+    let (mapped_user_id, _) = self
+        .identity_source
+        .lookup_by_external_id(&email)
+        .await?
+        .ok_or_else(|| anyhow!("Identity mapping not found"))?;
+
+    if mapped_user_id != user_id {
+        bail!("Auth identity mismatch");
+    }
+
+    self.session_source
+        .upgrade_to_user(session_id, user_id)
+        .await?;
+
+    Ok(user_id)
+}
+
+
 }
 

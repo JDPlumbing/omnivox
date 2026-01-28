@@ -16,11 +16,11 @@ pub use uvoxid::{*};
 pub use chronovox::{*};
 pub use tdt::{*};
 pub use id::{WorldId, EntityId, SimulationId, UserId};
-pub use env::{*};
+pub use env::{atmosphere, fields, gravity, medium, pressure, resistance, temperature, env_snapshot, derived_env };
 pub use spatial::{*};
 pub use physics::{*};
 pub use observer::{*};
 pub use property::{*};
-pub use world::{*};
+pub use world::{core, world_environment, world_env_descriptor, presets, world_frame, world_relative, world_stats, world_definition, catalog, world_summary};
  
 

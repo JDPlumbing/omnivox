@@ -2,7 +2,7 @@ use crate::core::env::fields::{Field, FieldSample};
 use crate::core::uvoxid::UvoxId;
 use crate::core::tdt::SimDuration;
 use crate::core::world::world_env_descriptor::WorldSpace;
-use crate::core::AtmosphereField;
+use crate::core::env::AtmosphereField;
 use crate::core::env::chemistry::OceanChemistry;
 
 // NOTE: This field currently computes atmospheric (gas) pressure only.
@@ -15,7 +15,7 @@ pub struct PressureField {
     pub step_m: f64,
 }
 
-const WATER_DENSITY_KG_M3: f64 = 1025.0; // seawater
+//const WATER_DENSITY_KG_M3: f64 = 1025.0; // seawater
 
 impl Field for PressureField {
     // Primitive phase: pressure contributes nothing

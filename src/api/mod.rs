@@ -1,9 +1,9 @@
 use axum::{
-    routing::{get, post, put, patch, delete},
+    routing::{get},
     Router,
     http::Method,
-    Extension,
-    middleware,
+   
+
 };
 use tower_http::cors::{Any, CorsLayer};
 
@@ -15,11 +15,11 @@ mod time;
 // --- Auth API ---
 mod auth;
 pub use auth::middleware::identity_middleware;
-
+// --- Session API ---
+mod session;
 // --- Users API ---
 //mod users;
-// --- Session API ---
-//mod session;
+
 // --- Properties API ---
 //mod properties;
 // --- Address API ---
@@ -77,10 +77,11 @@ pub fn api_router(app_state: AppState) -> Router {
     let time_routes = time::time_routes();
     // Auth routes
     let auth_routes = auth::auth_routes();
+    // Session routes
+    let session_routes = session::session_routes();
     // Users routes
     //let users_routes = users::users_routes();
-    // Session routes
-    //let session_routes = session::session_routes();
+
     // Properties routes
     //let property_routes = properties::property_routes();
     // Location routes
@@ -101,8 +102,9 @@ pub fn api_router(app_state: AppState) -> Router {
         .route("/ping", get(|| async { "pong" }))
         .nest("/time", time_routes)
         .nest("/auth", auth_routes)
+        .nest("/session", session_routes)
         //.nest("/users", users_routes)
-        //.nest("/session", session_routes)
+        
         //.nest("/properties", property_routes)
         //.nest("/location", location_routes)
         //.nest("/worlds", worlds_routes)
@@ -122,6 +124,7 @@ pub fn api_router(app_state: AppState) -> Router {
       // .nest("/observers", observer_routes)
         
         .with_state(app_state)
+       // .layer(middleware::from_fn(identity_middleware)) // 👈 MOVE HERE
         
         .layer(
             CorsLayer::new()
