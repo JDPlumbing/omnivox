@@ -9,6 +9,11 @@ pub struct LocationEngine {
 }
 
 impl LocationEngine {
+    pub fn new(
+        location_source: Arc<dyn LocationSource + Send + Sync>,
+    ) -> Self {
+        Self { location_source }
+    }
     /// Resolve an address *that already exists* into a spatial anchor
     pub async fn anchor_from_address(
         &self,

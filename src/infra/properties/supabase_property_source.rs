@@ -4,7 +4,8 @@ use uuid::Uuid;
 use serde_json::Value;
 
 use crate::supabasic::Supabase;
-use crate::supabasic::properties::PropertyRecord;
+use crate::infra::properties::property_row::PropertyRow;
+
 
 use crate::core::{
     UserId,

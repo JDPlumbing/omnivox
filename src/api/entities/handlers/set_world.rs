@@ -5,7 +5,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::shared::app_state::AppState;
-use crate::engine::entities::entity_engine::EntityEngine;
+use crate::engine::entity::entity_engine::EntityEngine;
 use crate::core::EntityId;
 use crate::api::entities::dtos::set_world::SetWorldDto;
 

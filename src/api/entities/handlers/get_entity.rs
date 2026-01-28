@@ -55,6 +55,24 @@ pub async fn get_entity(
             }),
         );
     }
+    // ---- SpawnedAt ----
+    if let Some(spawned) = store.spawned_ats.get(&entity_id) {
+        components.insert(
+            "spawned_at".to_string(),
+            serde_json::json!({
+                "time": spawned.time,
+            }),
+        );
+    }
+    // ---- DespawnedAt ----
+    if let Some(despawned) = store.despawned_ats.get(&entity_id) {
+        components.insert(
+            "despawned_at".to_string(),
+            serde_json::json!({
+                "time": despawned.time,
+            }),
+        );
+    }
 
     // If no components found → entity does not exist
     if components.is_empty() {

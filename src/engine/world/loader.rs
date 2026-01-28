@@ -1,135 +1,64 @@
-use crate::supabasic::Supabase;
-use crate::supabasic::worlds::WorldRow;
-use crate::supabasic::entity::EntityRow;
-
-use crate::core::id::{WorldId, EntityId};
+use anyhow::{Result, anyhow};
+use std::sync::Arc;
+use crate::core::world::World; 
+use crate::core::id::WorldId;
+use crate::core::entity::entity_store::EntityStore;
 use crate::core::tdt::sim_time::SimTime;
-use crate::core::{ UvoxId};
-
-
-use crate::engine::world::state::{
-    WorldState,
-};
-use crate::core::components::lifecycle::Lifecycle;
+use crate::engine::world::state::WorldState;
 use crate::core::world::WorldEnvironment;
-use crate::core::components::position::Position;
-use crate::core::components::orientation::Orientation;
+use crate::shared::world_sources::catalog::source::WorldCatalog;
+use crate::shared::world_sources::state::source::{
+    WorldStateSource, WorldStateSnapshot,
+};
 
-use crate::core::world::World;
+pub struct WorldLoader {
+    catalog: Arc<dyn WorldCatalog + Send + Sync>,
+    state_source: Arc<dyn WorldStateSource + Send + Sync>,
+}
 
-use crate::core::world::presets::earth_v0;
-
-use anyhow::Result;
-// TODO(world-sources):
-// Extract world loading into shared::world_sources::WorldSource
-// Implement SupabaseWorldSource and JsonWorldSource
-// WorldState must be loadable without DB access
-
-
-/// ---------------------------------------------------------------------------
-/// Load a runtime ECS WorldState from Supabase by typed WorldId.
-/// ---------------------------------------------------------------------------
-pub async fn load_world(
-    supa: &Supabase,
-    world_id: WorldId,
-) -> Result<WorldState> {
-
-    // 1. Load world metadata
-    let meta_rec = WorldRow::get(supa, world_id).await?;
-
-    let env_desc = meta_rec.environment
-        .clone()
-        .unwrap_or_else(|| {
-            log::warn!(
-                "World {} has no environment, defaulting to earth_v0",
-                world_id
-            );
-            earth_v0()
-        });
-
-    let world_env = WorldEnvironment::from_descriptor(&env_desc);
-
-    let meta = World {
-        id: world_id,
-        name: meta_rec.name.clone(),
-        description: meta_rec.description.clone(),
-        world_epoch: meta_rec.world_epoch
-            .as_ref()
-            .and_then(|s| s.parse::<i128>().ok())
-            .map(SimTime::from_ns),
-    };
-
-    let mut state = WorldState::new(meta, world_env);
-
-    // 2. Load Objex templates ONCE
-    /*let templates: HashMap<Uuid, Objex> =
-        supa.select_objex_templates()
-            .await?
-            .into_iter()
-            .map(|row| {
-                let objex = Objex {
-                    id: row.id,
-                    geospec_id: row.geospec_id,
-                    matcat: MatCatId::new(
-                        row.matcat_category,
-                        row.matcat_variant,
-                        row.matcat_grade,
-                    ),
-                };
-                (row.id, objex)
-            })
-
-            .collect();
-*/
-    // 3. Load entity rows
-    let rows: Vec<EntityRow> =
-        EntityRow::list_for_world(supa, world_id).await?;
-
-    for row in rows {
-        let id = EntityId(row.row_id.expect("EntityRow missing row_id"));
-
-        // Register entity
-        state.entities.insert(id);
-        state.world_membership.insert(id, world_id);
-
-        // Resolve template → attach components
-        /*let template = templates
-            .get(&row.objex_template_id)
-            .expect("Missing Objex template");
-
-        state.shapes.insert(id, ShapeRef {
-            geospec_id: template.geospec_id,
-        });
-
-        state.materials.insert(id, MaterialRef {
-            matcat: template.matcat,
-        });
-        */
-        // Position (mandatory)
-        let position: UvoxId =
-            serde_json::from_value(row.position)
-                .expect("Invalid UvoxId in DB");
-
-        state.positions.insert(id, Position(position));
-
-        // Orientation (optional)
-        if !row.orientation.is_null() {
-            let orientation =
-                serde_json::from_value(row.orientation)
-                    .expect("Invalid orientation in DB");
-
-            state.orientations.insert(id, Orientation(orientation));
-        }
-
-        // Lifecycle
-        state.lifecycles.insert(id, Lifecycle {
-            spawned_at: row.spawned_at,
-            despawned_at: row.despawned_at,
-        });
-
-        // Metadata
-        state.metadata.insert(id, row.metadata);
+impl WorldLoader {
+    pub fn new(
+        catalog: Arc<dyn WorldCatalog + Send + Sync>,
+        state_source: Arc<dyn WorldStateSource + Send + Sync>,
+    ) -> Self {
+        Self { catalog, state_source }
     }
 
-    Ok(state)
+    pub async fn load(&self, world_id: WorldId) -> Result<WorldState> {
+        // 1️⃣ Load full definition
+        let def = self.catalog.get_world_definition(world_id).await?;
+
+        // 2️⃣ Build environment (this is why we needed definition)
+        let env_desc = def.environment
+            .as_ref()
+            .ok_or_else(|| anyhow!("World has no environment descriptor"))?;
+
+        let environment = WorldEnvironment::from_descriptor(env_desc);
+
+        // 3️⃣ Build World meta
+        let world = World::new(
+            def.world_id,
+            Some(def.name),
+            def.description,
+            None, // or parse epoch later
+        );
+
+        // 4️⃣ Load snapshot
+        let snapshot = self
+            .state_source
+            .load_snapshot(world_id)
+            .await?
+            .unwrap_or_else(|| WorldStateSnapshot {
+                sim_time: SimTime::from_ns(0),
+                entity_store: EntityStore::default(),
+            });
+
+        // 5️⃣ Construct authoritative runtime state
+        Ok(WorldState::from_snapshot(
+            world,
+            environment,
+            snapshot,
+        ))
+    }
+
 }

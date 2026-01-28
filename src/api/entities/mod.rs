@@ -12,5 +12,15 @@ pub fn entities_routes() -> Router<AppState> {
         .route("/note", post(handlers::create_note::create_note_entity))
         .route("/{id}", get(handlers::get_entity::get_entity))
         .route("/{id}/world", put(handlers::set_world::set_entity_world))
-	.route("/{id}/position", put(handlers::set_position::set_entity_position))
+    	.route("/{id}/position", put(handlers::set_position::set_entity_position))
+	    .route("/{id}/spawned_at", put(handlers::set_spawned_at::set_entity_spawned_at))
+.route(
+    "/{id}/despawned_at",
+    put(handlers::set_despawned_at::set_entity_despawned_at),
+)
+
+
+
+
+
 }

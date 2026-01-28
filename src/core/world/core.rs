@@ -7,7 +7,7 @@ use crate::core::id::WorldId;
 /// -------------------------------------------------------------------
 /// Domain-level metadata about a world (NOT persisted directly)
 /// -------------------------------------------------------------------
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct World {
     pub id: WorldId,
     pub name: Option<String>,

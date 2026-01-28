@@ -2,16 +2,17 @@ use anyhow::Result;
 use crate::core::UserId;
 use crate::shared::identity::auth_context::AccountRole;
 
-#[derive(Debug, Clone)]
-pub struct ResolvedIdentity {
-    pub user_id: UserId,
-    pub role: AccountRole,
-}
-
 #[async_trait::async_trait]
 pub trait IdentitySource: Send + Sync {
-    async fn resolve_from_token(
+    async fn lookup_by_external_id(
         &self,
-        token: &str,
-    ) -> Result<ResolvedIdentity>;
+        external_id: &str,
+    ) -> Result<Option<(UserId, AccountRole)>>;
+
+    async fn create_mapping(
+        &self,
+        external_id: &str,
+        user_id: &UserId,
+        role: AccountRole,
+    ) -> Result<()>;
 }

@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use std::fmt;
 use std::ops::{Add, AddAssign};
 use glam::Vec3;
-use crate::core::uvoxid::{ANG_SCALE, RUm, LatCode, LonCode, UvoxId};
+use crate::core::uvoxid::{ANG_SCALE, UvoxId};
 
 /// Typed Δr in micrometers
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]

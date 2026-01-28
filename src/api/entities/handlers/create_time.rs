@@ -4,7 +4,7 @@ use axum::{
 };
 
 use crate::shared::app_state::AppState;
-use crate::engine::entities::entity_engine::EntityEngine;
+use crate::engine::entity::entity_engine::EntityEngine;
 use crate::core::components::time::Time;
 use crate::core::SimTime;
 

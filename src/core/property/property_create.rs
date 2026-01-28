@@ -1,5 +1,5 @@
 use uuid::Uuid;
-use crate::core::{UserId, WorldId};
+use crate::core::{ WorldId};
 use crate::core::UvoxId;
 
 pub struct CreateProperty {

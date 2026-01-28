@@ -10,4 +10,5 @@ pub trait LocationSource: Send + Sync {
         &self,
         address_id: Uuid,
     ) -> Result<ResolvedLocation>;
+    
 }

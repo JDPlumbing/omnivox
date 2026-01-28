@@ -1,10 +1,9 @@
 use thiserror::Error;
-use crate::supabasic::error::SupabasicError;
 
 #[derive(Debug, Error)]
 pub enum ChronovoxError {
-    #[error("Supabase error: {0}")]
-    Db(String),
+    #[error("Storage error: {0}")]
+    Storage(String),
 
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
@@ -20,14 +19,6 @@ pub enum ChronovoxError {
 
     #[error("Invalid event kind: {0}")]
     InvalidEventKind(String),
-
-}
-
-// unify everything under Chronovox
-impl From<SupabasicError> for ChronovoxError {
-    fn from(err: SupabasicError) -> Self {
-        ChronovoxError::Db(err.to_string())
-    }
 }
 
 pub type Result<T> = std::result::Result<T, ChronovoxError>;

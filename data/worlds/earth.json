@@ -1,0 +1,31 @@
+{
+  "world_id": 1,
+  "name": "Earth",
+  "description": "Default Earth for Public Users",
+  "world_epoch": "-62168428837000000037",
+  "environment": {
+    "space": {
+      "up_model": "Radial",
+      "surface_radius_m": 6371000
+    },
+    "medium": {
+      "default": "Gas"
+    },
+    "gravity": {
+      "kind": "Radial",
+      "strength": 9.80665
+    },
+    "pressure": {
+      "derive_from_density": true
+    },
+    "atmosphere": {
+      "max_height_m": 120000,
+      "scale_height_m": 8500,
+      "sea_level_density": 1.225
+    },
+    "temperature": {
+      "surface_temp_k": 288.15,
+      "lapse_rate_k_per_m": -0.0065
+    }
+  }
+}

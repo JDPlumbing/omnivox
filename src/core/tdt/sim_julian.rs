@@ -3,7 +3,7 @@
 //! Formula from US Naval Observatory / Meeus.
 
 use crate::core::tdt::sim_time::SimTime;
-use chrono::{TimeZone, Utc, Datelike, Timelike};
+use chrono::{Datelike, Timelike};
 
 
 /// Convert a SimTime (ns since Unix epoch) to Julian Day Number (JDN)

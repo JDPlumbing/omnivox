@@ -5,7 +5,7 @@ use crate::core::tdt::SimTime;
 use crate::core::world::world_frame::WorldResolver;
 use crate::core::UvoxId;
 use crate::core::world::world_env_descriptor::WorldSpace;
-use crate::core::AnchorError;
+use crate::core::physics::AnchorError;
 use crate::core::math::vec3::{dot, normalize, magnitude};
 
 

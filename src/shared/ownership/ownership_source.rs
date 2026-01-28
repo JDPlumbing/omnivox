@@ -28,3 +28,27 @@ pub trait OwnershipSource: Send + Sync {
     ) -> Result<()>;
 
 }
+#[async_trait::async_trait]
+pub trait OwnershipSource: Send + Sync {
+    async fn list_for_user(
+        &self,
+        user_id: UserId,
+    ) -> Result<Vec<Ownership>>;
+
+    async fn get(
+        &self,
+        user_id: UserId,
+        resource_id: ResourceId,
+    ) -> Result<Option<Ownership>>;
+
+    async fn create(
+        &self,
+        ownership: Ownership,
+    ) -> Result<Ownership>;
+
+    async fn delete(
+        &self,
+        user_id: UserId,
+        resource_id: ResourceId,
+    ) -> Result<()>;
+}

@@ -10,21 +10,21 @@ use axum::middleware;
 use crate::api::auth::middleware::identity_middleware;
 
 // --- Time API ---
-pub mod time;
+mod time;
 // --- Auth API ---
-pub mod auth;
+mod auth;
 // --- Users API ---
-pub mod users;
+mod users;
 // --- Session API ---
-pub mod session;
+mod session;
 // --- Properties API ---
 mod properties;
 // --- Address API ---
 mod location;
 // --- Worlds API ---
-pub mod worlds;
+//pub mod worlds;
 // --- Entities API (NEW, replaces objex API) ---
-mod entities;
+//mod entities;
 
 
 
@@ -83,9 +83,9 @@ pub fn api_router(app_state: AppState) -> Router {
     // Location routes
     let location_routes = location::location_routes();
     // Worlds routes
-    let worlds_routes = worlds::world_routes();
+    //let worlds_routes = worlds::world_routes();
     // Entities routes
-    let entities_routes = entities::entities_routes();
+    //let entities_routes = entities::entities_routes();
     //let physics_routes = physics::physics_routes();
     //let simulations_routes = simulations::routes();
     //
@@ -102,8 +102,8 @@ pub fn api_router(app_state: AppState) -> Router {
         .nest("/session", session_routes)
         .nest("/properties", property_routes)
         .nest("/location", location_routes)
-        .nest("/worlds", worlds_routes)
-        .nest("/entities", entities_routes)
+        //.nest("/worlds", worlds_routes)
+       // .nest("/entities", entities_routes)
         //.nest("/simulations", simulations_routes)
         //.nest("/entities", entities_routes)
         //.nest("/objex", objex_routes())

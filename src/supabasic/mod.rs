@@ -31,10 +31,4 @@ pub use simulations::SimulationRow;
 pub use crate::core::World;
 pub mod events;
 
-use crate::supabasic::{properties::PropertyRecord, events::EventRow};
-use uuid::Uuid;
-
-pub mod objex;
-pub use objex::*;
-
 

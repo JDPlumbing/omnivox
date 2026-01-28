@@ -2,10 +2,9 @@ use axum::{
     extract::State,
     Json,
 };
-use uuid::Uuid;
 
 use crate::shared::app_state::AppState;
-use crate::engine::entities::entity_engine::EntityEngine;
+use crate::engine::entity::entity_engine::EntityEngine;
 use crate::core::components::note::Note;
 use crate::core::EntityId;
 

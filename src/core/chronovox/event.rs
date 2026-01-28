@@ -5,7 +5,7 @@ use crate::core::id::{WorldId, EntityId};
 
 use crate::core::tdt::sim_time::SimTime;
 use crate::core::tdt::sim_time::serialize_simtime;
-use crate::supabasic::events::EventRow;
+//use crate::supabasic::events::EventRow;
 
 /// ---------------------------------------------------------------------------
 /// ChronoEvent — a *command/event* describing what happened to an entity.
@@ -115,7 +115,7 @@ impl ChronoEvent {
     }
 
 }
-
+/*
 /// ---------------------------------------------------------------------------
 /// Convert DB row → ChronoEvent
 /// (DB stores absolute ns timestamps + serialized kind + payload)
@@ -135,3 +135,4 @@ impl From<EventRow> for ChronoEvent {
         }
     }
 }
+*/

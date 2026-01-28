@@ -6,7 +6,7 @@ use uuid::Uuid;
 use serde_json::json;
 
 use crate::shared::app_state::AppState;
-use crate::engine::entities::entity_engine::EntityEngine;
+use crate::engine::entity::entity_engine::EntityEngine;
 use crate::core::EntityId;
 use crate::core::components::position::Position;
 use crate::api::entities::dtos::set_position::SetPositionDto;

@@ -44,7 +44,7 @@ pub async fn sample_environment_handler(
 
     // 2️⃣ Try runtime cache first
     let cached: Option<Arc<WorldState>> = {
-        let worlds = app.worlds.read().await;
+        let worlds = app.world_engine.worlds.read().await;
         worlds.get(&world_id).cloned()
     };
 
@@ -52,10 +52,10 @@ pub async fn sample_environment_handler(
     let world: Arc<WorldState> = match cached {
         Some(w) => w,
         None => {
-            match app.world_source.load_world(world_id).await {
+            match app.world_engine.load(world_id).await {
                 Ok(loaded) => {
                     let arc = Arc::new(loaded);
-                    app.worlds.write().await.insert(world_id, arc.clone());
+                    app.world_engine.worlds.write().await.insert(world_id, arc.clone());
                     arc
                 }
                 Err(e) => {

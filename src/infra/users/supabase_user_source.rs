@@ -2,7 +2,6 @@
 use async_trait::async_trait;
 use anyhow::Result;
 use uuid::Uuid;
-use serde_json::Value;
 use crate::supabasic::Supabase;
 use crate::core::UserId;
 use crate::shared::users::user_source::{UserSource, UserRecord};
