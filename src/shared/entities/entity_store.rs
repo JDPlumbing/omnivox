@@ -1,7 +1,7 @@
-// shared/entities/entity_store.rs
+// shared/entity/entity_store.rs
 use std::collections::HashMap;
 use crate::core::EntityId;
-use crate::core::components::{time::Time, 
+use crate::core::entity::components::{time::Time, 
                               note::Note, 
                               world_membership::WorldMembership, 
                               position::Position,
@@ -9,20 +9,24 @@ use crate::core::components::{time::Time,
                               despawned_at::DespawnedAt,
                               active::Active,
                             };
-use crate::core::components::material::{Density, 
+use crate::core::entity::components::material::{Density, 
                                             Hardness, 
                                             Viscosity, 
                                             Conductivity
                                         };
-use crate::core::components::geometry::{Length, 
+use crate::core::entity::components::geometry::{Length, 
                                             Radius,     
                                             Thickness, 
                                             Width, 
                                             Height
                                         };
-use crate::core::components::spatial::{Velocity,
+use crate::core::entity::components::spatial::{Velocity,
                                         VelocityENU,
-                                        PositionENU
+                                        PositionENU,
+                                        acceleration_enu::AccelerationENU,
+                                        location::Location,
+                                        
+
 
                                         };
 
@@ -48,6 +52,8 @@ pub struct EntityStore {
     pub velocities: HashMap<EntityId, Velocity>,
     pub position_enus: HashMap<EntityId, PositionENU>,
     pub velocity_enus: HashMap<EntityId, VelocityENU>,
+    pub acceleration_enus: HashMap<EntityId, AccelerationENU>,
+    pub locations: HashMap<EntityId, Location>,
 
 }
 
@@ -73,6 +79,8 @@ impl EntityStore {
             velocities: HashMap::new(),
             position_enus: HashMap::new(),
             velocity_enus: HashMap::new(),
+            acceleration_enus: HashMap::new(),
+            locations: HashMap::new(),
         }
     }
 
@@ -143,6 +151,12 @@ impl EntityStore {
     }
     pub fn add_velocity_enu(&mut self, entity: EntityId, velocity_enu: VelocityENU) {
         self.velocity_enus.insert(entity, velocity_enu);
+    }
+    pub fn add_location(&mut self, entity: EntityId, location: Location) {
+        self.locations.insert(entity, location);
+    }
+    pub fn add_acceleration_enu(&mut self, entity: EntityId, acceleration_enu: AccelerationENU) {
+        self.acceleration_enus.insert(entity, acceleration_enu);
     }
 
 }

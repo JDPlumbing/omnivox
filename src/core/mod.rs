@@ -10,8 +10,9 @@ pub mod spatial;
 pub mod physics;
 pub mod observer;
 pub mod math;
-pub mod components;
 pub mod property;
+
+
 pub use uvoxid::{*};
 pub use chronovox::{*};
 pub use tdt::{*};

@@ -1,7 +1,7 @@
 // infra/world_sources/state/entity_store_snapshot.rs
 use serde::{Serialize, Deserialize};
 use crate::core::EntityId;
-use crate::core::components::{
+use crate::core::entity::components::{
     spatial::{PositionENU, VelocityENU, world_membership::WorldMembership},
     active::Active,
 };
