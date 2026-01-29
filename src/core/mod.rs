@@ -26,3 +26,6 @@ pub use world::{core, world_environment, world_env_descriptor, presets, world_fr
 
 pub mod cosmic;
 pub mod worlds;
+pub mod environment;
+pub mod simulation;
+pub mod render;

@@ -1,7 +1,7 @@
 use crate::core::world::{World, WorldEnvironment};
 use crate::core::tdt::sim_time::SimTime;
-use crate::core::entity::entity_store::EntityStore;
-use crate::shared::world_sources::state::source::WorldStateSnapshot;
+use crate::shared::entities::entity_store::EntityStore;
+
 /// -------------------------------------------------------------------
 /// ECS-style in-memory simulation state for a running world
 /// -------------------------------------------------------------------
@@ -27,19 +27,6 @@ impl WorldState {
             environment,
             sim_time: SimTime::from_ns(0),
             entity_store: EntityStore::default(),
-        }
-    }
-
-    pub fn from_snapshot(
-        meta: World,
-        environment: WorldEnvironment,
-        snapshot: WorldStateSnapshot,
-    ) -> Self {
-        Self {
-            meta,
-            environment,
-            sim_time: snapshot.sim_time,
-            entity_store: snapshot.entity_store,
         }
     }
 }

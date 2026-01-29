@@ -5,8 +5,8 @@ use std::fs;
 
 use crate::core::id::WorldId;
 use crate::core::tdt::sim_time::SimTime;
-use crate::core::entity::entity_store::EntityStore;
 
+use crate::infra::world_sources::state::entity_store_snapshot::EntityStoreSnapshot;
 use crate::shared::world_sources::state::source::{
     WorldStateSource,
     WorldStateSnapshot,
@@ -14,13 +14,13 @@ use crate::shared::world_sources::state::source::{
 
 use serde::{Serialize, Deserialize};
 
-
 /// What actually gets written to disk
 #[derive(Debug, Serialize, Deserialize)]
 struct WorldStateFile {
     sim_time: i128,
-    entity_store: EntityStore,
+    entity_store: EntityStoreSnapshot,
 }
+
 pub struct JsonWorldStateSource {
     root: PathBuf,
 }
@@ -54,7 +54,7 @@ impl WorldStateSource for JsonWorldStateSource {
 
         Ok(Some(WorldStateSnapshot {
             sim_time: SimTime::from_ns(file.sim_time),
-            entity_store: file.entity_store,
+            entity_store_snapshot: file.entity_store,
         }))
     }
 
@@ -67,7 +67,7 @@ impl WorldStateSource for JsonWorldStateSource {
 
         let file = WorldStateFile {
             sim_time: snapshot.sim_time.as_ns(),
-            entity_store: snapshot.entity_store.clone(),
+            entity_store: snapshot.entity_store_snapshot.clone(),
         };
 
         let json = serde_json::to_string_pretty(&file)?;

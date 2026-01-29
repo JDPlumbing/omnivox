@@ -20,8 +20,14 @@ use crate::core::components::geometry::{Length,
                                             Width, 
                                             Height
                                         };
+use crate::core::components::spatial::{Velocity,
+                                        VelocityENU,
+                                        PositionENU
 
-#[derive(Default)]
+                                        };
+
+
+#[derive(Debug, Default, Clone)]
 pub struct EntityStore {
     pub lengths: HashMap<EntityId, Length>,
     pub radii: HashMap<EntityId, Radius>,
@@ -39,6 +45,10 @@ pub struct EntityStore {
     pub spawned_ats: HashMap<EntityId, SpawnedAt>,
     pub despawned_ats: HashMap<EntityId, DespawnedAt>,
     pub actives: HashMap<EntityId, Active>,
+    pub velocities: HashMap<EntityId, Velocity>,
+    pub position_enus: HashMap<EntityId, PositionENU>,
+    pub velocity_enus: HashMap<EntityId, VelocityENU>,
+
 }
 
 impl EntityStore {
@@ -60,6 +70,9 @@ impl EntityStore {
             spawned_ats: HashMap::new(),
             despawned_ats: HashMap::new(),
             actives: HashMap::new(),
+            velocities: HashMap::new(),
+            position_enus: HashMap::new(),
+            velocity_enus: HashMap::new(),
         }
     }
 
@@ -122,4 +135,14 @@ impl EntityStore {
     pub fn add_height(&mut self, entity: EntityId, height: Height) {
         self.heights.insert(entity, height);
     }
+    pub fn add_velocity(&mut self, entity: EntityId, velocity: Velocity) {
+        self.velocities.insert(entity, velocity);
+    }
+    pub fn add_position_enu(&mut self, entity: EntityId, position_enu: PositionENU) {
+        self.position_enus.insert(entity, position_enu);
+    }
+    pub fn add_velocity_enu(&mut self, entity: EntityId, velocity_enu: VelocityENU) {
+        self.velocity_enus.insert(entity, velocity_enu);
+    }
+
 }

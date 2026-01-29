@@ -10,7 +10,7 @@ use crate::shared::properties::property_source::PropertySource;
 use crate::shared::location::location_source::LocationSource;
 use crate::shared::location::address_source::AddressSource;
 use crate::engine::user::user_engine::UserEngine;
-use crate::engine::world::world_engine::WorldEngine;
+//use crate::engine::world::world_engine::WorldEngine;
 use crate::engine::location::location_engine::LocationEngine;
 use crate::engine::property::property_engine::PropertyEngine;
 use crate::engine::time::time_engine::TimeEngine;
@@ -36,7 +36,7 @@ pub struct AppState {
 
     // ---- Engines ----
     pub user_engine: Arc<UserEngine>,
-    pub world_engine: Arc<WorldEngine>,
+    //pub world_engine: Arc<WorldEngine>,
     pub location_engine: Arc<LocationEngine>,
     pub property_engine: Arc<PropertyEngine>,
 }
@@ -60,7 +60,7 @@ impl AppState {
         address_source: Arc<dyn AddressSource + Send + Sync>,
 
         user_engine: Arc<UserEngine>,
-        world_engine: Arc<WorldEngine>,
+        //world_engine: Arc<WorldEngine>,
         location_engine: Arc<LocationEngine>,
         property_engine: Arc<PropertyEngine>,
     ) -> Self {
@@ -81,7 +81,7 @@ impl AppState {
             address_source,
 
             user_engine,
-            world_engine,
+            //world_engine,
             location_engine,
             property_engine,
         }

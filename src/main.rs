@@ -1,6 +1,3 @@
-use omnivox::core::cosmic::state::{ CosmicState};
-use omnivox::core::cosmic::id::CosmicBodyId;
-
 
 #[cfg(test)]
 mod tests {

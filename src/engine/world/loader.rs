@@ -2,7 +2,7 @@ use anyhow::{Result, anyhow};
 use std::sync::Arc;
 use crate::core::world::World; 
 use crate::core::id::WorldId;
-use crate::core::entity::entity_store::EntityStore;
+use crate::shared::entities::entity_store::EntityStore;
 use crate::core::tdt::sim_time::SimTime;
 use crate::engine::world::state::WorldState;
 use crate::core::world::WorldEnvironment;

@@ -10,14 +10,14 @@ use crate::infra::inmemory::location::InMemoryLocationSource;
 use crate::infra::inmemory::property::InMemoryPropertySource;
 use crate::infra::inmemory::session::InMemorySessionSource;
 use crate::engine::user::user_engine::UserEngine;
-use crate::engine::world::WorldEngine;
+//use crate::engine::world::WorldEngine;
 use crate::engine::location::location_engine::LocationEngine;
 use crate::engine::property::property_engine::PropertyEngine;
 use crate::infra::inmemory::users::InMemoryUserSource;
 use crate::infra::inmemory::anon_users::InMemoryAnonUserSource;
 use crate::infra::inmemory::auth::InMemoryAuthSource;
 use crate::infra::inmemory::world_state::InMemoryWorldStateSource;
-use crate::engine::world::loader::WorldLoader;
+//use crate::engine::world::loader::WorldLoader;
 use crate::engine::time::time_engine::TimeEngine;
 use crate::shared::identity::auth_source::AuthSource;
 use crate::shared::identity::identity_source::IdentitySource;
@@ -93,12 +93,12 @@ let (
         session_source.clone(),
     ));
 
-    let loader = Arc::new(WorldLoader::new(
-        world_catalog.clone(),
-        world_state_source.clone(),
-    ));
+    // let loader = Arc::new(WorldLoader::new(
+    //     world_catalog.clone(),
+    //     world_state_source.clone(),
+    // ));
 
-    let world_engine = Arc::new(WorldEngine::new(loader));
+    // let world_engine = Arc::new(WorldEngine::new(loader));
 
     let location_engine =
         Arc::new(LocationEngine::new(location_source.clone()));
@@ -124,7 +124,7 @@ let (
         address_source,
 
         user_engine,
-        world_engine,
+        //world_engine,
         location_engine,
         property_engine,
     ))

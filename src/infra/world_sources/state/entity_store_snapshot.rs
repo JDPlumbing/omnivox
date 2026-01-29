@@ -1,48 +1,60 @@
 // infra/world_sources/state/entity_store_snapshot.rs
-#[derive(Serialize, Deserialize)]
+use serde::{Serialize, Deserialize};
+use crate::core::EntityId;
+use crate::core::components::{
+    spatial::{PositionENU, VelocityENU, world_membership::WorldMembership},
+    active::Active,
+};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EntityStoreSnapshot {
-    pub lengths: HashMap<String, Length>,
-    pub radii: HashMap<String, Radius>,
-    pub thicknesses: HashMap<String, Thickness>,
-    pub widths: HashMap<String, Width>,
-    pub heights: HashMap<String, Height>,
-    pub densities: HashMap<String, Density>,
-    pub hardnesses: HashMap<String, Hardness>,
-    pub viscosities: HashMap<String, Viscosity>,
-    pub conductivities: HashMap<String, Conductivity>,
-    pub times: HashMap<String, Time>,
-    pub notes: HashMap<String, Note>,
-    pub world_memberships: HashMap<String, WorldMembership>,
-    pub positions: HashMap<String, Position>,
-    pub spawned_ats: HashMap<String, SpawnedAt>,
-    pub despawned_ats: HashMap<String, DespawnedAt>,
-    pub actives: Vec<String>,
+    pub positions: Vec<(EntityId, PositionENU)>,
+    pub velocities: Vec<(EntityId, VelocityENU)>,
+    pub world_memberships: Vec<(EntityId, WorldMembership)>,
+    pub actives: Vec<EntityId>,
 }
+use crate::shared::entities::entity_store::EntityStore;
+
 impl From<&EntityStore> for EntityStoreSnapshot {
     fn from(store: &EntityStore) -> Self {
         Self {
-            lengths: store.lengths.iter()
-                .map(|(id, v)| (id.to_string(), v.clone()))
+            positions: store.position_enus
+                .iter()
+                .map(|(id, v)| (*id, *v))
                 .collect(),
-            // repeat
-            actives: store.actives.keys()
-                .map(|id| id.to_string())
+
+            velocities: store.velocity_enus
+                .iter()
+                .map(|(id, v)| (*id, *v))
                 .collect(),
+
+            world_memberships: store.world_memberships
+                .iter()
+                .map(|(id, v)| (*id, *v))
+                .collect(),
+
+            actives: store.actives.keys().cloned().collect(),
         }
     }
 }
-
 impl From<EntityStoreSnapshot> for EntityStore {
     fn from(snapshot: EntityStoreSnapshot) -> Self {
         let mut store = EntityStore::default();
 
-        store.lengths = snapshot.lengths.into_iter()
-            .map(|(id, v)| (id.parse().unwrap(), v))
-            .collect();
-        // repeat
+        for (id, pos) in snapshot.positions {
+            store.position_enus.insert(id, pos);
+        }
+
+        for (id, vel) in snapshot.velocities {
+            store.velocity_enus.insert(id, vel);
+        }
+
+        for (id, wm) in snapshot.world_memberships {
+            store.world_memberships.insert(id, wm);
+        }
 
         for id in snapshot.actives {
-            store.actives.insert(id.parse().unwrap(), Active);
+            store.actives.insert(id, Active);
         }
 
         store

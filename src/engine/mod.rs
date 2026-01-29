@@ -1,7 +1,7 @@
-pub mod world;
+//pub mod world;
 pub mod systems;
 pub mod generators;
-pub use world::state::*;
+//pub use world::state::*;
 pub mod entity;
 pub use entity::*;
 pub mod property;

@@ -1,4 +1,4 @@
-use crate::core::WorldId;
+use crate::core::worlds::id::WorldId;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
