@@ -24,7 +24,8 @@ use crate::core::entity::components::geometry::{Length,
 use crate::core::entity::components::spatial::{Velocity,
                                         VelocityENU,
                                         PositionENU,
-                                        AccelerationENU
+                                        AccelerationENU,
+                                        Grounded,
                                         };
 
 #[derive(Debug, Default, Clone)]
@@ -49,7 +50,7 @@ pub struct EntityStore {
     pub position_enus: HashMap<EntityId, PositionENU>,
     pub velocity_enus: HashMap<EntityId, VelocityENU>,
     pub acceleration_enus: HashMap<EntityId, AccelerationENU>,
-    
+    pub groundeds: HashMap<EntityId, Grounded>,
     pub entity_environment_samples: HashMap<EntityId, EntityEnvironmentSample>
 
 }
@@ -77,6 +78,7 @@ impl EntityStore {
             position_enus: HashMap::new(),
             velocity_enus: HashMap::new(),
             acceleration_enus: HashMap::new(),
+            groundeds: HashMap::new(),
             entity_environment_samples: HashMap::new(),
         }
     }
@@ -154,4 +156,7 @@ impl EntityStore {
         self.acceleration_enus.insert(entity, acceleration_enu);
     }
 
+    pub fn add_grounded(&mut self, entity: EntityId, grounded: Grounded) {
+        self.groundeds.insert(entity, grounded);
+    }
 }
