@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::core::EntityId;
+use crate::core::id::EntityId;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Entity {

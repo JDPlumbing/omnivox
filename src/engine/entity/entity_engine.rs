@@ -1,4 +1,4 @@
-use crate::core::{ EntityId};
+use crate::core::entity::id::EntityId;
 use crate::core::worlds::id::WorldId;
 use crate::shared::entities::entity_store::EntityStore;
 use crate::engine::entity::errors::DespawnError;

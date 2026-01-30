@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use anyhow::Result;
 use uuid::Uuid;
 
-use crate::core::spatial::location::{Address, CreateAddress, UpdateAddress};
+use crate::core::old_spatial::location::{Address, CreateAddress, UpdateAddress};
 
 #[async_trait]
 pub trait AddressSource: Send + Sync {

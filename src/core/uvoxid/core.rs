@@ -189,12 +189,7 @@ impl std::ops::AddAssign<i64> for LonCode {
 // The Fully Typed UvoxId
 // ------------------------------------------------------------
 
-#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct UvoxId {
-    pub r_um: RUm,
-    pub lat_code: LatCode,
-    pub lon_code: LonCode,
-}
+
 
 impl UvoxId {
     pub fn new(r_um: RUm, lat_code: LatCode, lon_code: LonCode) -> Self {

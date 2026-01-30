@@ -3,8 +3,8 @@ use anyhow::Result;
 use uuid::Uuid;
 use crate::core::{WorldId, UserId};
 use crate::shared::session::session_context::SessionContext;
-use crate::core::spatial::SpatialAnchor;
-use crate::core::SpatialHorizon;
+use crate::core::old_spatial::SpatialAnchor;
+use crate::core::old_spatial::SpatialHorizon;
 
 #[async_trait]
 pub trait SessionSource: Send + Sync {

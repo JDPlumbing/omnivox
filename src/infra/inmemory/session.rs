@@ -6,8 +6,8 @@ use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::core::{UserId, WorldId};
-use crate::core::spatial::SpatialAnchor;
-use crate::core::SpatialHorizon;
+use crate::core::old_spatial::SpatialAnchor;
+use crate::core::old_spatial::SpatialHorizon;
 use crate::shared::session::session_context::SessionContext;
 use crate::shared::session::session_source::SessionSource;
 

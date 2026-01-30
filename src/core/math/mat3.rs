@@ -1,17 +1,55 @@
-use std::ops::Mul;
+use std::ops::{Mul};
+use crate::core::math::vec3::Vec3;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Mat3 {
-    pub m: [[f64; 3]; 3],
+    pub m: [Vec3; 3], // rows
 }
+impl Mul for Mat3 {
+    type Output = Mat3;
+
+    fn mul(self, rhs: Mat3) -> Mat3 {
+        let r0 = Vec3::new(
+            self.m[0].dot(Vec3::new(rhs.m[0].x, rhs.m[1].x, rhs.m[2].x)),
+            self.m[0].dot(Vec3::new(rhs.m[0].y, rhs.m[1].y, rhs.m[2].y)),
+            self.m[0].dot(Vec3::new(rhs.m[0].z, rhs.m[1].z, rhs.m[2].z)),
+        );
+
+        let r1 = Vec3::new(
+            self.m[1].dot(Vec3::new(rhs.m[0].x, rhs.m[1].x, rhs.m[2].x)),
+            self.m[1].dot(Vec3::new(rhs.m[0].y, rhs.m[1].y, rhs.m[2].y)),
+            self.m[1].dot(Vec3::new(rhs.m[0].z, rhs.m[1].z, rhs.m[2].z)),
+        );
+
+        let r2 = Vec3::new(
+            self.m[2].dot(Vec3::new(rhs.m[0].x, rhs.m[1].x, rhs.m[2].x)),
+            self.m[2].dot(Vec3::new(rhs.m[0].y, rhs.m[1].y, rhs.m[2].y)),
+            self.m[2].dot(Vec3::new(rhs.m[0].z, rhs.m[1].z, rhs.m[2].z)),
+        );
+
+        Mat3 { m: [r0, r1, r2] }
+    }
+}
+impl Mul<Vec3> for Mat3 {
+    type Output = Vec3;
+
+    fn mul(self, v: Vec3) -> Vec3 {
+        Vec3::new(
+            self.m[0].x * v.x + self.m[0].y * v.y + self.m[0].z * v.z,
+            self.m[1].x * v.x + self.m[1].y * v.y + self.m[1].z * v.z,
+            self.m[2].x * v.x + self.m[2].y * v.y + self.m[2].z * v.z,
+        )
+    }
+}
+
 
 impl Mat3 {
     pub fn identity() -> Self {
         Self {
             m: [
-                [1.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0],
-                [0.0, 0.0, 1.0],
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 1.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
             ],
         }
     }
@@ -20,9 +58,9 @@ impl Mat3 {
         let (s, c) = theta.sin_cos();
         Self {
             m: [
-                [1.0, 0.0, 0.0],
-                [0.0,  c, -s],
-                [0.0,  s,  c],
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0,  c, -s),
+                Vec3::new(0.0,  s,  c),
             ],
         }
     }
@@ -31,9 +69,9 @@ impl Mat3 {
         let (s, c) = theta.sin_cos();
         Self {
             m: [
-                [ c, 0.0, s],
-                [0.0, 1.0, 0.0],
-                [-s, 0.0, c],
+                Vec3::new( c, 0.0, s),
+                Vec3::new(0.0, 1.0, 0.0),
+                Vec3::new(-s, 0.0, c),
             ],
         }
     }
@@ -42,78 +80,21 @@ impl Mat3 {
         let (s, c) = theta.sin_cos();
         Self {
             m: [
-                [ c, -s, 0.0],
-                [ s,  c, 0.0],
-                [0.0, 0.0, 1.0],
+                Vec3::new( c, -s, 0.0),
+                Vec3::new( s,  c, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
             ],
         }
     }
 }
-
-impl Mul<[f64; 3]> for Mat3 {
-    type Output = [f64; 3];
-
-    fn mul(self, v: [f64; 3]) -> [f64; 3] {
-        [
-            self.m[0][0] * v[0] + self.m[0][1] * v[1] + self.m[0][2] * v[2],
-            self.m[1][0] * v[0] + self.m[1][1] * v[1] + self.m[1][2] * v[2],
-            self.m[2][0] * v[0] + self.m[2][1] * v[1] + self.m[2][2] * v[2],
-        ]
-    }
-}
-
-impl Mul for Mat3 {
-    type Output = Mat3;
-
-    fn mul(self, rhs: Mat3) -> Mat3 {
-        let mut r = [[0.0; 3]; 3];
-
-        for i in 0..3 {
-            for j in 0..3 {
-                for k in 0..3 {
-                    r[i][j] += self.m[i][k] * rhs.m[k][j];
-                }
-            }
-        }
-
-        Mat3 { m: r }
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-pub fn rotate_around_axis(v: [f64; 3], axis: [f64; 3], angle: f64) -> [f64; 3] {
+pub fn rotate_around_axis(v: Vec3, axis: Vec3, angle: f64) -> Vec3 {
     let cos_a = angle.cos();
     let sin_a = angle.sin();
 
-    let cross = [
-        axis[1]*v[2] - axis[2]*v[1],
-        axis[2]*v[0] - axis[0]*v[2],
-        axis[0]*v[1] - axis[1]*v[0],
-    ];
+    let axis = axis.normalized();
 
-    let dot = axis[0]*v[0] + axis[1]*v[1] + axis[2]*v[2];
+    let cross = axis.cross(v);
+    let dot = axis.dot(v);
 
-    [
-        v[0]*cos_a + cross[0]*sin_a + axis[0]*dot*(1.0 - cos_a),
-        v[1]*cos_a + cross[1]*sin_a + axis[1]*dot*(1.0 - cos_a),
-        v[2]*cos_a + cross[2]*sin_a + axis[2]*dot*(1.0 - cos_a),
-    ]
+    v * cos_a + cross * sin_a + axis * dot * (1.0 - cos_a)
 }

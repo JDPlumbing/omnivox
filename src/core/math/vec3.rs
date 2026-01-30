@@ -1,24 +1,63 @@
 // core/math/vec3.rs
+use std::ops::{Add, Mul, Sub};
+use serde::{Serialize, Deserialize};
 
-pub fn dot(a: Vec3, b: Vec3) -> f64 {
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct Vec3 {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+impl Add for Vec3 {
+    type Output = Vec3;
+    fn add(self, rhs: Vec3) -> Vec3 {
+        Vec3::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    }
+}
+impl Sub for Vec3 {
+    type Output = Vec3;
+    fn sub(self, rhs: Vec3) -> Vec3 {
+        Vec3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    }
 }
 
-pub fn magnitude(v: Vec3) -> f64 {
-    (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt()
+impl Mul<Vec3> for f64 {
+    type Output = Vec3;
+    fn mul(self, v: Vec3) -> Vec3 {
+        Vec3::new(self * v.x, self * v.y, self * v.z)
+    }
 }
 
-pub fn normalize(v: Vec3) -> Vec3 {
-    let m = magnitude(v).max(1e-12);
-    [v[0] / m, v[1] / m, v[2] / m]
+impl Mul<f64> for Vec3 {
+    type Output = Vec3;
+    fn mul(self, s: f64) -> Vec3 {
+        Vec3::new(self.x * s, self.y * s, self.z * s)
+    }
 }
 
-pub fn cross(a: Vec3, b: Vec3) -> Vec3 {
-    [
-        a[1] * b[2] - a[2] * b[1],
-        a[2] * b[0] - a[0] * b[2],
-        a[0] * b[1] - a[1] * b[0],
-    ]
-}
+impl Vec3 {
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Self { x, y, z }
+    }
 
-pub type Vec3 = [f64; 3];
+    pub fn dot(self, other: Vec3) -> f64 {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    pub fn magnitude(self) -> f64 {
+        (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
+    }
+
+    pub fn normalized(self) -> Vec3 {
+        let m = self.magnitude().max(1e-12);
+        Vec3::new(self.x / m, self.y / m, self.z / m)
+    }
+
+    pub fn cross(self, other: Vec3) -> Vec3 {
+        Vec3::new(
+            self.y * other.z - self.z * other.y,
+            self.z * other.x - self.x * other.z,
+            self.x * other.y - self.y * other.x,
+        )
+    }
+}

@@ -4,7 +4,7 @@
 // Works with the fixed simulation calendar and the extended formats
 // defined in sim_display.rs.
 
-use crate::core::chronovox::ChronoEvent;
+
 use crate::core::tdt::sim_time::SimTime;
 use crate::core::tdt::sim_display::{TimeFormat, format_simtime};
 use crate::core::tdt::sim_calendar::*;
@@ -12,6 +12,14 @@ use crate::core::tdt::sim_calendar::*;
 use serde_json::json;
 use std::collections::BTreeMap;
 
+#[derive(Debug, Clone)]
+pub struct ChronoEvent {
+    pub entity_id: u64,
+    pub world_id: u64,
+    pub kind: String,
+    pub payload: serde_json::Value,
+    pub t: SimTime,
+}
 /// ---------------------------------------------------------------------------
 /// Resolution modes (bucket sizes)
 /// ---------------------------------------------------------------------------
