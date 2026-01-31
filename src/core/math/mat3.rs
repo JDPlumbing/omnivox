@@ -98,3 +98,31 @@ pub fn rotate_around_axis(v: Vec3, axis: Vec3, angle: f64) -> Vec3 {
 
     v * cos_a + cross * sin_a + axis * dot * (1.0 - cos_a)
 }
+impl Mat3 {
+    pub fn transpose(self) -> Mat3 {
+        Mat3 {
+            m: [
+                Vec3::new(
+                    self.m[0].x,
+                    self.m[1].x,
+                    self.m[2].x,
+                ),
+                Vec3::new(
+                    self.m[0].y,
+                    self.m[1].y,
+                    self.m[2].y,
+                ),
+                Vec3::new(
+                    self.m[0].z,
+                    self.m[1].z,
+                    self.m[2].z,
+                ),
+            ],
+        }
+    }
+
+    /// For rotation matrices, inverse == transpose
+    pub fn inverse(self) -> Mat3 {
+        self.transpose()
+    }
+}

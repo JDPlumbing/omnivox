@@ -1,5 +1,5 @@
 // core/math/vec3.rs
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Mul, Sub, Neg};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -32,6 +32,15 @@ impl Mul<f64> for Vec3 {
     type Output = Vec3;
     fn mul(self, s: f64) -> Vec3 {
         Vec3::new(self.x * s, self.y * s, self.z * s)
+    }
+}
+
+
+impl Neg for Vec3 {
+    type Output = Vec3;
+
+    fn neg(self) -> Vec3 {
+        Vec3::new(-self.x, -self.y, -self.z)
     }
 }
 

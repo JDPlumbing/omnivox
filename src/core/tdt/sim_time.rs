@@ -21,6 +21,14 @@ impl<'de> Deserialize<'de> for SimTime {
         Ok(SimTime(ns))
     }
 }
+use std::ops::AddAssign;
+
+
+impl AddAssign<SimDuration> for SimTime {
+    fn add_assign(&mut self, rhs: SimDuration) {
+        self.0 += rhs.0;
+    }
+}
 
 /// Implementation of `SimTime` providing constructors, conversions, and arithmetic operations.
 impl SimTime {
@@ -61,7 +69,9 @@ impl SimTime {
     pub fn from_seconds(sec: i64) -> Self {
         SimTime(sec as i128 * NANOS_PER_SECOND)
     }
-
+    pub fn from_seconds_f64(sec: f64) -> Self {
+        SimTime((sec * NANOS_PER_SECOND as f64) as i128)
+    }
     /// Creates a new `SimTime` from a UTC datetime.
     ///
     /// # Arguments
