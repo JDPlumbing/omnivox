@@ -1,0 +1,62 @@
+math = rules
+physics layer = raw values
+cosmic layer = raw values as input + rules = output
+|
+|--world layer = cosmic output + raw values = input + rules = output
+    |
+    |--env layer = world output + raw values = input + rules = output 
+        |
+        |--entity layer = env output + raw values = input + rules = output
+
+    
+
+spatial frames (conceputal)
+
+    cosmic frame: what cosmic bodies exist, and where are they in reference to each others
+
+        world frame: what worlds exist, and which cosmic bodies do they represent
+
+            env frame: where on the world is this area
+
+                entity frame: where is this entity in reference to other entities in the evironment (entities may or may not interact based on whatever rules, for instance: collisions or interactions between entities)
+
+
+
+simulation engine (and state):
+        simulation is the only thing that "owns" time progression. everything above from cosmic>world>env>entity - those are just static facts a a single point in time. so at t=n where is this thing or what is it like here. 
+        a simulation, however: knows: which frame the user is "in" at the time: so: cosmic frame: only show information relevant to cosmic bodies
+                                                                                        world frame: only show information relevant to worlds
+                                                                                        env frame: only show information relevant to environments
+                                                                                        entity frame: only show information relevant to entities
+        and the simulation engine is responsible for moving time forward, and updating all the relevant states of each layer based on the rules defined for each layer. based on: tick rate, current time, etc.. 
+        so, you only have to "load" into the simualtion memory: the outputs from the above layer, and the values or whatever we care about at the layer we are in.
+            
+
+
+[SimTime]
+    ↓
+[CosmicState] ──┐
+[WorldState]  ──┼─→ sample_entity_environments
+[EnvState]    ──┘
+                    ↓
+          EntityEnvironmentSample (per entity)
+                    ↓
+           apply_gravity_to_entities
+                    ↓
+             AccelerationENU
+                    ↓
+           integrate_velocity(dt)
+                    ↓
+              VelocityENU
+                    ↓
+           integrate_positions(dt)
+                    ↓
+              PositionENU
+SimulationEngine
+ ├─ owns SimTime
+ ├─ mutates SimulationState
+ └─ enforces tick order
+
+SimulationState
+ ├─ holds “what is true now”
+ └─ has no behavior

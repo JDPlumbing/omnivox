@@ -1,0 +1,8 @@
+pub mod axial_tilt;
+pub mod luminosity;
+pub mod mass;
+pub mod orbit;
+pub mod radius;
+pub mod root;
+pub mod rotation;
+pub mod prime_meridian;
