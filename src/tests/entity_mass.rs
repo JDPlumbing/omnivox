@@ -1,10 +1,10 @@
 use crate::shared::entities::entity_store::EntityStore;
 use crate::core::entity::id::EntityId;
 use crate::core::entity::components::{
-    geometry::Radius,
-    material::Density,
+    geometry_parts::Radius,
+    materials::Density,
 };
-use crate::core::entity::systems::mass::compute_entity_mass;
+use crate::core::entity::systems::compute_entity_mass::compute_entity_mass;
 use crate::core::physics::units::{
     length::Meters,
     density::KilogramsPerCubicMeter,

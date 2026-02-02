@@ -1,13 +1,13 @@
 use crate::shared::entities::entity_store::EntityStore;
 use crate::core::entity::id::EntityId;
 use crate::core::entity::components::{
-    geometry::Radius,
-    material::Density,
+    geometry_parts::Radius,
+    materials::Density,
     entity_environment_sample::EntityEnvironmentSample,
 };
 use crate::core::entity::systems::{
-    mass::compute_entity_mass,
-    weight::compute_entity_weight,
+    compute_entity_mass::compute_entity_mass,
+    compute_entity_weight::compute_entity_weight,
 };
 use crate::core::worlds::systems::gravity::LocalENU;
 use crate::core::physics::units::{

@@ -15,25 +15,20 @@ use crate::core::entity::components::{time::Time,
                               mass::Mass,
                               temperature::Temperature,
                               weight::Weight,
-                              surface_area::SurfaceArea,
-                              
-
-
+                              geometry::Geometry,
+                              geometry_parts::volume::Volume,
+                              geometry_parts::surface_area::SurfaceArea,
+                              exposure_area::ExposureArea,
+                              material::Material,
                             };
-use crate::core::entity::components::material::{Density, 
+use crate::core::entity::components::materials::{Density, 
                                             Hardness, 
-                                            Viscosity, 
+                                            viscosity::Viscosity, 
                                             Absorptivity,
                                             thermal::specific_heat::SpecificHeat,
                                             emissivity::Emissivity
                                         };
-use crate::core::entity::components::geometry::{Length, 
-                                            Radius,     
-                                            Thickness, 
-                                            Width, 
-                                            Height,
 
-                                        };
 use crate::core::entity::components::spatial::{Velocity,
                                         VelocityENU,
                                         PositionENU,
@@ -43,11 +38,6 @@ use crate::core::entity::components::spatial::{Velocity,
 
 #[derive(Debug, Default, Clone)]
 pub struct EntityStore {
-    pub lengths: HashMap<EntityId, Length>,
-    pub radii: HashMap<EntityId, Radius>,
-    pub thicknesses: HashMap<EntityId, Thickness>,
-    pub widths: HashMap<EntityId, Width>,
-    pub heights: HashMap<EntityId, Height>,
     pub densities: HashMap<EntityId, Density>,
     pub hardnesses: HashMap<EntityId, Hardness>,
     pub viscosities: HashMap<EntityId, Viscosity>,
@@ -73,17 +63,16 @@ pub struct EntityStore {
     pub masses: HashMap<EntityId, Mass>,
     pub weights: HashMap<EntityId, Weight>,
     pub emissivities: HashMap<EntityId, Emissivity>,
+    pub geometries: HashMap<EntityId, Geometry>,
+    pub volumes: HashMap<EntityId, Volume>,
     pub surface_areas: HashMap<EntityId, SurfaceArea>,
+    pub exposure_areas: HashMap<EntityId, ExposureArea>,
+    pub materials: HashMap<EntityId, Material>,
 }
 
 impl EntityStore {
     pub fn new() -> Self {
         Self {
-            lengths: HashMap::new(),
-            radii: HashMap::new(),
-            thicknesses: HashMap::new(),
-            widths: HashMap::new(),
-            heights: HashMap::new(),
             densities: HashMap::new(),
             hardnesses: HashMap::new(),
             viscosities: HashMap::new(),
@@ -109,7 +98,11 @@ impl EntityStore {
             emissivities: HashMap::new(),
             masses: HashMap::new(),
             weights: HashMap::new(),
+            geometries: HashMap::new(),
+            volumes: HashMap::new(),
             surface_areas: HashMap::new(),
+            exposure_areas: HashMap::new(),
+            materials: HashMap::new(),
         }
     }
 
@@ -143,6 +136,9 @@ impl EntityStore {
     pub fn add_absorptivity(&mut self, entity: EntityId, absorptivity: Absorptivity) {
         self.absorptivities.insert(entity, absorptivity);
     }
+    pub fn add_exposure_area(&mut self, entity: EntityId, exposure_area: ExposureArea) {
+        self.exposure_areas.insert(entity, exposure_area);
+    }
     pub fn remove_active(&mut self, entity: &EntityId) {
         self.actives.remove(entity);
     }
@@ -159,21 +155,7 @@ impl EntityStore {
     pub fn add_viscosity(&mut self, entity: EntityId, viscosity: Viscosity) {
         self.viscosities.insert(entity, viscosity);
     }
-    pub fn add_length(&mut self, entity: EntityId, length: Length) {
-        self.lengths.insert(entity, length);
-    }
-    pub fn add_radius(&mut self, entity: EntityId, radius: Radius) {
-        self.radii.insert(entity, radius);
-    }
-    pub fn add_thickness(&mut self, entity: EntityId, thickness: Thickness) {
-        self.thicknesses.insert(entity, thickness);
-    }
-    pub fn add_width(&mut self, entity: EntityId, width: Width) {
-        self.widths.insert(entity, width);
-    }
-    pub fn add_height(&mut self, entity: EntityId, height: Height) {
-        self.heights.insert(entity, height);
-    }
+
     pub fn add_velocity(&mut self, entity: EntityId, velocity: Velocity) {
         self.velocities.insert(entity, velocity);
     }
@@ -216,8 +198,16 @@ impl EntityStore {
     pub fn add_weight(&mut self, entity: EntityId, weight: Weight) {
         self.weights.insert(entity, weight);
     }
+    pub fn add_geometry(&mut self, entity: EntityId, geometry: Geometry) {
+        self.geometries.insert(entity, geometry);
+    }
+    pub fn add_volume(&mut self, entity: EntityId, volume: Volume) {
+        self.volumes.insert(entity, volume);
+    }
     pub fn add_surface_area(&mut self, entity: EntityId, surface_area: SurfaceArea) {
         self.surface_areas.insert(entity, surface_area);
     }
-
+    pub fn add_material(&mut self, entity: EntityId, material: Material) {
+        self.materials.insert(entity, material);
+    }
 }

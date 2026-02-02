@@ -1,6 +1,6 @@
 use crate::shared::entities::entity_store::EntityStore;
 use crate::core::entity::id::EntityId;
-use crate::core::entity::components::geometry::Radius;
+use crate::core::entity::components::geometry_parts::Radius;
 use crate::core::entity::systems::geometry::exposure_area::compute_entity_exposure_area;
 use crate::core::physics::units::{
     length::Meters,

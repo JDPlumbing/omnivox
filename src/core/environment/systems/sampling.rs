@@ -1,6 +1,6 @@
 use crate::core::environment::state::EnvironmentState;
 use crate::core::environment::systems::surface::environment_at_surface;
-use crate::core::entity::systems::environment_bridge::declare_entity_environment_sample;
+use crate::core::entity::systems::declare_entity_environment_sample::declare_entity_environment_sample;
 use crate::core::entity::id::EntityId;
 use crate::shared::entities::entity_store::EntityStore;
 

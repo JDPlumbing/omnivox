@@ -4,8 +4,8 @@ use crate::shared::EntityStore;
 
 use crate::core::entity::id::EntityId;
 use crate::core::entity::components::{
-    geometry::radius::Radius,
-    material::{
+    geometry_parts::radius::Radius,
+    materials::{
         density::Density,
         thermal::specific_heat::SpecificHeat,
         emissivity::Emissivity,
