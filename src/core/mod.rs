@@ -16,3 +16,4 @@ pub mod spatial;
 pub mod entity;
 pub mod simulation;
 pub mod render;
+pub mod commands;

@@ -1,20 +1,25 @@
 use crate::core::spatial::uvox_id::{UvoxId, RUm, LatCode, LonCode};
-use crate::core::spatial::surface::SurfaceCoords;
+use crate::core::spatial::surface_coords::SurfaceCoords;
 
 use crate::core::worlds::id::WorldId;
 use crate::core::worlds::state::WorldState;
 
 use crate::core::cosmic::state::CosmicState;
-use crate::core::physics::units::angle::Radians;
+use crate::core::physics::units::angle::Degrees;
 use crate::core::physics::units::length::Meters;
 
 /// Angular scale: integer units per degree
 /// Chosen to give ~1.1µm resolution at Earth's equator.
 pub const ANG_SCALE: i128 = 100_000_000_000;
 
-fn radians_to_code(rad: Radians) -> i64 {
-    let degrees = rad.0.to_degrees();
-    (degrees * ANG_SCALE as f64).round() as i64
+/// Convert degrees → integer angular code
+fn degrees_to_code(deg: Degrees) -> i64 {
+    (deg.0 * ANG_SCALE as f64).round() as i64
+}
+
+/// Convert integer angular code → degrees
+fn code_to_degrees(code: i64) -> Degrees {
+    Degrees(code as f64 / ANG_SCALE as f64)
 }
 
 /// Resolve a world-surface position into a spatial address.
@@ -34,7 +39,7 @@ pub fn surface_to_uvox(
 
     let body_id = anchor.body;
 
-    // 2️⃣ Get cosmic body radius (meters)
+    // 2️⃣ Get cosmic body reference radius (meters)
     let base_radius_m = cosmic_state
         .radii
         .get(&body_id)
@@ -46,9 +51,9 @@ pub fn surface_to_uvox(
     let r_um = ((base_radius_m + surface.elevation.0) * 1_000_000.0)
         .round() as i64;
 
-    // 4️⃣ Convert angular coordinates to codes
-    let lat_code = LatCode(radians_to_code(surface.latitude));
-    let lon_code = LonCode(radians_to_code(surface.longitude));
+    // 4️⃣ Encode angular coordinates (degrees → scaled integers)
+    let lat_code = LatCode(degrees_to_code(surface.latitude));
+    let lon_code = LonCode(degrees_to_code(surface.longitude));
 
     // 5️⃣ Construct spatial address
     UvoxId::new(
@@ -60,7 +65,7 @@ pub fn surface_to_uvox(
 
 // ---------------------------------------
 /// Resolve a spatial address into a world-surface position.
-/// -----------------------------------------
+/// ---------------------------------------
 
 pub fn uvox_to_surface(
     world_id: WorldId,
@@ -69,13 +74,14 @@ pub fn uvox_to_surface(
     cosmic_state: &CosmicState,
 ) -> SurfaceCoords {
     // 1️⃣ Resolve world → cosmic body
-    let anchor = world_state.anchors
+    let anchor = world_state
+        .anchors
         .get(&world_id)
         .expect("world has no anchor");
 
     let body_id = anchor.body;
 
-    // 2️⃣ Get base radius
+    // 2️⃣ Get cosmic body reference radius
     let base_radius_m = cosmic_state
         .radii
         .get(&body_id)
@@ -83,14 +89,9 @@ pub fn uvox_to_surface(
         .meters
         .0;
 
-    // 3️⃣ Decode angles
-    let latitude = Radians(
-        (pos.lat.0 as f64 / ANG_SCALE as f64).to_radians()
-    );
-
-    let longitude = Radians(
-        (pos.lon.0 as f64 / ANG_SCALE as f64).to_radians()
-    );
+    // 3️⃣ Decode angles (scaled integers → degrees)
+    let latitude = code_to_degrees(pos.lat.0);
+    let longitude = code_to_degrees(pos.lon.0);
 
     // 4️⃣ Decode elevation
     let r_m = pos.r_um.0 as f64 * 1e-6;

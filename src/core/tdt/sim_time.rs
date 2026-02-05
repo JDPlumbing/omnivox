@@ -29,6 +29,11 @@ impl AddAssign<SimDuration> for SimTime {
         self.0 += rhs.0;
     }
 }
+impl SimTime {
+    pub fn as_seconds_f64(&self) -> f64 {
+        self.0 as f64 / NANOS_PER_SECOND as f64
+    }
+}
 
 /// Implementation of `SimTime` providing constructors, conversions, and arithmetic operations.
 impl SimTime {

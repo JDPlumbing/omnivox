@@ -1,6 +1,5 @@
 use crate::shared::entities::entity_store::EntityStore;
 use crate::core::entity::systems::geometry::geometry_exposure_area::compute_geometry_exposure_area;
-use crate::core::entity::components::absorbed_energy::AbsorbedEnergy;
 use crate::core::physics::units::energy::Joules;
 
 pub fn accumulate_absorbed_energy(

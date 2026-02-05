@@ -10,6 +10,9 @@ pub struct Orbit {
     /// Semi-major axis
     pub semi_major_axis: Meters,
 
+    /// eccentricity
+    pub eccentricity: f64,
+
     /// Orbital period
     pub period: Seconds,
 

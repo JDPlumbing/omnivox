@@ -6,8 +6,9 @@ use crate::core::worlds::state::WorldState;
 use crate::core::cosmic::state::CosmicState;
 use crate::core::cosmic::systems::frame_system::CosmicFrameSystem;
 use crate::core::cosmic::systems::radiation_system::CosmicRadiationSystem;
-use crate::core::spatial::surface::SurfaceCoords;
+use crate::core::spatial::surface_coords::SurfaceCoords;
 use crate::core::tdt::sim_time::SimTime;
+use crate::core::worlds::systems::surface::sample_world_surface;
 
 pub struct Insolation {
     pub flux: WattsPerSquareMeter,
@@ -15,17 +16,14 @@ pub struct Insolation {
 }
 
 pub fn compute_insolation(
-    solar_direction_world: Vec3,
+    solar_direction: Vec3,
     stellar_irradiance: WattsPerSquareMeter,
     surface_normal: Vec3,
 ) -> Insolation {
-    let s = solar_direction_world.normalized();
+    let s = solar_direction.normalized();
     let n = surface_normal.normalized();
 
     let cos_theta = s.dot(n).max(0.0);
-
-    println!("compute_insolation_sun·normal = {}", cos_theta);
-
 
     let zenith_angle = if cos_theta > 0.0 {
         Radians(cos_theta.acos())
@@ -38,9 +36,10 @@ pub fn compute_insolation(
         zenith_angle,
     }
 }
+
 pub fn insolation_at_surface(
     world_id: WorldId,
-    _location: &SurfaceCoords, // unused for Option A
+    location: &SurfaceCoords,
     world_state: &WorldState,
     cosmic_state: &CosmicState,
     time: SimTime,
@@ -54,7 +53,6 @@ pub fn insolation_at_surface(
         frames: &frames,
     };
 
-    // Deterministic star
     let orbit = cosmic_state.orbits.get(&body_id)?;
     let star_id = orbit.primary;
 
@@ -63,37 +61,19 @@ pub fn insolation_at_surface(
 
     let body_pose = frames.body_pose(body_id, time);
 
-    // Sun direction in planet-fixed frame
-    let sun_dir_planet =
-        body_pose.orientation.inverse() * (-radiation.direction);
+    // Surface normal (world-local → cosmic)
+    let surface_sample =
+        sample_world_surface(world_id, location, world_state);
 
-    // Spin axis in planet-fixed frame (Z after orientation)
+    let surface_normal_cosmic =
+        body_pose.orientation * surface_sample.normal_local;
 
-    let surface_normal = Vec3::new(1.0, 0.0, 0.0);
-
-
-
-    let cos_zenith = sun_dir_planet.normalized().dot(surface_normal);
-
-
-
-    // Debug
-    let rotation = cosmic_state.rotations.get(&body_id).unwrap();
-    let t = time.0 as f64 * 1e-9;
-    let spin_deg = (2.0 * std::f64::consts::PI * (t / rotation.period.0)
-        + rotation.phase_at_epoch.0)
-        .rem_euclid(2.0 * std::f64::consts::PI)
-        * 180.0 / std::f64::consts::PI;
-
-    println!(
-        "INSOLATION_DEBUG spin_deg={:.3} cos_zenith={:.6}",
-        spin_deg,
-        cos_zenith
-    );
+    // Sun direction in cosmic space
+    let sun_dir_cosmic = -radiation.direction;
 
     Some(compute_insolation(
-        sun_dir_planet,
+        sun_dir_cosmic,
         radiation.flux,
-        surface_normal,
+        surface_normal_cosmic,
     ))
 }

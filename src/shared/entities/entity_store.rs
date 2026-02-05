@@ -20,6 +20,7 @@ use crate::core::entity::components::{time::Time,
                               geometry_parts::surface_area::SurfaceArea,
                               exposure_area::ExposureArea,
                               material::Material,
+                              measurement::Measurement,
                             };
 use crate::core::entity::components::materials::{Density, 
                                             Hardness, 
@@ -38,6 +39,10 @@ use crate::core::entity::components::spatial::{Velocity,
 
 #[derive(Debug, Default, Clone)]
 pub struct EntityStore {
+    pub actives: HashMap<EntityId, Active>,
+    pub spawned_ats: HashMap<EntityId, SpawnedAt>,
+    pub despawned_ats: HashMap<EntityId, DespawnedAt>,
+    pub measurements: HashMap<EntityId, Measurement>,
     pub densities: HashMap<EntityId, Density>,
     pub hardnesses: HashMap<EntityId, Hardness>,
     pub viscosities: HashMap<EntityId, Viscosity>,
@@ -45,13 +50,13 @@ pub struct EntityStore {
     pub notes: HashMap<EntityId, Note>,
     pub world_memberships: HashMap<EntityId, WorldMembership>,
     pub positions: HashMap<EntityId, Position>,
-    pub spawned_ats: HashMap<EntityId, SpawnedAt>,
-    pub despawned_ats: HashMap<EntityId, DespawnedAt>,
-    pub actives: HashMap<EntityId, Active>,
+
     pub velocities: HashMap<EntityId, Velocity>,
+
     pub position_enus: HashMap<EntityId, PositionENU>,
     pub velocity_enus: HashMap<EntityId, VelocityENU>,
     pub acceleration_enus: HashMap<EntityId, AccelerationENU>,
+
     pub groundeds: HashMap<EntityId, Grounded>,
     pub entity_environment_samples: HashMap<EntityId, EntityEnvironmentSample>,
     pub exposures: HashMap<EntityId, Exposure>,
@@ -103,6 +108,7 @@ impl EntityStore {
             surface_areas: HashMap::new(),
             exposure_areas: HashMap::new(),
             materials: HashMap::new(),
+            measurements: HashMap::new(),
         }
     }
 

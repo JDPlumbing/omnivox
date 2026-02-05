@@ -76,3 +76,8 @@ impl Vec3 {
         )
     }
 }
+impl From<Vec3> for [f64; 3] {
+    fn from(v: Vec3) -> Self {
+        [v.x, v.y, v.z]
+    }
+}

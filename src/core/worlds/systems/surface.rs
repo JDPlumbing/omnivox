@@ -1,10 +1,11 @@
 use crate::core::math::vec3::Vec3;
-use crate::core::spatial::surface::SurfaceCoords;
+use crate::core::spatial::surface_coords::SurfaceCoords;
 use crate::core::worlds::components::world_surface::WorldSurface;
 use crate::core::worlds::state::WorldState;
 use crate::core::worlds::systems::geometry::surface_normal_from_lat_lon;
 use crate::core::worlds::id::WorldId;
 use crate::core::physics::units::length::Meters;
+use crate::core::physics::units::angle::Radians;
 
 /// Pure geometric sample of a world's surface at a given location.
 /// Contains no physics, no environment, and no time-dependent state.
@@ -38,9 +39,13 @@ pub fn sample_world_surface(
 
     match surface {
         WorldSurface::Spherical { .. } => {
+            // 🌍 WORLD → GEOMETRY boundary
+            let lat_rad = Radians::from_degrees(location.latitude);
+            let lon_rad = Radians::from_degrees(location.longitude);
+
             let normal = surface_normal_from_lat_lon(
-                location.latitude,
-                location.longitude,
+                lat_rad,
+                lon_rad,
             );
 
             WorldSurfaceSample {

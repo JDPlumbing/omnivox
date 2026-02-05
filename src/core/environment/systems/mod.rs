@@ -1,6 +1,10 @@
-pub mod thermal;
-pub mod atmosphere;
-pub mod barometric;
+
+pub mod atmosphere_physics;
+pub mod equilibrium_temperature;
+pub mod evaluate_environment;
+
+
+pub mod pressure_at_altitude;
+
+pub mod sample_environment_inputs;
 pub mod scale_height;
-pub mod surface;
-pub mod sampling;

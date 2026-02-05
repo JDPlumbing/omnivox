@@ -44,6 +44,7 @@ pub fn simple_star_planet() -> SimpleSystem {
     cosmic.orbits.insert(planet, Orbit {
         primary: star,
         semi_major_axis: Meters(1.0),
+        eccentricity: 0.0,
         period: Seconds(365.0 * 86_400.0),
         inclination: Radians(0.0),
         phase_at_epoch: Radians(0.0),
@@ -54,7 +55,7 @@ pub fn simple_star_planet() -> SimpleSystem {
         phase_at_epoch: Radians(0.0),
     });
 
-    cosmic.axial_tilts.insert(planet, AxialTilt { radians: Radians(0.0) });
+    cosmic.axial_tilts.insert(planet, AxialTilt { radians: Radians(0.0) , longitude: Radians(0.0) });
     cosmic.prime_meridians.insert(planet, PrimeMeridian { radians: Radians(0.0) });
 
     SimpleSystem { cosmic, star, planet }

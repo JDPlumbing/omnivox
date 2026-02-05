@@ -11,7 +11,10 @@ use crate::core::tdt::sim_time::SimTime;
 /// world-body local frame.
 #[derive(Debug, Clone, Copy)]
 pub struct SurfaceRadiation {
+    /// Direction photons travel, in body-local frame.
+    /// (source → surface)
     pub direction_local: Vec3,
+
     pub flux: WattsPerSquareMeter,
 }
 

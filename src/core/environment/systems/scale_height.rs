@@ -5,7 +5,7 @@ use crate::core::physics::units::{
     
     acceleration::MetersPerSecondSquared,
 };
-use crate::core::environment::systems::atmosphere::MeanMolecularWeight;
+use crate::core::environment::systems::atmosphere_physics::MeanMolecularWeight;
 
 /// Compute atmospheric scale height.
 ///

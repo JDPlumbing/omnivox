@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use std::fmt;
-
+use std::str::FromStr;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -16,5 +16,14 @@ impl EntityId {
 impl fmt::Display for EntityId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+
+impl FromStr for EntityId {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(EntityId(Uuid::parse_str(s)?))
     }
 }

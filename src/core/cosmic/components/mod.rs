@@ -6,3 +6,4 @@ pub mod radius;
 pub mod root;
 pub mod rotation;
 pub mod prime_meridian;
+pub mod cosmic_metadata;

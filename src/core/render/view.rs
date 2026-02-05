@@ -1,6 +1,6 @@
 use crate::core::worlds::id::WorldId;
 use crate::core::id::EntityId;
-use crate::core::entity::components::spatial::Location;
+use crate::core::spatial::location::Location;
 
 #[derive(Default)]
 pub enum ViewFrame {

@@ -1,302 +1,225 @@
-# Omnivox Backend Architecture
+# Omnivox Architecture
 
-This document describes the current backend architecture of Omnivox after the core refactor.
+This document captures the **non‑obvious architectural rules** of the Omnivox system. These rules exist to preserve correctness, scalability, and sanity as the system grows.
 
-The primary goal of this architecture is **separation of concerns**, **offline capability**, and **infra swap-ability**.
-
----
-
-## Design Goals
-
-* Eliminate tech debt from mixed OOP / infra-driven design
-* Make core simulation and domain logic runnable:
-
-  * without HTTP
-  * without a database
-  * without Supabase
-  * without a frontend
-* Treat persistence and auth as *optional adapters*
-* Allow the system to run headless, offline, and deterministically
-* Make API a thin UI layer over engines
+If you are about to add a feature and something here feels inconvenient, **stop and re‑evaluate**. The inconvenience is usually protecting an invariant.
 
 ---
 
-## High-Level Mental Model
+## 1. Core Mental Model
 
-| Concept  | Analogy                        |
-| -------- | ------------------------------ |
-| AppState | React Context Provider         |
-| Engines  | React Hooks                    |
-| Sources  | Ports (Hexagonal Architecture) |
-| Infra    | Adapters                       |
-| API      | UI Layer                       |
+Omnivox is **not** a CRUD app.
 
----
+It is a **world model**:
 
-## Crate / Module Layout
+* entities exist independently of views
+* meaning accrues over time
+* simulation and observation are separate concerns
 
-```
-src/
-├── core/        # Pure domain + simulation logic (NO IO)
-├── engine/      # Behavior & orchestration
-├── shared/      # Traits, contexts, ports
-├── infra/       # Adapters (JSON, in-memory, Supabase later)
-├── app/         # Bootstrap / wiring
-├── api/         # HTTP layer (Axum)
-├── bin/         # Binaries (server)
-```
+UI, API, and storage are *projections* over a persistent world state.
 
 ---
 
-## Dependency Rules (Strict)
+## 2. Entities
 
-Dependencies are **one-directional**:
+### Identity
 
-```
-core
- ↑
-engine
- ↑
-shared
- ↑
-infra
- ↑
-app
- ↑
-api
-```
+* Every entity has a stable `EntityId` (UUID)
+* IDs are opaque and never carry meaning
+* IDs are returned from write operations and used for all future interaction
 
-Rules:
+### Components
 
-* `core` depends on nothing
-* `engine` depends only on `core`
-* `shared` depends only on `core`
-* `infra` depends only on `shared + core`
-* `app` wires infra → shared → engine
-* `api` depends only on `engine + shared + AppState`
+* Entities are identity + components (ECS)
+* Components are **storage**, not intent
+* Entities may exist without being simulated
 
-Violations of these rules are considered architectural bugs.
+### Important Rule
+
+> Entities store **identity**, not **geometry**.
+
+Spatial components (e.g. `Position`) store *addresses* (UvoxId), not physical vectors.
 
 ---
 
-## Core (`core/`)
+## 3. Spatial Model
 
-The core is **pure and deterministic**.
+### UvoxId
 
-Contains:
+* Canonical spatial identity
+* Stores scaled degrees + absolute radius
+* Loss‑controlled, hashable, stable
 
-* ECS entities and components
-* Simulation time (`SimTime`, `SimDuration`)
-* World definitions
-* Physics, math, invariants
+### SurfaceCoords
 
-Rules:
+* Human‑facing semantic location
+* Uses radians internally
+* Only used at boundaries
 
-* No HTTP
-* No database structs
-* No Supabase
-* Serializable domain structs only
+### Conversions
 
-The core can be executed in isolation.
-
----
-
-## Shared (`shared/`)
-
-Defines **contracts and contexts**, never implementations.
-
-Contains:
-
-* `*Source` traits (ports)
-* `RequestContext`, `AuthContext`
-* Session and identity abstractions
-
-Rules:
-
-* No infra types
-* No concrete storage
-* No IO
+* `surface_to_uvox` and `uvox_to_surface` are the **only** places spatial conversion occurs
+* Conversions require world + cosmic context
 
 ---
 
-## Infra (`infra/`)
+## 4. Units
 
-Infra provides **implementations** of shared traits.
+### Internal Units
 
-Current adapters:
+* Angles: **radians**
+* Length: meters
+* Time: nanoseconds (`SimTime`)
 
-* In-memory (dev / tests)
-* JSON (world catalog + world state)
+### External Units (API / UI)
 
-Future adapters:
+* Angles: **degrees**
+* Length: meters
+* Time: seconds (f64)
 
-* Supabase (auth, persistence)
-* SQLite / Postgres
+### Rule
 
-Rules:
+> Unit conversion happens **only at boundaries**.
 
-* Implements `shared::*Source`
-* Never called directly by API
-
----
-
-## Engine (`engine/`)
-
-Engines own **behavior and orchestration**.
-
-Examples:
-
-* `UserEngine`
-* `WorldEngine`
-* `TimeEngine`
-* `LocationEngine`
-
-Responsibilities:
-
-* Coordinate sources
-* Enforce invariants
-* Contain business rules
-
-Engines do NOT:
-
-* Know about HTTP
-* Know about databases
-* Know about Supabase
+Never convert units inside simulation or core logic.
 
 ---
 
-## AppState
+## 5. Commands
 
-`AppState` is the **single source of truth** at runtime.
+Commands represent **intent**.
 
-It contains:
+### Properties
 
-* All sources (trait objects)
-* All engines
+* Commands mutate state
+* Commands carry intent, not components
+* Commands may create multiple entities
+* Commands do not expose ECS internals
 
-Created **once** during bootstrap and shared via `Arc`.
+### Example
 
-Used by:
-
-* API handlers (`State<AppState>`)
-* Middleware (`Extension<AppState>`)
-
----
-
-## API (`api/`)
-
-The API is a **thin HTTP UI layer** built with Axum.
-
-Responsibilities:
-
-* Parse HTTP requests
-* Call engines
-* Return HTTP responses
-
-Rules:
-
-* No domain logic
-* No infra access
-* No Supabase usage
-
-Example routes:
-
-```
-GET  /api/ping
-GET  /api/time/*
-POST /api/auth/signup
-POST /api/auth/login
+```rust
+CreateMarker {
+  world_id,
+  location,
+  note: String
+}
 ```
 
----
-
-## Authentication & Identity Model
-
-### Session-Based (Not Token-Based)
-
-* Sessions are the root of trust
-* Identity is derived from session state
-* No JWTs in API
-* No token refresh endpoints
-
-### Flow
-
-1. Anonymous session created
-2. Signup or login associates user with session
-3. Identity middleware resolves session → RequestContext
-4. Handlers assume identity is already resolved
+Commands accept plain values and domain IDs — never ECS components.
 
 ---
 
-## Identity Middleware
+## 6. Constructors
 
-Identity middleware runs on every request.
+Constructors:
 
-Responsibilities:
+* create ECS components
+* wire entities correctly
+* contain no policy or permissions
 
-* Read `x-session-id` header
-* Load session via `SessionSource`
-* Inject `RequestContext`
+Constructors are:
 
-Middleware does NOT:
-
-* Verify tokens
-* Talk to Supabase
-* Perform auth logic
+* pure
+* reusable
+* domain‑agnostic
 
 ---
 
-## World Data Model
+## 7. Simulation Engine
 
-Worlds are loaded from disk:
+The engine:
 
-```
-data/worlds/
-├── earth.json
-├── moon.json
-└── sun.json
-```
+* owns time
+* owns world, cosmic, environment, and entity state
+* runs systems during `tick()`
 
-Each file contains an **array** of world definitions:
+### Important Rule
 
-```json
-[
-  { "world_id": 1, "name": "Earth", ... }
-]
-```
-
-This allows batching and future extensibility.
+> Only the engine mutates simulation state.
 
 ---
 
-## Runtime Modes Supported
+## 8. API
 
-* Headless (no API)
-* Offline (in-memory + JSON)
-* HTTP server
-* Future: Supabase-backed
+### Write Endpoints
 
----
+* call commands
+* return `EntityId`
+* do not return projections
 
-## Architectural Guarantees
+### Read Endpoints
 
-This architecture guarantees:
+* project engine state
+* are read‑only
+* never mutate state
 
-* Deterministic simulation
-* Testability without mocks
-* Infra swap without touching core
-* Clear ownership boundaries
-* Long-term maintainability
+### Rule
 
----
-
-## Status
-
-* API re-enabled ✔
-* Auth decoupled ✔
-* Infra optional ✔
-* World loading stable ✔
+> Writes use **commands**. Reads use **projections**.
 
 ---
 
-This document should be kept up to date as the system evolves.
+## 9. UI
+
+The UI:
+
+* owns selection
+* owns highlighting
+* owns visibility
+* owns grouping *as a view concern*
+
+UI state is:
+
+* ephemeral
+* per‑user
+* never stored in the engine
+
+### Rule
+
+> If the UI crashed and restarted, this state should not exist.
+
+---
+
+## 10. Environment
+
+Environment:
+
+* connects entities to world + cosmic state
+* is resolved during simulation
+* is not required for entity creation
+
+Environment is a **simulation concern**, not a spatial one.
+
+---
+
+## 11. What Does NOT Belong in Core
+
+* UI selection
+* hover state
+* auth / identity
+* persistence adapters
+* rendering
+
+These live *above* the core.
+
+---
+
+## 12. Guiding Principle
+
+> Facts live in the engine.
+> Projections live outside it.
+
+If unsure where something belongs, ask:
+
+> "Does this affect physical reality or causality?"
+
+If no — it does not belong in core.
+
+---
+
+## End
+
+This document is a **guardrail**, not a straitjacket.
+
+If a future feature requires breaking a rule, update this document first — intentionally.

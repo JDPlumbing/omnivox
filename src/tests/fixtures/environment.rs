@@ -1,12 +1,12 @@
 use crate::core::environment::state::EnvironmentState;
 use crate::core::environment::components::{
     atmosphere::AtmosphereDescriptor,
-    composition::{AtmosphericComposition, GasFraction},
+    atmospheric_composition::{AtmosphericComposition, GasFraction},
 };
 use crate::core::worlds::id::WorldId;
 use crate::core::physics::units::{
     pressure::Pascals,
-    length::Meters,
+
     albedo::Albedo,
 };
 
@@ -23,7 +23,7 @@ pub fn earth_like_environment(world_id: WorldId) -> EnvironmentState {
         AtmosphereDescriptor {
             albedo: Albedo(0.30),
             surface_pressure: Pascals(101_325.0),
-            scale_height: Meters(8_500.0), // ~8.5 km
+           
         },
     );
 

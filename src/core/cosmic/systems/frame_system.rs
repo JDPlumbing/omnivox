@@ -8,6 +8,7 @@ use crate::core::math::mat3::Mat3;
 
 use super::frame_math::CosmicPose;
 
+
 pub struct CosmicFrameSystem<'a> {
     pub state: &'a CosmicState,
 }
@@ -40,52 +41,84 @@ impl<'a> CosmicFrameSystem<'a> {
             let rotated =
                 parent_pose.orientation * inclined;
 
-            CosmicPose {
-                position: parent_pose.position + rotated,
-                orientation:
-                    parent_pose.orientation * local_pose.orientation,
-            }
+        CosmicPose {
+            position: parent_pose.position + rotated,
+            orientation: parent_pose.orientation * local_pose.orientation,
+        }
+       
         } else {
             // Root body
             local_pose
         }
     }
+}
 
+#[allow(non_snake_case)]
+fn solve_kepler(M: f64, e: f64) -> f64 {
+    let mut E = M; // good initial guess
+
+    for _ in 0..5 {
+        E = E - (E - e * E.sin() - M) / (1.0 - e * E.cos());
+    }
+
+    E
 }
 
 use std::f64::consts::PI;
 
 impl<'a> CosmicFrameSystem<'a> {
+    #[allow(non_snake_case)]
     fn local_body_pose(
-    &self,
-    body: CosmicBodyId,
-    time: SimTime,
-) -> CosmicPose {
+        &self,
+        body: CosmicBodyId,
+        time: SimTime,
+    ) -> CosmicPose {
     // -----------------------------
-    // Position (orbit, parent equatorial plane)
+    // Orbit solution
     // -----------------------------
-    let position = if let Some(orbit) = self.state.orbits.get(&body) {
-        let t = time.0 as f64 * 1e-9; // ✅ seconds
+    let (position, orbit_phase) = if let Some(orbit) = self.state.orbits.get(&body) {
+        let t = time.0 as f64 * 1e-9;
         let period = orbit.period.0;
 
-        let theta =
-            2.0 * PI * (t / period) + orbit.phase_at_epoch.0;
+        let a = orbit.semi_major_axis.0;
+        let e = orbit.eccentricity;
 
-        let r = orbit.semi_major_axis.0;
+        // Mean anomaly
+        let M = 2.0 * PI * (t / period) + orbit.phase_at_epoch.0;
 
-        Vec3::new(
+        // Eccentric anomaly
+        let E = solve_kepler(M, e);
+
+        // True anomaly
+        let sin_v = ((1.0 - e * e).sqrt() * E.sin()) / (1.0 - e * E.cos());
+        let cos_v = (E.cos() - e) / (1.0 - e * E.cos());
+        let theta = sin_v.atan2(cos_v);
+       /* if body == CosmicBodyId(2) {
+            println!(
+                "t_days={:.2}  Earth true anomaly={:.2}°",
+                t / 86400.0,
+                theta.to_degrees()
+            );
+        }*/
+
+        // Radius
+        let r = a * (1.0 - e * e) / (1.0 + e * theta.cos());
+
+        let position = Vec3::new(
             r * theta.cos(),
             r * theta.sin(),
             0.0,
-        )
+        );
+
+        (position, Mat3::rotation_z(theta))
     } else {
-        Vec3::new(0.0, 0.0, 0.0)
+        (Vec3::ZERO, Mat3::identity())
     };
 
-
     // -----------------------------
-    // Orientation (prime meridian + axial tilt + spin)
+    // Orientation (orbit phase + axial tilt + spin)
     // -----------------------------
+    // Prime meridian
     let align = self
         .state
         .prime_meridians
@@ -93,13 +126,23 @@ impl<'a> CosmicFrameSystem<'a> {
         .map(|p| Mat3::rotation_z(p.radians.0))
         .unwrap_or(Mat3::identity());
 
-    let tilt = self
+    // Axial tilt params
+    let (tilt_angle, tilt_longitude) = self
         .state
         .axial_tilts
         .get(&body)
-        .map(|t| Mat3::rotation_x(t.radians.0))
-        .unwrap_or(Mat3::identity());
+        .map(|t| (t.radians.0, t.longitude.0))
+        .unwrap_or((0.0, 0.0));
 
+    // Tilt direction + magnitude
+    let tilt_dir = Mat3::rotation_z(tilt_longitude);
+    let tilt_mag = Mat3::rotation_x(tilt_angle);
+
+    // Fixed spin axis in inertial space (THIS is what creates seasons)
+    let tilt_frame = tilt_dir * tilt_mag;
+
+
+    // Spin
     let spin_angle = self
         .state
         .rotations
@@ -110,12 +153,13 @@ impl<'a> CosmicFrameSystem<'a> {
         })
         .unwrap_or(0.0);
 
-    let spin_local = Mat3::rotation_z(spin_angle);
+    // Spin about tilted axis
+    let spin_about_axis =
+        tilt_frame * Mat3::rotation_z(spin_angle) * tilt_frame.transpose();
 
-    // ✅ Spin about tilted axis
-    let spin = tilt * spin_local * tilt.transpose();
+    // Final orientation
+    let orientation = spin_about_axis * align;
 
-    let orientation = spin * align;
 
     CosmicPose {
         position,

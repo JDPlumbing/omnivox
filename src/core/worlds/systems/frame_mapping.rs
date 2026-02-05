@@ -9,24 +9,9 @@ use crate::core::cosmic::systems::frame_system::CosmicFrameSystem;
 
 use crate::core::tdt::sim_time::SimTime;
 
-use crate::core::spatial::surface::SurfaceCoords;
+use crate::core::spatial::surface_coords::SurfaceCoords;
 
-/// Convert a cosmic-space direction (e.g. sun vector)
-/// into world-local ENU coordinates.
-// NOT USED FOR INSOLATION - USE FOR RENDERING ONLY
-pub fn sun_direction_world(
-    sun_dir_cosmic: Vec3,
-    world_north: Vec3,
-) -> Vec3 {
-    let up = world_north.normalized();
-    let enu = enu_frame(up, world_north);
 
-    Vec3::new(
-        sun_dir_cosmic.dot(enu.east),
-        sun_dir_cosmic.dot(enu.north),
-        sun_dir_cosmic.dot(enu.up),
-    )
-}
 
 /// Resolve a point on a world's surface into cosmic-space position.
 pub fn world_surface_position_cosmic(

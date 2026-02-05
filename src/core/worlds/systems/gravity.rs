@@ -1,6 +1,6 @@
 use crate::core::worlds::id::WorldId;
 use crate::core::worlds::state::WorldState;
-use crate::core::spatial::surface::SurfaceCoords;
+use crate::core::spatial::location::Location;
 use crate::core::cosmic::state::CosmicState;
 use crate::core::cosmic::systems::frame_system::CosmicFrameSystem;
 use crate::core::cosmic::systems::gravity_point::acceleration_vector_at_point_from_body;
@@ -18,7 +18,7 @@ pub struct LocalENU {
 
 pub fn gravity_enu_at_location(
     world_id: WorldId,
-    location: &SurfaceCoords,
+    location: &Location,
     world_state: &WorldState,
     cosmic_state: &CosmicState,
     time: SimTime,
@@ -72,4 +72,24 @@ pub fn gravity_enu_at_location(
         north: MetersPerSecondSquared(g_cosmic.dot(enu.north)),
         up: MetersPerSecondSquared(g_cosmic.dot(enu.up)),
     }
+}
+
+
+pub fn gravity_at_surface(
+    world_id: WorldId,
+    location: &Location,
+    world_state: &WorldState,
+    cosmic_state: &CosmicState,
+    time: SimTime,
+) -> MetersPerSecondSquared {
+    let g = gravity_enu_at_location(
+        world_id,
+        location,
+        world_state,
+        cosmic_state,
+        time,
+    );
+
+    // Up is negative (toward center), so negate
+    MetersPerSecondSquared(-g.up.0)
 }

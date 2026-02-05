@@ -12,7 +12,6 @@ pub use velocity_enu::VelocityENU;
 pub use position_enu::PositionENU;
 pub mod acceleration_enu;
 pub use acceleration_enu::AccelerationENU;
-pub mod location;
-pub use location::Location;
+
 pub mod grounded;
 pub use grounded::Grounded;
