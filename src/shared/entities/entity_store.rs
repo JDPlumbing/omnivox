@@ -35,6 +35,7 @@ use crate::core::entity::components::spatial::{Velocity,
                                         PositionENU,
                                         AccelerationENU,
                                         Grounded,
+                                        MarkerShape,
                                         };
 
 #[derive(Debug, Default, Clone)]
@@ -50,8 +51,9 @@ pub struct EntityStore {
     pub notes: HashMap<EntityId, Note>,
     pub world_memberships: HashMap<EntityId, WorldMembership>,
     pub positions: HashMap<EntityId, Position>,
-
+    pub marker_shapes: HashMap<EntityId, MarkerShape>,
     pub velocities: HashMap<EntityId, Velocity>,
+    pub parent_anchors: HashMap<EntityId, EntityId>,
 
     pub position_enus: HashMap<EntityId, PositionENU>,
     pub velocity_enus: HashMap<EntityId, VelocityENU>,
@@ -109,6 +111,8 @@ impl EntityStore {
             exposure_areas: HashMap::new(),
             materials: HashMap::new(),
             measurements: HashMap::new(),
+            marker_shapes: HashMap::new(),
+            parent_anchors: HashMap::new(),
         }
     }
 
@@ -215,5 +219,11 @@ impl EntityStore {
     }
     pub fn add_material(&mut self, entity: EntityId, material: Material) {
         self.materials.insert(entity, material);
+    }
+    pub fn add_measurement(&mut self, entity: EntityId, measurement: Measurement) {
+        self.measurements.insert(entity, measurement);
+    }
+    pub fn add_marker_shape(&mut self, entity: EntityId, marker_shape: MarkerShape) {
+        self.marker_shapes.insert(entity, marker_shape);
     }
 }

@@ -7,6 +7,8 @@ use crate::core::worlds::state::WorldState;
 use crate::core::cosmic::state::CosmicState;
 use crate::core::physics::units::angle::Degrees;
 use crate::core::physics::units::length::Meters;
+use crate::core::math::vec3::Vec3;
+
 
 /// Angular scale: integer units per degree
 /// Chosen to give ~1.1µm resolution at Earth's equator.
@@ -102,4 +104,34 @@ pub fn uvox_to_surface(
         longitude,
         elevation,
     }
+}
+
+
+pub fn surface_coords_to_cosmic(
+    world_id: WorldId,
+    surface: SurfaceCoords,
+    world_state: &WorldState,
+    cosmic_state: &CosmicState,
+) -> Vec3 {
+    // Resolve world → body
+    let anchor = world_state
+        .anchors
+        .get(&world_id)
+        .expect("world has no anchor");
+
+    let body_id = anchor.body;
+
+    let base_radius =
+        cosmic_state.radii.get(&body_id).unwrap().meters.0;
+
+    let r = base_radius + surface.elevation.0;
+
+    let lat = surface.latitude.0.to_radians();
+    let lon = surface.longitude.0.to_radians();
+
+    Vec3::new(
+        r * lat.cos() * lon.cos(),
+        r * lat.cos() * lon.sin(),
+        r * lat.sin(),
+    )
 }

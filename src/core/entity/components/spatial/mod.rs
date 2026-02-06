@@ -12,6 +12,9 @@ pub use velocity_enu::VelocityENU;
 pub use position_enu::PositionENU;
 pub mod acceleration_enu;
 pub use acceleration_enu::AccelerationENU;
-
+pub mod marker_shape;
+pub use marker_shape::MarkerShape;
 pub mod grounded;
 pub use grounded::Grounded;
+pub mod spatial_anchor;
+pub use spatial_anchor::SpatialAnchor;
